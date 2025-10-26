@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>ACSRS – Connexion</title>
+<style>
+  :root{--bg:#0b0f14;--panel:#121821;--line:#223044;--text:#e8eef5;--muted:#93a7bf;--accent:#3a8bf2;--ok:#2e7d32;}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;min-height:100%}
+  .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{width:100%;max-width:520px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:24px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+  h1{margin:0 0 8px;font-size:24px}
+  h2{margin:0 0 8px;font-size:18px}
+  p.muted{color:var(--muted);margin:0 0 16px}
+  label{display:block;margin:10px 0 6px;color:var(--muted);font-size:13px}
+  input{width:100%;padding:10px;border-radius:10px;border:1px solid #2c3d52;background:#0f1520;color:#fff}
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .row>*{flex:1}
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--accent);border:0;color:#fff;font-weight:700;padding:10px 14px;border-radius:12px;cursor:pointer;text-decoration:none}
+  .btn.full{width:100%}
+  .btn.ghost{background:#0f1520;border:1px solid #2c3d52}
+  .btn.success{background:var(--ok)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .error{color:#ffb4b4;margin-top:10px;min-height:18px;text-align:center}
+  .ok{color:#9be7a1;margin-top:10px;text-align:center;min-height:18px}
+  .sep{height:1px;background:var(--line);margin:16px 0}
+  .hidden{display:none}
+  .center{text-align:center}
+  .tag{display:inline-block;background:#0f1520;border:1px solid #2c3d52;color:#e8eef5;padding:4px 8px;border-radius:999px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>ACSRS – Connexion</h1>
+    <p class="muted">Connectez-vous, puis choisissez votre mode : <b>Afficher</b> (TV) ou <b>Encoder</b> (Dispatch / Missions).</p>
+
+    <!-- Étape 1 : Connexion -->
+    <section id="stepLogin">
+      <label for="login">Identifiant (e-mail)</label>
+      <input id="login" type="email" autocomplete="username" placeholder="centrale@acsrs.be" value="centrale@acsrs.be" />
+
+      <label for="password">Mot de passe</label>
+      <input id="password" type="password" autocomplete="current-password" placeholder="••••••••" />
+
+      <button id="btnLogin" class="btn full">Se connecter</button>
+      <div id="msgLogin" class="error"></div>
+    </section>
+
+    <!-- Étape 2 : Choix du mode -->
+    <section id="stepMode" class="hidden">
+      <div class="row" style="align-items:center;justify-content:space-between">
+        <h2 style="margin:0">Choisir le mode</h2>
+        <span id="who" class="tag">—</span>
+      </div>
+      <div class="grid2" style="margin-top:10px">
+        <button id="btnModeDisplay" class="btn" style="padding:18px 14px">
+          👀 Afficher<br><span style="font-weight:400;font-size:12px;opacity:.85">TV véhicules & TV missions</span>
+        </button>
+        <button id="btnModeEncode" class="btn" style="padding:18px 14px">
+          ✍️ Encoder<br><span style="font-weight:400;font-size:12px;opacity:.85">Dispatch & Missions</span>
+        </button>
+      </div>
+      <div class="sep"></div>
+      <div class="center">
+        <button id="btnLogout" class="btn ghost">Se déconnecter</button>
+      </div>
+      <div id="msgMode" class="ok"></div>
+    </section>
+
+    <!-- Étape 3 : Liens selon le mode -->
+    <section id="stepLinks" class="hidden">
+      <h2 id="linksTitle">Accès</h2>
+      <div id="linksDisplay" class="grid2 hidden" style="margin-top:10px">
+        <a class="btn ghost" href="tv-grid.html">📺 TV Véhicules</a>
+        <a class="btn ghost" href="tv-missions.html">🎥 TV Missions</a>
+      </div>
+      <div id="linksEncode" class="grid2 hidden" style="margin-top:10px">
+        <a class="btn" href="dispatch.html">🚑 Ouvrir Dispatch</a>
+        <a class="btn" href="missions.html">📝 Ouvrir Missions</a>
+      </div>
+      <div class="sep"></div>
+      <div class="center">
+        <button id="btnBackMode" class="btn ghost">Changer de mode</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script>
+/* ========= Identifiants fixes ========= */
+const VALID_USER = "centrale@acsrs.be";
+const VALID_PASS = "Password01$";
+
+/* ========= Helpers UI ========= */
+const $ = (id)=>document.getElementById(id);
+const show = (el)=>el.classList.remove('hidden');
+const hide = (el)=>el.classList.add('hidden');
+
+/* ========= Session ========= */
+function getSession(){
+  try{ return JSON.parse(sessionStorage.getItem('auth_session')||'null'); }catch{ return null; }
+}
+function setSession(obj){
+  sessionStorage.setItem('auth_session', JSON.stringify(obj));
+}
+function clearSession(){
+  sessionStorage.removeItem('auth_session');
+}
+
+/* ========= Étapes ========= */
+function goLogin(){
+  show($('stepLogin')); hide($('stepMode')); hide($('stepLinks'));
+  $('msgLogin').textContent='';
+  $('password').value='';
+}
+function goMode(){
+  hide($('stepLogin')); show($('stepMode')); hide($('stepLinks'));
+  const s = getSession();
+  $('who').textContent = s?.username || '—';
+  $('msgMode').textContent = '';
+}
+function goLinks(){
+  hide($('stepLogin')); hide($('stepMode')); show($('stepLinks'));
+  const s = getSession();
+  const isDisplay = s?.mode === 'affichage';
+  $('linksTitle').textContent = isDisplay ? 'Accès – Affichage' : 'Accès – Encodage';
+  // Afficher les bons liens
+  if (isDisplay){ show($('linksDisplay')); hide($('linksEncode')); }
+  else { show($('linksEncode')); hide($('linksDisplay')); }
+}
+
+/* ========= Login ========= */
+$('btnLogin').addEventListener('click', ()=>{
+  const login = $('login').value.trim();
+  const pass  = $('password').value;
+  if(!login || !pass){ $('msgLogin').textContent="Veuillez saisir vos identifiants."; return; }
+  if(login !== VALID_USER || pass !== VALID_PASS){
+    $('msgLogin').textContent="Identifiant ou mot de passe incorrect.";
+    return;
+  }
+  // OK → créer session sans mode (à choisir ensuite)
+  setSession({ username: login, token: Math.random().toString(36).slice(2), ts: Date.now() });
+  goMode();
+});
+
+/* ========= Choix du mode ========= */
+$('btnModeDisplay').addEventListener('click', ()=>{
+  const s = getSession(); if(!s) return goLogin();
+  s.mode = 'affichage';
+  setSession(s);
+  $('msgMode').textContent = "Mode Affichage sélectionné (TV).";
+  goLinks();
+});
+
+$('btnModeEncode').addEventListener('click', ()=>{
+  const s = getSession(); if(!s) return goLogin();
+  s.mode = 'encodage';
+  setSession(s);
+  $('msgMode').textContent = "Mode Encodage sélectionné (Dispatch/Missions).";
+  goLinks();
+});
+
+/* ========= Changer / quitter ========= */
+$('btnBackMode').addEventListener('click', goMode);
+$('btnLogout').addEventListener('click', ()=>{ clearSession(); goLogin(); });
+
+/* ========= Boot ========= */
+(function init(){
+  const s = getSession();
+  if(!s){ goLogin(); return; }
+  // déjà connecté : si mode connu → liens, sinon choix du mode
+  if(s.mode==='affichage' || s.mode==='encodage') goLinks();
+  else goMode();
+})();
+</script>
+</body>
+</html>
