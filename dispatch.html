@@ -417,15 +417,33 @@ async function liberateOnly(){
 }
 async function confirmReassign(){
   if(!_rea.selected) return alert("Sélectionne un véhicule repreneur.");
+
+  // Supprime l’attribution de tous ceux qui la portent
   (data._settings.vehs||[]).forEach(v=>{
     if((data[v.id]?.attribution||"").toUpperCase()===_rea.attrib.toUpperCase()){
-      data[v.id].attribution=""; const sv=(data._settings.vehs||[]).find(x=>x.id===v.id); if(sv) sv.attrib="";
+      data[v.id].attribution=""; 
+      const sv=(data._settings.vehs||[]).find(x=>x.id===v.id);
+      if(sv) sv.attrib="";
     }
   });
-  if(data[_rea.fromVeh]){ data[_rea.fromVeh].attribution=""; const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh); if(sv) sv.attrib=""; }
+
+  // Libère sur le véhicule indispo
+  if(data[_rea.fromVeh]){
+    data[_rea.fromVeh].attribution="";
+    const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh);
+    if(sv) sv.attrib="";
+  }
+
+  // Assigne au repreneur
   if(!data[_rea.selected]) data[_rea.selected]={};
-  data[_rea.selected].attribution=_rea.attrib; const sv2=(data._settings.vehs||[]).find(x=>x.id===_rea.selected); if(sv2) sv2.attrib=_rea.attrib;
-  await save(); renderAll(); cancelReassign(); alert(`${_rea.attrib} est maintenant attribué à ${_ea.selected||_rea.selected}.`);
+  data[_rea.selected].attribution=_rea.attrib;
+  const sv2=(data._settings.vehs||[]).find(x=>x.id===_rea.selected);
+  if(sv2) sv2.attrib=_rea.attrib;
+
+  await save(); 
+  renderAll(); 
+  cancelReassign();
+  alert(`${_rea.attrib} est maintenant attribué à ${_rea.selected}.`);
 }
 
 /* ====== Persistance ====== */
