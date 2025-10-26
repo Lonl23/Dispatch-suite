@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8" />
+<title>TV – Véhicules</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{--bg:#0b0f14;--panel:#121821;--line:#223044;--text:#e8eef5;--muted:#93a7bf;--accent:#3a8bf2;--warn:#f4b400;--danger:#e74c3c;--ok:#2e7d32;}
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
+  .header{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;background:#121821;border-bottom:1px solid var(--line)}
+  .header h1{margin:0;font-size:24px;color:#cfe1ff}
+  .meta{display:flex;gap:16px;align-items:center;color:var(--muted);font-size:14px}
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;padding:12px;height:calc(100vh - 56px - 48px);box-sizing:border-box}
+  .col{border:1px solid var(--line);border-radius:12px;background:var(--panel);display:flex;flex-direction:column;overflow:hidden}
+  .col h2{margin:0;padding:8px 10px;text-align:center;border-bottom:1px solid var(--line);color:var(--accent);font-size:18px}
+  .list{padding:10px;overflow:auto}
+  .card{background:#0f1520;border:1px solid #2c3d52;border-radius:10px;padding:8px;margin-bottom:8px}
+  .title{display:flex;justify-content:space-between;align-items:center;font-weight:700;font-size:16px}
+  .subtitle{color:var(--muted);font-size:13px;margin-top:2px}
+  .crew{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px}
+  .pill{background:#0b121c;border:1px solid #2c3d52;border-radius:999px;padding:2px 8px;font-size:12px}
+  .meta2{display:flex;gap:10px;flex-wrap:wrap;margin-top:6px;font-size:12px}
+  .comment{margin-top:6px;color:#d8dee9;font-size:13px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;margin-left:8px}
+  .b-dispo{background:var(--ok);color:#fff}
+  .b-sorti{background:var(--accent);color:#fff}
+  .b-res{background:var(--warn);color:#000}
+  .b-indispo{background:var(--danger);color:#fff}
+  /* Marquee fluide */
+  .marquee{position:fixed;left:0;right:0;bottom:0;height:48px;background:#b91c1c;color:#fff;border-top:1px solid #7f1d1d;display:flex;align-items:center;overflow:hidden}
+  .marquee .track{display:flex;white-space:nowrap;will-change:transform;animation:scroll 40s linear infinite}
+  .marquee .chunk{padding:0 32px}
+  @keyframes scroll{ 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+  @media (max-width: 1100px){ .grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width: 700px){ .grid{grid-template-columns:1fr;} .header h1{font-size:18px} }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📺 Statuts véhicules</h1>
+  <div class="meta">
+    <span id="now">—</span>
+    <!-- Place pour météo si tu veux plus tard -->
+  </div>
+</div>
+
+<div class="grid">
+  <div class="col">
+    <h2>Sorti</h2>
+    <div class="list" id="col-sorti"></div>
+  </div>
+  <div class="col">
+    <h2>Disponible</h2>
+    <div class="list" id="col-dispo"></div>
+  </div>
+  <div class="col">
+    <h2>Réserve</h2>
+    <div class="list" id="col-reserve"></div>
+  </div>
+  <div class="col">
+    <h2>Indisponible</h2>
+    <div class="list" id="col-indispo"></div>
+  </div>
+</div>
+
+<!-- Bannière défilante -->
+<div class="marquee" aria-hidden="true">
+  <div class="track" id="marqueeTrack">
+    <div class="chunk" id="marqueeA"></div>
+    <div class="chunk" id="marqueeB"></div>
+  </div>
+</div>
+
+<script src="store-bridge.js"></script>
+<script>
+const KEY = "dispatch_parc_vehicules";
+let state = {};
+
+function fmt(s){ return (s ?? "").toString().trim(); }
+function esc(s){ return String(s??"").replace(/[&<>"']/g, m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;', "'":'&#39;' }[m])); }
+function pad2(n){ return n<10 ? "0"+n : n; }
+
+function tickClock(){
+  const d = new Date();
+  const s = `${pad2(d.getDate())}/${pad2(d.getMonth()+1)}/${d.getFullYear()} — ${pad2(d.getHours())}:${pad2(d.getMinutes())}:${pad2(d.getSeconds())}`;
+  document.getElementById('now').textContent = s;
+}
+setInterval(tickClock, 1000); tickClock();
+
+function vehicleCard(id, d){
+  const name = esc(d.name || id);
+  const attrib = fmt(d.attribution) ? ` — <span class="pill">Attrib: ${esc(d.attribution)}</span>` : "";
+  const plaque = fmt(d.plaque) ? `<span class="pill">Plaque: ${esc(d.plaque)}</span>` : "";
+  const km = fmt(d.km) ? `<span class="pill">Km: ${esc(d.km)}</span>` : "";
+  const hs = fmt(d.heure_sortie) ? `<span class="pill">Heure sortie: ${esc(d.heure_sortie)}</span>` : "";
+  const crew = `
+    ${fmt(d.XO) ? `<span class="pill">Chauffeur: ${esc(d.XO)}</span>` : ""}
+    ${fmt(d.S)  ? `<span class="pill">Soins: ${esc(d.S)}</span>` : ""}
+    ${fmt(d.PS) ? `<span class="pill">3ᵉ: ${esc(d.PS)}</span>` : ""}
+  `;
+  const comment = fmt(d.commentaire) ? `<div class="comment">📝 ${esc(d.commentaire)}</div>` : "";
+  const badge = d.statut==="Disponible" ? "b-dispo" :
+                d.statut==="Réserve"     ? "b-res" :
+                d.statut==="Sorti"       ? "b-sorti" : "b-indispo";
+
+  return `
+    <div class="card">
+      <div class="title">
+        <div>${name}</div>
+        <div class="badge ${badge}">${esc(d.statut||"")}</div>
+      </div>
+      <div class="subtitle">${attrib}</div>
+      <div class="crew">${crew}</div>
+      <div class="meta2">${plaque}${km}${hs}</div>
+      ${comment}
+    </div>
+  `;
+}
+
+function render(){
+  const cfg = state._settings?.vehs || [];
+  // répartir par statut
+  const col = { "Sorti":[], "Disponible":[], "Réserve":[], "Indisponible":[] };
+  cfg.forEach(v=>{
+    const d = state[v.id] || {};
+    const st = d.statut || "Disponible";
+    if(!col[st]) col[st] = [];
+    col[st].push({ id: v.id, d });
+  });
+  // tri alpha simple par nom/id
+  Object.keys(col).forEach(k=> col[k].sort((a,b)=> (a.d.name||a.id).localeCompare(b.d.name||b.id, 'fr')) );
+
+  document.getElementById('col-sorti').innerHTML     = col["Sorti"].map(x=>vehicleCard(x.id, x.d)).join("") || `<div class="subtitle">—</div>`;
+  document.getElementById('col-dispo').innerHTML     = col["Disponible"].map(x=>vehicleCard(x.id, x.d)).join("") || `<div class="subtitle">—</div>`;
+  document.getElementById('col-reserve').innerHTML   = col["Réserve"].map(x=>vehicleCard(x.id, x.d)).join("") || `<div class="subtitle">—</div>`;
+  document.getElementById('col-indispo').innerHTML   = col["Indisponible"].map(x=>vehicleCard(x.id, x.d)).join("") || `<div class="subtitle">—</div>`;
+
+  renderMarquee();
+}
+
+function renderMarquee(){
+  const cfg = state._settings?.vehs || [];
+  const notes = state._notes || { materiel:"", infos:"" };
+
+  // 1) Véhicules OUT (indisponibles) avec commentaire
+  const outs = cfg
+    .map(v=>({ id:v.id, d: state[v.id]||{} }))
+    .filter(x=> (x.d.statut||"") === "Indisponible")
+    .map(x=>{
+      const base = `⚠️ OUT ${x.d.name||x.id}${x.d.attribution?` [${x.d.attribution}]`:""}`;
+      return x.d.commentaire ? `${base} — ${x.d.commentaire}` : base;
+    });
+
+  // 2) Matériel à récupérer
+  const mats = fmt(notes.materiel) ? [`🧰 Matériel: ${notes.materiel}`] : [];
+
+  // 3) Infos & remarques
+  const infos = fmt(notes.infos) ? [`ℹ️ Infos: ${notes.infos}`] : [];
+
+  // Chaîne finale
+  const parts = [...outs, ...mats, ...infos];
+  const text = parts.length ? parts.join("   •   ") : "—";
+
+  const A = document.getElementById('marqueeA');
+  const B = document.getElementById('marqueeB');
+  A.textContent = text + "   •   ";
+  B.textContent = text + "   •   ";
+  // L’animation CSS fait une boucle infinie fluide (on duplique le contenu sur 2 moitiés)
+}
+
+// --- Chargement & sync depuis Firebase ---
+(async ()=>{
+  // 1) Chargement initial
+  state = await readKey(KEY) || {};
+  render();
+  // 2) Rafraîchissement périodique
+  //    Si tu veux du quasi-temps réel, diminue l'intervalle (ex: 3000 ms)
+  setInterval(async ()=>{
+    const fresh = await readKey(KEY) || {};
+    const old = JSON.stringify(state);
+    const now = JSON.stringify(fresh);
+    if (now !== old) { state = fresh; render(); }
+  }, 5000);
+})();
+</script>
+</body>
+</html>
