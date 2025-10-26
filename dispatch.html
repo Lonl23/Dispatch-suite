@@ -12,7 +12,6 @@
   .btn{background:#3a8bf2;border:0;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
   .btn.ghost{background:#0f1520;border:1px solid #2c3d52}
   .btn.danger{background:#e74c3c}
-  .btn.success{background:#2e7d32}
   .container{max-width:1200px;margin:12px auto;padding:0 12px}
   .card{background:#121821;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
   .muted{color:var(--muted);font-size:12px}
@@ -31,8 +30,8 @@
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9000}
   .modal.show{display:flex}
   .modal .box{background:#121821;border:1px solid #223044;border-radius:12px;padding:14px;max-width:640px;width:95%;max-height:85vh;overflow:auto}
-  #modalReassign{z-index:10000} /* au-dessus des autres */
-  body.modal-open{overflow:hidden} /* bloque le fond quand modale */
+  #modalReassign{z-index:10000}
+  body.modal-open{overflow:hidden}
   @media (max-width: 768px){
     .header h1{font-size:18px}
     h3{font-size:18px}
@@ -53,7 +52,6 @@
     <button class="btn ghost" onclick="window.open('missions.html','_blank')">📝 Missions</button>
     <button class="btn ghost" onclick="window.open('tv-grid.html','_blank')">📺 TV Véhicules</button>
     <button class="btn ghost" onclick="window.open('tv-missions.html','_blank')">🎥 TV Missions</button>
-    <button id="wakeBtn" class="btn ghost">🔆 Anti-veille</button>
     <button class="btn" onclick="openSettings()">⚙️ Paramétrages</button>
   </div>
 </div>
@@ -121,7 +119,7 @@
 
 </div>
 
-<!-- MODALE Paramétrages -->
+<!-- MODALE Paramétrages (ouverture directe, sans mot de passe) -->
 <div id="modalSettings" class="modal">
   <div class="box">
     <div style="display:flex;justify-content:space-between;align-items:center">
@@ -183,7 +181,6 @@ if (typeof readKey !== 'function' || typeof saveKey !== 'function') {
 }
 
 const STORAGE_KEY = "dispatch_parc_vehicules";
-const SETTINGS_PWD = "Password01";
 const LH_SET = new Set(["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8"]);
 let data = {};
 let _rea = { fromVeh:null, attrib:"", selected:null, candidates:[] };
@@ -305,12 +302,7 @@ function renderOut(){
 }
 
 /* ====== Paramétrages ====== */
-function openSettings(){
-  const pw=prompt("Mot de passe Paramétrages :");
-  if(pw!==SETTINGS_PWD) return alert("Mot de passe incorrect.");
-  showModal('modalSettings');
-  buildSettingsGrid();
-}
+function openSettings(){ showModal('modalSettings'); buildSettingsGrid(); }
 function closeSettings(){ hideModal('modalSettings'); }
 
 function buildSettingsGrid(){
@@ -416,17 +408,6 @@ async function confirmReassign(){
   data[_rea.selected].attribution=_rea.attrib; const sv2=(data._settings.vehs||[]).find(x=>x.id===_rea.selected); if(sv2) sv2.attrib=_rea.attrib;
   await save(); renderAll(); cancelReassign(); alert(`${_rea.attrib} est maintenant attribué à ${_rea.selected}.`);
 }
-
-/* ====== Anti-veille (Wake Lock) ====== */
-(()=>{
-  const btn=$('wakeBtn'); let lock=null, on=false;
-  function set(onb){ on=onb; if(btn){ btn.textContent = on? "🔆 Veille désactivée (cliquer pour stopper)" : "🔆 Anti-veille"; btn.classList.toggle('success', on); } }
-  async function request(){ if('wakeLock' in navigator && navigator.wakeLock?.request){ try{ lock=await navigator.wakeLock.request('screen'); set(true); lock.addEventListener('release',()=>{ if(on) onVisible(); }); }catch{} } else { alert("Wake Lock non supporté. Utilise F11 et les paramètres d'alimentation."); } }
-  async function release(){ try{ await lock?.release(); }catch{} lock=null; set(false); }
-  async function toggle(){ on?await release():await request(); }
-  async function onVisible(){ if(document.visibilityState==='visible' && on && 'wakeLock' in navigator) try{ await request(); }catch{} }
-  btn?.addEventListener('click', toggle); document.addEventListener('visibilitychange', onVisible);
-})();
 
 /* ====== Persistance ====== */
 async function save(){ await saveKey(STORAGE_KEY, data); }
