@@ -25,31 +25,16 @@
   .chip{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:6px 10px}
   .status{display:inline-block;padding:4px 8px;border-radius:8px;font-weight:700;font-size:12px}
   .s-dispo{background:#2e7d32}.s-sorti{background:#3a8bf2}.s-res{background:#f4b400;color:#000}.s-indispo{background:#e74c3c}
-  /* Modale ré-attribution */
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9000}
-  .modal.show{display:flex}
-  .modal .box{background:#121821;border:1px solid #223044;border-radius:12px;padding:14px;max-width:640px;width:95%;max-height:85vh;overflow:auto}
-  body.modal-open{overflow:hidden}
-  @media (max-width: 768px){
-    .header h1{font-size:18px}
-    h3{font-size:18px}
-    .grid2,.grid3{grid-template-columns:1fr;gap:10px}
-    th,td{font-size:14px}
-    .modal .box{max-width:520px;width:96%}
-  }
 </style>
 </head>
 <body>
 
-<!-- Bridge Firebase REST (global). DOIT être un script normal, sans type="module" -->
+<!-- Bridge Firebase REST (script normal, pas "module") -->
 <script src="store-bridge.js"></script>
 
 <div class="header">
   <h1>Tableau de garde</h1>
-  <div>
-    <!-- Ouvre Paramétrages dans un nouvel onglet -->
-    <a href="parametres.html" target="_blank" class="btn">⚙️ Paramétrages</a>
-  </div>
+  <a href="parametres.html" target="_blank" class="btn">⚙️ Paramétrages</a>
 </div>
 
 <div class="container">
@@ -91,17 +76,16 @@
   <!-- Tableau -->
   <div class="card">
     <h3 style="margin:0 0 8px">Véhicules</h3>
-    <p class="muted">Ajoute/modifie les véhicules dans <b>Paramétrages</b> (nouvel onglet).</p>
     <div style="overflow:auto; max-height:60vh;">
       <table>
         <thead>
           <tr>
             <th>Véhicule</th>
+            <th>Attribution</th>
             <th>Chauffeur</th>
             <th>Soins</th>
             <th>3ᵉ Homme</th>
             <th>Km</th>
-            <th>Heure sortie</th>
             <th>Statut</th>
             <th>Commentaire</th>
           </tr>
@@ -119,151 +103,100 @@
 
 </div>
 
-<!-- MODALE Ré-attribution LH -->
-<div id="modalReassign" class="modal">
-  <div class="box">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3 style="margin:0">Ré-attribuer <span id="rea_attrib">LH?</span></h3>
-      <button class="btn" onclick="cancelReassign()">✖</button>
-    </div>
-    <p>Le véhicule <b id="rea_fromVeh">—</b> passe <b>Indisponible</b> avec l’attribution <b id="rea_attrib2">LH?</b>. Choisis un repreneur (LH uniques).</p>
-    <input id="rea_search" placeholder="Rechercher un véhicule..." oninput="renderReassignCandidates()">
-    <div id="rea_list" style="margin-top:8px;border:1px solid var(--line);border-radius:10px;max-height:50vh;overflow:auto"></div>
-    <div style="text-align:right;margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn" onclick="liberateOnly()">Libérer sans ré-attribuer</button>
-      <button class="btn" onclick="confirmReassign()">Confirmer</button>
-    </div>
-  </div>
-</div>
-
 <script>
-/* Catcher d’erreurs pour diagnostiquer vite */
-window.onerror = function (msg, src, line, col, err) {
-  console.error("JS Error:", msg, "at", src, line+":"+col, err);
-  alert("Erreur JS: " + msg);
-};
-
-/* Fallback si store-bridge.js manquant */
+/* Fallback si bridge absent */
 if (typeof readKey !== 'function' || typeof saveKey !== 'function') {
-  console.warn("store-bridge.js introuvable -> fallback localStorage");
+  console.warn("store-bridge.js manquant -> fallback localStorage");
   window.readKey = async (k)=>{ try{return JSON.parse(localStorage.getItem(k)||"{}");}catch{return{}} };
   window.saveKey = async (k,o)=>{ localStorage.setItem(k, JSON.stringify(o||{})); };
 }
 
+/* Constantes & état */
 const STORAGE_KEY = "dispatch_parc_vehicules";
 const BACKUP_KEY  = "dispatch_parc_vehicules_backup";
-const LH_SET = new Set(["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8"]);
 let data = {};
-let _rea = { fromVeh:null, attrib:"", selected:null, candidates:[] };
-let _pollTimer = null, _lastJSON = "";
+let _lastJSON = "";
+let pollTimer = null;
 
 const $ = (id)=>document.getElementById(id);
-function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]);}
+const ATTRIBS = ["","LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","Prev","LOG","TMS","OFF"];
 
-/* Modales (ré-attribution) */
-function showModal(id){
-  const el = document.getElementById(id);
-  if(!el) return;
-  document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
-  el.classList.add('show');
-  document.body.classList.add('modal-open');
-}
-function hideModal(id){
-  const el = document.getElementById(id);
-  if(!el) return;
-  el.classList.remove('show');
-  if(document.querySelectorAll('.modal.show').length===0){
-    document.body.classList.remove('modal-open');
-  }
-}
-document.addEventListener('click', (e)=>{
-  const m = e.target.closest('.modal');
-  if(m && m.classList.contains('show') && !e.target.closest('.box')){
-    hideModal(m.id);
-  }
-});
-
-/* Ensure */
 function ensure(){
   if(!data || typeof data!=='object') data = {};
   if(!data._settings) data._settings = { vehs: [] };
-  if(!data._roles)    data._roles    = {};
-  if(!data._notes)    data._notes    = { materiel:"", infos:"" };
+  if(!data._roles) data._roles = {
+    officier_semaine:"", officier_garde:"", responsable_operations:"",
+    chef_groupe:"", chef_poste:"", centraliste_1:"", centraliste_2:""
+  };
+  if(!data._notes) data._notes = { materiel:"", infos:"" };
   (data._settings.vehs||[]).forEach(v=>{
     if(!data[v.id]) data[v.id] = {
-      XO:"",S:"",PS:"",attribution:v.attrib||"",plaque:v.plaque||"",
-      km:"",heure_sortie:"",statut:"Disponible",commentaire:"",name:v.name||v.id
+      XO:"", S:"", PS:"", km:"", statut:"Disponible", commentaire:"",
+      attribution: v.attrib||"", plaque: v.plaque||"", name: v.name||v.id
     };
   });
 }
 
-/* Render */
 function renderAll(){ renderRoles(); renderNotes(); renderTable(); renderStats(); renderOut(); }
 
+/* Rôles : bind + sauvegarde immédiate */
 function renderRoles(){
   document.querySelectorAll('[data-rolekey]').forEach(inp=>{
-    const k=inp.dataset.rolekey;
+    const k = inp.dataset.rolekey;
     inp.value = data._roles[k] || "";
-    inp.oninput = async e=>{ data._roles[k]=e.target.value; await save(); };
+    inp.oninput = async e => { data._roles[k] = e.target.value; await save(); };
   });
 }
+
+/* Notes : bind + sauvegarde immédiate */
 function renderNotes(){
-  $('note_materiel').value = data._notes.materiel||"";
-  $('note_infos').value    = data._notes.infos||"";
-  $('note_materiel').oninput = async e=>{ data._notes.materiel=e.target.value; await save(); };
-  $('note_infos').oninput    = async e=>{ data._notes.infos=e.target.value; await save(); };
+  $('note_materiel').value = data._notes.materiel || "";
+  $('note_infos').value    = data._notes.infos || "";
+  $('note_materiel').oninput = async e => { data._notes.materiel = e.target.value; await save(); };
+  $('note_infos').oninput    = async e => { data._notes.infos    = e.target.value; await save(); };
 }
 
+/* Tableau véhicules */
 function renderTable(){
-  const tb=$('tbody'); tb.innerHTML="";
+  const tb = $('tbody'); tb.innerHTML = "";
   (data._settings.vehs||[]).forEach(v=>{
-    const d=data[v.id];
-    tb.insertAdjacentHTML('beforeend',`
+    const d = data[v.id];
+    tb.insertAdjacentHTML('beforeend', `
       <tr>
-        <td><b>${esc(d.name||v.id)}</b><br><span class="muted">${d.attribution?`Attrib: ${esc(d.attribution)} — `:""}${d.plaque?`Plaque: ${esc(d.plaque)}`:""}</span></td>
-        <td><input data-v="${esc(v.id)}" data-k="XO" value="${esc(d.XO||"")}" placeholder="Chauffeur"></td>
-        <td><input data-v="${esc(v.id)}" data-k="S" value="${esc(d.S||"")}" placeholder="Soins"></td>
-        <td><input data-v="${esc(v.id)}" data-k="PS" value="${esc(d.PS||"")}" placeholder="3ᵉ homme"></td>
-        <td><input data-v="${esc(v.id)}" data-k="km" value="${esc(d.km||"")}" placeholder="km (num.)"></td>
-        <td><input data-v="${esc(v.id)}" data-k="heure_sortie" value="${esc(d.heure_sortie||"")}" placeholder="HH:MM"></td>
+        <td><b>${d.name||v.id}</b><br><span class="muted">${d.plaque||""}</span></td>
         <td>
-          <select data-v="${esc(v.id)}" data-k="statut">
+          <select data-v="${v.id}" data-k="attribution">
+            ${ATTRIBS.map(a=>`<option ${a===(d.attribution||"")?"selected":""}>${a}</option>`).join("")}
+          </select>
+        </td>
+        <td><input data-v="${v.id}" data-k="XO" value="${d.XO||""}" placeholder="Chauffeur"></td>
+        <td><input data-v="${v.id}" data-k="S" value="${d.S||""}" placeholder="Soins"></td>
+        <td><input data-v="${v.id}" data-k="PS" value="${d.PS||""}" placeholder="3e"></td>
+        <td><input data-v="${v.id}" data-k="km" value="${d.km||""}" placeholder="Km"></td>
+        <td>
+          <select data-v="${v.id}" data-k="statut">
             <option ${d.statut==="Disponible"?"selected":""}>Disponible</option>
             <option ${d.statut==="Sorti"?"selected":""}>Sorti</option>
             <option ${d.statut==="Réserve"?"selected":""}>Réserve</option>
             <option ${d.statut==="Indisponible"?"selected":""}>Indisponible</option>
           </select>
         </td>
-        <td><input data-v="${esc(v.id)}" data-k="commentaire" value="${esc(d.commentaire||"")}" placeholder="Remarque…"></td>
+        <td><input data-v="${v.id}" data-k="commentaire" value="${d.commentaire||""}" placeholder="Remarque"></td>
       </tr>
     `);
   });
 
   document.querySelectorAll('input[data-v],select[data-v]').forEach(el=>{
     el.oninput = async ()=>{
-      const id=el.dataset.v, k=el.dataset.k;
-      const oldStat=data[id]?.statut;
-
+      const id = el.dataset.v, k = el.dataset.k;
       if(k==="km") el.value = el.value.replace(/[^\d]/g,'');
-      data[id][k]=el.value;
-
-      // Auto-heure sortie si passe "Sorti" et vide
-      if(k==="statut" && el.value==="Sorti" && !data[id].heure_sortie){
-        const d=new Date(); const hh=String(d.getHours()).padStart(2,"0"), mm=String(d.getMinutes()).padStart(2,"0");
-        data[id].heure_sortie = `${hh}:${mm}`;
-      }
-
+      data[id][k] = el.value;
       await save(); renderStats(); renderOut();
-
-      // Ré-attribution si Indisponible et portait une LH
-      if(k==="statut" && el.value==="Indisponible" && oldStat!=="Indisponible"){
-        const a=(data[id]?.attribution||"").toUpperCase();
-        if(LH_SET.has(a)) openReassignModal(id,a);
-      }
     };
   });
 }
 
+/* Stats & OUT */
 function renderStats(){
   const list=(data._settings.vehs||[]).map(v=>data[v.id]);
   $('cDispo').textContent = list.filter(v=>v.statut==="Disponible").length;
@@ -271,7 +204,6 @@ function renderStats(){
   $('cReserve').textContent = list.filter(v=>v.statut==="Réserve").length;
   $('cIndispo').textContent = list.filter(v=>v.statut==="Indisponible").length;
 }
-
 function renderOut(){
   const box=$('outList'); box.innerHTML="";
   (data._settings.vehs||[]).forEach(v=>{
@@ -279,80 +211,20 @@ function renderOut(){
     if(d.statut==="Indisponible"){
       const div=document.createElement('div');
       div.className="chip";
-      div.innerHTML = `<b>${esc(d.name||v.id)}</b> ${d.attribution?`<span style="color:#ffec99">[${esc(d.attribution)}]</span>`:""} ${d.commentaire?`— ${esc(d.commentaire)}`:""}`;
+      div.innerHTML = `<b>${d.name||v.id}</b> ${d.attribution?`[${d.attribution}]`:""} ${d.commentaire?`— ${d.commentaire}`:""}`;
       box.appendChild(div);
     }
   });
 }
 
-/* LH unicité + ré-attribution */
-function openReassignModal(fromVeh, attrib){
-  _rea={fromVeh, attrib, selected:null,
-        candidates:(data._settings.vehs||[]).map(v=>v.id)
-          .filter(id=>id!==fromVeh && (data[id]?.statut||"Disponible")!=="Indisponible")};
-  $('rea_fromVeh').textContent=fromVeh; $('rea_attrib').textContent=attrib; $('rea_attrib2').textContent=attrib;
-  $('rea_search').value=""; renderReassignCandidates(); showModal('modalReassign');
-}
-function renderReassignCandidates(){
-  const box=$('rea_list'); box.innerHTML="";
-  const q=($('rea_search').value||"").toLowerCase();
-  const items=_rea.candidates.map(id=>{
-    const d=data[id]||{}; const other = LH_SET.has((d.attribution||"").toUpperCase()) && (d.attribution||"").toUpperCase()!==_rea.attrib;
-    return {id,name:d.name||id,stat:d.statut||"Disponible",attrib:d.attribution||"",disabled:other};
-  }).filter(x=>(x.id+" "+x.name+" "+x.stat+" "+x.attrib).toLowerCase().includes(q));
-  if(!items.length){ box.innerHTML=`<div class="muted" style="padding:10px">Aucun candidat…</div>`; return; }
-  items.forEach(x=>{
-    const row=document.createElement('label'); row.style.display="block"; row.style.padding="8px"; row.style.borderBottom="1px solid var(--line)";
-    row.style.cursor=x.disabled?'not-allowed':'pointer'; row.style.opacity=x.disabled?.6:1;
-    row.innerHTML = `<input type="radio" name="rea_choice" value="${esc(x.id)}" ${x.disabled?'disabled':''} onchange="_rea.selected=this.value" style="margin-right:8px">
-                     <b>${esc(x.name)}</b> <span class="muted">(${esc(x.id)}) — Statut: ${esc(x.stat)} — Attrib: ${esc(x.attrib||"—")}${x.disabled?` (porte déjà ${esc(x.attrib)})`:''}</span>`;
-    box.appendChild(row);
-  });
-}
-function cancelReassign(){ hideModal('modalReassign'); _rea={fromVeh:null,attrib:"",selected:null,candidates:[]}; }
-async function liberateOnly(){
-  if(!_rea.fromVeh) return cancelReassign();
-  data[_rea.fromVeh].attribution=""; 
-  const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh); if(sv) sv.attrib="";
-  await save(); renderAll(); cancelReassign(); alert("Attribution libérée.");
-}
-async function confirmReassign(){
-  if(!_rea.selected) return alert("Sélectionne un véhicule repreneur.");
-  // Retire l’attribution des autres véhicules qui la portent
-  (data._settings.vehs||[]).forEach(v=>{
-    if((data[v.id]?.attribution||"").toUpperCase()===_rea.attrib.toUpperCase()){
-      data[v.id].attribution="";
-      const sv=(data._settings.vehs||[]).find(x=>x.id===v.id);
-      if(sv) sv.attrib="";
-    }
-  });
-  // Libère sur le véhicule indisponible
-  if(data[_rea.fromVeh]){
-    data[_rea.fromVeh].attribution="";
-    const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh);
-    if(sv) sv.attrib="";
-  }
-  // Assigne au repreneur
-  if(!data[_rea.selected]) data[_rea.selected]={};
-  data[_rea.selected].attribution=_rea.attrib;
-  const sv2=(data._settings.vehs||[]).find(x=>x.id===_rea.selected);
-  if(sv2) sv2.attrib=_rea.attrib;
-
-  await save();
-  renderAll();
-  cancelReassign();
-  alert(`${_rea.attrib} est maintenant attribué à ${_rea.selected}.`);
-}
-
-/* Sauvegarde + backup local périodique */
+/* Sauvegarde serveur + backup local */
 async function save(){
   await saveKey(STORAGE_KEY, data);
   try { localStorage.setItem(BACKUP_KEY, JSON.stringify(data)); } catch {}
 }
-setInterval(()=>{ try { localStorage.setItem(BACKUP_KEY, JSON.stringify(data)); } catch {} }, 15000);
 
-/* Poll serveur pour sync avec Paramétrages */
-async function pollServer(){
+/* Poll Firebase pour synchro avec Paramétrages */
+async function poll(){
   const fresh = await readKey(STORAGE_KEY) || {};
   const now = JSON.stringify(fresh);
   if (now !== _lastJSON) {
@@ -361,20 +233,23 @@ async function pollServer(){
   }
 }
 
-/* Boot + restauration si serveur vide */
+/* Boot + restauration depuis backup si serveur vide */
 async function boot(){
   let server = await readKey(STORAGE_KEY) || {};
   const backup = (()=>{ try{return JSON.parse(localStorage.getItem(BACKUP_KEY)||"{}");}catch{return{}} })();
-  const isEmpty = (obj)=> !obj || (Object.keys(obj).length===0);
-  if (isEmpty(server) && !isEmpty(backup)) {
-    data = backup;
-    await saveKey(STORAGE_KEY, data); // pousse vers le serveur
-  } else {
-    data = server;
-  }
+  const isEmpty = (o)=> !o || Object.keys(o).length===0;
+
+  data = (!isEmpty(server) ? server : backup);
   ensure(); renderAll();
+
   _lastJSON = JSON.stringify(data);
-  _pollTimer = setInterval(pollServer, 5000);
+  pollTimer = setInterval(poll, 5000);
+
+  // Si serveur vide mais backup présent, push vers serveur
+  if (isEmpty(server) && !isEmpty(backup)) {
+    await saveKey(STORAGE_KEY, data);
+    _lastJSON = JSON.stringify(data);
+  }
 }
 
 boot();
