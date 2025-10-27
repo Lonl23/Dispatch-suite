@@ -1,80 +1,27 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dispatch – Tableau de garde</title>
 
-<!-- Styles -->
 <style>
 :root {
   --bg:#071022;--panel:#0f1724;--line:#213243;
   --txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6;--ok:#2e7d32;
 }
-body {
-  background:var(--bg);
-  color:var(--txt);
-  font-family:"Segoe UI",Arial,sans-serif;
-  margin:0;
-  padding:0;
-}
-h1 {
-  text-align:center;
-  margin:20px 0;
-}
-section {
-  background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:12px;
-  padding:12px;
-  margin:12px auto;
-  width:90%;
-  max-width:1200px;
-}
-label {color:var(--mut);font-size:13px;}
-input,textarea,select {
-  background:#081427;
-  color:#fff;
-  border:1px solid var(--line);
-  border-radius:8px;
-  padding:6px 8px;
-  margin-bottom:8px;
-  width:100%;
-}
-table {
-  width:100%;
-  border-collapse:collapse;
-  margin-top:10px;
-}
-th, td {
-  border:1px solid var(--line);
-  padding:8px;
-  text-align:center;
-}
-th {background:#13233b;}
-button {
-  background:var(--accent);
-  color:#fff;
-  border:0;
-  border-radius:8px;
-  padding:8px 12px;
-  cursor:pointer;
-  font-weight:bold;
-}
-.statusBox {
-  display:flex;
-  justify-content:space-evenly;
-  margin-top:10px;
-}
-.statusBox div {
-  flex:1;
-  text-align:center;
-  padding:8px;
-  border-radius:8px;
-  background:#102030;
-  margin:0 4px;
-}
-.hidden {display:none;}
+body {background:var(--bg);color:var(--txt);font-family:"Segoe UI",Arial,sans-serif;margin:0;}
+h1{text-align:center;margin:20px 0;}
+section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px auto;width:90%;max-width:1200px;}
+label{color:var(--mut);font-size:13px;}
+input,textarea,select{background:#081427;color:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:8px;width:100%;}
+table{width:100%;border-collapse:collapse;margin-top:10px;}
+th,td{border:1px solid var(--line);padding:8px;text-align:center;}
+th{background:#13233b;}
+button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:bold;}
+.statusBox{display:flex;justify-content:space-evenly;margin-top:10px;}
+.statusBox div{flex:1;text-align:center;padding:8px;border-radius:8px;background:#102030;margin:0 4px;}
+.hidden{display:none;}
 </style>
 </head>
 
@@ -86,18 +33,27 @@ button {
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
-<!-- Redirection obligatoire si pas connecté -->
+<!-- Redirection conditionnelle -->
 <script>
 (async function ensureAuth(){
   const token = localStorage.getItem("dispatch_idToken");
-  if(!token){ location.href = "index.html"; return; }
+  const cameFromIndex = localStorage.getItem("dispatch_logged_via_index");
+  
+  // Si pas connecté ou pas passé par index → redirection
+  if(!token || !cameFromIndex){
+    location.href = "index.html";
+    return;
+  }
+
+  // Vérifie rapidement que le token Firebase est encore valide
   try{
     const url = "https://racs-dispatch-default-rtdb.europe-west1.firebasedatabase.app/.info/connected.json?auth="+encodeURIComponent(token);
     const r = await fetch(url, { cache:"no-store" });
-    if(r.status !== 200){ throw 0; }
+    if(r.status !== 200) throw 0;
   }catch{
     localStorage.removeItem("dispatch_idToken");
     localStorage.removeItem("dispatch_uid");
+    localStorage.removeItem("dispatch_logged_via_index");
     location.href = "index.html";
   }
 })();
@@ -133,14 +89,13 @@ button {
 
 <section id="vehicules">
   <h2>Véhicules</h2>
-  <p style="color:var(--mut)">Les véhicules sont configurés dans Paramétrages.</p>
   <table id="tableVeh">
     <thead>
       <tr>
         <th>Véhicule</th>
         <th>Attribution</th>
         <th>Chauffeur</th>
-        <th>Soigneur</th>
+        <th>Soins</th>
         <th>3ᵉ Homme</th>
         <th>Statut</th>
         <th>Commentaire</th>
@@ -157,7 +112,7 @@ button {
 </section>
 
 <script>
-// --- CONFIG FIREBASE ---
+// CONFIG FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyCP6ZClAectP8OPneAeOYGYdRYO0CvnbnQ",
   authDomain: "racs-dispatch.firebaseapp.com",
@@ -170,12 +125,12 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// --- RÉFÉRENCES DANS LA BASE ---
+// RÉFÉRENCES DANS LA BASE
 const refCmd = db.ref("dispatch_commandement");
 const refVeh = db.ref("dispatch_parc_vehicules");
 const refNotes = db.ref("dispatch_notes");
 
-// --- CHARGEMENT DES DONNÉES EXISTANTES ---
+// CHARGEMENT DES DONNÉES
 refCmd.on("value", snap=>{
   const v=snap.val()||{};
   off_sem.value=v.off_sem||"";
@@ -193,7 +148,7 @@ refNotes.on("value", snap=>{
   infos.value=v.infos||"";
 });
 
-// --- SAUVEGARDE AUTOMATIQUE ---
+// SAUVEGARDE AUTO
 document.querySelectorAll("#commandement input").forEach(inp=>{
   inp.addEventListener("change",()=>{
     refCmd.update({
@@ -216,7 +171,7 @@ document.querySelectorAll("#notes textarea").forEach(txt=>{
   });
 });
 
-// --- AFFICHAGE DES VÉHICULES ---
+// VÉHICULES
 refVeh.on("value", snap=>{
   const tbody=document.querySelector("#tableVeh tbody");
   tbody.innerHTML="";
@@ -250,7 +205,7 @@ refVeh.on("value", snap=>{
   nbIndispo.textContent="Indisponibles : "+indispo;
 });
 
-// --- MISE À JOUR DES CHAMPS ---
+// MISE À JOUR CHAMPS
 document.addEventListener("change",e=>{
   if(e.target.dataset && e.target.dataset.key){
     const key=e.target.dataset.key;
