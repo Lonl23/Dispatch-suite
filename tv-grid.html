@@ -8,18 +8,20 @@
   :root{
     --bg:#0a0f16; --panel:#121821; --line:#1f2c3e;
     --text:#f1f5fa; --muted:#9bb5d3;
-    --dispo-bg:#15351c;  --dispo-bd:#2e7d32;
-    --indispo-bg:#3a1212;--indispo-bd:#e74c3c;
-    --depart-bg:#7a6200; --depart-bd:#f0c000;
-    --surplace-bg:#7a3f00;--surplace-bd:#ff9800;
-    --hopital-bg:#3a006e;--hopital-bd:#9c27b0;
-    --route-bg:#00416a;  --route-bd:#2196f3;
+    /* couleurs bloc entier par statut */
+    --dispo-bg:#15351c;  --dispo-bd:#2e7d32;   /* Disponible */
+    --indispo-bg:#3a1212;--indispo-bd:#e74c3c; /* Indisponible */
+    --depart-bg:#7a6200; --depart-bd:#f0c000;  /* Départ */
+    --surplace-bg:#7a3f00;--surplace-bd:#ff9800;/* Sur place */
+    --route-bg:#00416a;  --route-bd:#2196f3;   /* En route hôpital */
+    --hopital-bg:#3a006e;--hopital-bd:#9c27b0; /* À l'hôpital */
     --ticker-bg:#a00020; --ticker-fg:#fff;
   }
 
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
     font-family:Segoe UI,Inter,system-ui,sans-serif;overflow:hidden}
 
+  /* Header */
   .header{display:flex;justify-content:space-between;align-items:center;
     padding:8px 16px;background:#0d1523;border-bottom:2px solid var(--line)}
   .header h1{margin:0;font-size:24px;color:#cfe1ff}
@@ -27,50 +29,78 @@
   .pill{background:#0f1624;border:1px solid #223146;border-radius:999px;
     padding:4px 10px;font-weight:600;font-size:14px}
 
+  /* Roles */
   .roles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
     padding:6px 10px;background:#101a2a;border-bottom:1px solid #223146}
-  .role{background:#142035; border:1px solid #223146; border-radius:8px;
-    padding:4px 8px; min-width:140px;text-align:center;font-size:14px}
+  .role{background:#142035;border:1px solid #223146;border-radius:8px;
+    padding:4px 8px;min-width:140px;text-align:center;font-size:14px}
   .role span{display:block;color:#9bb5d3;font-size:11px}
 
+  /* Legend */
+  .legend{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;
+    padding:6px 10px;border-bottom:1px solid #223146;background:#0f1624}
+  .legend .item{display:flex;align-items:center;gap:8px;color:#cfe1ff;font-size:13px}
+  .chip{width:18px;height:12px;border:2px solid;border-radius:3px}
+  .chip.dispo  {background:var(--dispo-bg);  border-color:var(--dispo-bd)}
+  .chip.indispo{background:var(--indispo-bg);border-color:var(--indispo-bd)}
+  .chip.depart {background:var(--depart-bg); border-color:var(--depart-bd)}
+  .chip.surplace{background:var(--surplace-bg);border-color:var(--surplace-bd)}
+  .chip.route  {background:var(--route-bg);  border-color:var(--route-bd)}
+  .chip.hopital{background:var(--hopital-bg);border-color:var(--hopital-bd)}
+
+  /* Main split: left hall / right garage */
   .main{display:grid;grid-template-columns:1fr 1fr;gap:10px;
-    height:calc(100vh - 140px);padding:10px;box-sizing:border-box;overflow:hidden}
-  .leftPane,.rightPane{background:#0f1624;border:1px solid #223146;border-radius:12px;
+    height:calc(100vh - 180px);padding:10px;box-sizing:border-box;overflow:hidden}
+  .pane{background:#0f1624;border:1px solid #223146;border-radius:12px;
     padding:8px;overflow:auto}
-
   .section-title{margin:0 0 6px 0;color:#cfe1ff;font-size:16px;text-align:center}
-  .hall-frame{border:2px solid #33465f;border-radius:10px;padding:10px}
-  .ext-row{display:flex;justify-content:center;margin-bottom:10px}
-  .slot.ext{width:92%}
+  .frame{border:2px solid #33465f;border-radius:10px;padding:10px}
 
-  .hall-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;row-gap:10px}
-  .stack{display:flex;flex-direction:column;gap:10px}
-
+  /* Generic slot */
   .slot{
     background:#121e31;border:2px solid #425672;border-radius:10px;
     padding:6px 10px;min-height:80px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center
   }
-  .slot .code{display:none}
+  .slot .code{display:none} /* on masque les labels d’emplacement */
   .slot .veh{font-size:16px;font-weight:800}
   .slot .sub{font-size:12px;color:#b8c9e0;margin-top:2px}
 
-  .slot.dispo{background:var(--dispo-bg);border-color:var(--dispo-bd);}
-  .slot.indispo{background:var(--indispo-bg);border-color:var(--indispo-bd);}
-  .slot.depart{background:var(--depart-bg);border-color:var(--depart-bd);}
-  .slot.surplace{background:var(--surplace-bg);border-color:var(--surplace-bd);}
-  .slot.route{background:var(--route-bg);border-color:var(--route-bd);}
-  .slot.hopital{background:var(--hopital-bg);border-color:var(--hopital-bd);}
+  .slot.dispo{background:var(--dispo-bg);border-color:var(--dispo-bd)}
+  .slot.indispo{background:var(--indispo-bg);border-color:var(--indispo-bd)}
+  .slot.depart{background:var(--depart-bg);border-color:var(--depart-bd)}
+  .slot.surplace{background:var(--surplace-bg);border-color:var(--surplace-bd)}
+  .slot.route{background:var(--route-bg);border-color:var(--route-bd)}
+  .slot.hopital{background:var(--hopital-bg);border-color:var(--hopital-bd)}
 
-  .cols{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .col{background:#121b2a;border:1px solid #223146;border-radius:10px;
-    display:flex;flex-direction:column;min-height:120px}
-  .col h3{margin:0;padding:6px;text-align:center;border-bottom:1px solid #223146;color:#cfe1ff;font-size:15px}
-  .list{padding:6px;display:flex;flex-direction:column;gap:6px}
-  .vehCard{background:#1a2436;border:1px solid #2b3a51;border-radius:8px;padding:6px;text-align:center}
-  .vehCard .name{font-weight:800}
-  .vehCard .line{font-size:12px;color:#9bb5d3}
+  /* Hall layout (gauche) */
+  .ext-row{display:flex;justify-content:center;margin-bottom:10px}
+  .slot.ext{width:92%}
+  .hall-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;row-gap:10px}
+  .stack{display:flex;flex-direction:column;gap:10px}
 
+  /* Garage layout (droite), agencé comme la photo */
+  .garage{
+    display:grid;gap:10px;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas:
+      "g1  g8  g2"
+      "g1  g8  g3"
+      "sep sep g4"
+      "g6  g7  g5";
+  }
+  .g1  {grid-area:g1}
+  .g8  {grid-area:g8}
+  .g2  {grid-area:g2}
+  .g3  {grid-area:g3}
+  .g4  {grid-area:g4}
+  .g5  {grid-area:g5}
+  .g6  {grid-area:g6}
+  .g7  {grid-area:g7}
+  .sep {grid-area:sep;border-top:3px solid #33465f;margin:4px 0}
+
+  /* Ticker */
   .banner{position:absolute;left:0;right:0;bottom:0;height:40px;background:var(--ticker-bg);
     color:var(--ticker-fg);display:flex;align-items:center;overflow:hidden;border-top:1px solid #7a0016}
   .track{display:flex;gap:48px;white-space:nowrap;will-change:transform}
@@ -84,6 +114,7 @@
 
 <script src="store-bridge.js"></script>
 
+<!-- Header -->
 <div class="header">
   <h1>Tableau de garde</h1>
   <div class="head-right">
@@ -92,12 +123,25 @@
   </div>
 </div>
 
+<!-- Roles -->
 <div id="roles" class="roles">Chargement des rôles…</div>
 
+<!-- Legend -->
+<div class="legend" id="legend">
+  <div class="item"><span class="chip dispo"></span> Disponible</div>
+  <div class="item"><span class="chip indispo"></span> Indisponible</div>
+  <div class="item"><span class="chip depart"></span> Départ</div>
+  <div class="item"><span class="chip surplace"></span> Sur place</div>
+  <div class="item"><span class="chip route"></span> En route hôpital</div>
+  <div class="item"><span class="chip hopital"></span> À l’hôpital</div>
+</div>
+
+<!-- Main: Hall + Garage -->
 <div class="main">
-  <div class="leftPane">
+  <!-- Hall des départs -->
+  <div class="pane">
     <h2 class="section-title">Hall des départs</h2>
-    <div class="hall-frame">
+    <div class="frame">
       <div class="ext-row">
         <div class="slot ext" id="slot-EXT"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
       </div>
@@ -120,16 +164,26 @@
     </div>
   </div>
 
-  <div class="rightPane">
-    <div class="cols">
-      <div class="col"><h3>Sortis</h3><div id="col-sortis" class="list"></div></div>
-      <div class="col"><h3>Disponibles</h3><div id="col-dispo" class="list"></div></div>
-      <div class="col"><h3>Réserve</h3><div id="col-reserve" class="list"></div></div>
-      <div class="col"><h3>Indisponibles</h3><div id="col-indispo" class="list"></div></div>
+  <!-- Garage -->
+  <div class="pane">
+    <h2 class="section-title">Garage</h2>
+    <div class="frame">
+      <div class="garage">
+        <div class="slot g1"  id="slot-G1"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+        <div class="slot g8"  id="slot-G8"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+        <div class="slot g2"  id="slot-G2"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+        <div class="slot g3"  id="slot-G3"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+        <div class="sep"></div>
+        <div class="slot g4"  id="slot-G4"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+        <div class="slot g6"  id="slot-G6"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+        <div class="slot g7"  id="slot-G7"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+        <div class="slot g5"  id="slot-G5"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+      </div>
     </div>
   </div>
 </div>
 
+<!-- Bannière -->
 <div class="banner">
   <div class="track">
     <div id="band1" class="scroll"></div>
@@ -155,7 +209,7 @@ function tick(){
 }
 setInterval(tick,1000); tick();
 
-/* Météo */
+/* Météo La Hulpe */
 async function meteo(){
   try{
     const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=50.73&longitude=4.48&current=temperature_2m,weather_code&timezone=Europe/Brussels",{cache:"no-store"});
@@ -183,7 +237,7 @@ function renderRoles(){
     .map(([k,l])=>`<div class="role"><span>${l}</span>${esc(r[k]||"-")}</div>`).join("");
 }
 
-/* Codes couleur statuts */
+/* mapping couleurs par statut */
 function slotClassForStatus(s){
   switch(s){
     case "Disponible": return "dispo";
@@ -198,61 +252,60 @@ function slotClassForStatus(s){
   }
 }
 
-/* Hall */
-function renderHall(){
-  const all=["H1","H2","H3","H4","H5","H6","H7","H8","H9","H10","EXT"];
-  all.forEach(h=>{
-    const el=$(`#slot-${h}`); if(!el) return;
-    el.className="slot"+(h==="EXT"?" ext":"");
-    el.querySelector('.veh').textContent="—";
-    const sub=el.querySelector('.sub'); if(sub) sub.textContent="";
+/* Reset helper for a list of slots */
+function resetSlots(ids){
+  ids.forEach(id=>{
+    const el = document.getElementById('slot-'+id);
+    if(!el) return;
+    el.className = 'slot' + (id==='EXT' ? ' ext':'');
+    el.querySelector('.veh').textContent = '—';
+    const sub = el.querySelector('.sub'); if(sub) sub.textContent = '';
   });
+}
 
+/* Hall renderer */
+function renderHall(){
+  resetSlots(["EXT","H1","H2","H3","H4","H5","H6","H7","H8","H9","H10"]);
   const list=(data._settings?.vehs)||[];
   list.forEach(v=>{
     const d=data[v.id]||{};
     const emp=(v.emplacement||"").trim();
-    const target = /ext/i.test(emp) ? "#slot-EXT" : `#slot-${emp}`;
-    const box=$(target); if(!box) return;
-    const cl=slotClassForStatus(d.statut||"");
+    if(!/^H\d+|ext/i.test(emp)) return;
+    const target = /ext/i.test(emp) ? 'slot-EXT' : 'slot-'+emp;
+    const box = document.getElementById(target); if(!box) return;
+    const cl = slotClassForStatus(d.statut||"");
     if(cl) box.classList.add(cl);
-    box.querySelector('.veh').textContent = (d.name||v.id);
+    box.querySelector('.veh').textContent = d.name||v.id;
     const sub = box.querySelector('.sub');
     if(sub) sub.textContent = `${d.attribution?`[${d.attribution}] `:""}${d.plaque||""}`;
   });
 }
 
-/* Colonnes droites */
-function renderCols(){
-  $("#col-sortis").innerHTML="";
-  $("#col-dispo").innerHTML="";
-  $("#col-reserve").innerHTML="";
-  $("#col-indispo").innerHTML="";
-  const vehs=(data._settings?.vehs)||[];
-  vehs.forEach(v=>{
+/* Garage renderer */
+function renderGarage(){
+  resetSlots(["G1","G2","G3","G4","G5","G6","G7","G8"]);
+  const list=(data._settings?.vehs)||[];
+  list.forEach(v=>{
     const d=data[v.id]||{};
-    let colId=null;
-    if(d.statut==="Sorti") colId="col-sortis";
-    else if(d.statut==="Disponible") colId="col-dispo";
-    else if(d.statut==="Réserve") colId="col-reserve";
-    else if(d.statut==="Indisponible") colId="col-indispo";
-    if(!colId) return;
-    const html=`
-      <div class="vehCard">
-        <div class="name">${esc(d.name||v.id)}</div>
-        <div class="line">${d.attribution?`[${esc(d.attribution)}] `:""}${esc(d.plaque||"")}</div>
-      </div>`;
-    $(`#${colId}`).insertAdjacentHTML('beforeend',html);
+    const emp=(v.emplacement||"").trim();
+    if(!/^G\d+/i.test(emp)) return;
+    const box = document.getElementById('slot-'+emp.toUpperCase());
+    if(!box) return;
+    const cl = slotClassForStatus(d.statut||"");
+    if(cl) box.classList.add(cl);
+    box.querySelector('.veh').textContent = d.name||v.id;
+    const sub = box.querySelector('.sub');
+    if(sub) sub.textContent = `${d.attribution?`[${d.attribution}] `:""}${d.plaque||""}`;
   });
 }
 
-/* Bannière */
+/* Bannière bas */
 function buildBanner(){
   const notes=data._notes||{};
   const outs=[];
   (data._settings?.vehs||[]).forEach(v=>{
     const d=data[v.id]; if(d?.statut==="Indisponible"){
-      let t= (d.name||v.id);
+      let t=(d.name||v.id);
       if(d.attribution) t+=` [${d.attribution}]`;
       if(d.commentaire) t+=` — ${d.commentaire}`;
       outs.push(t);
@@ -268,16 +321,17 @@ function buildBanner(){
   document.getElementById('band2').innerHTML=doubled;
 }
 
-/* Refresh */
+/* Full refresh */
 async function refresh(){
   try{
     data = await readKey(KEY) || {};
     renderRoles();
     renderHall();
-    renderCols();
+    renderGarage();
     buildBanner();
   }catch(e){ console.error(e); }
 }
+
 refresh(); setInterval(refresh, 5000);
 window.addEventListener('storage', e=>{ if(e.key===KEY) refresh(); });
 </script>
