@@ -44,14 +44,15 @@
 </head>
 <body>
 
-<!-- Bridge Firebase (doit être présent dans le même dossier, avec l’URL de ta base) -->
+<!-- Bridge Firebase (doit être présent dans le même dossier, avec l'URL de ta base) -->
 <script src="store-bridge.js" defer></script>
 
 <div class="header">
   <h1>Tableau de garde</h1>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <!-- TV retirés -->
-    <button class="btn" id="btnSettings">⚙️ Paramétrages</button>
+    <button class="btn ghost" onclick="window.open('tv-grid.html','_blank')">📺 TV Véhicules</button>
+    <button class="btn ghost" onclick="window.open('tv-missions.html','_blank')">🎥 TV Missions</button>
+    <button class="btn" onclick="openSettings()">⚙️ Paramétrages</button>
   </div>
 </div>
 
@@ -150,7 +151,7 @@
 
     <hr style="border:0;border-top:1px solid var(--line)">
 
-    <h4 style="margin:8px 0">Véhicules configurés (édition directe)</h4>
+    <h4 style="margin:8px 0">Véhicules configurés</h4>
     <div id="cfgGrid" class="grid3"></div>
     <div style="text-align:right;margin-top:8px">
       <button class="btn" onclick="saveSettings()">💾 Enregistrer</button>
@@ -176,12 +177,6 @@
 </div>
 
 <script>
-/* Catcher d’erreurs pour éviter qu’une faute bloque toute la page */
-window.onerror = function (msg, src, line, col, err) {
-  console.error("JS Error:", msg, "at", src, line+":"+col, err);
-  alert("Erreur JS: " + msg);
-};
-
 /* ====== Fallback si store-bridge.js n'est pas chargé ====== */
 if (typeof readKey !== 'function' || typeof saveKey !== 'function') {
   console.warn("store-bridge.js introuvable -> fallback localStorage");
@@ -281,7 +276,9 @@ function renderTable(){
       const id=el.dataset.v, k=el.dataset.k;
       const oldStat=data[id]?.statut;
 
+      // Contrainte douce : km numérique
       if(k==="km") el.value = el.value.replace(/[^\d]/g,'');
+
       data[id][k]=el.value;
 
       // Auto-heure de sortie quand on passe "Sorti" et que l'heure est vide
@@ -323,17 +320,8 @@ function renderOut(){
 }
 
 /* ====== Paramétrages ====== */
-document.getElementById('btnSettings').addEventListener('click', ()=>{ openSettings(); });
-
 function openSettings(){ showModal('modalSettings'); buildSettingsGrid(); }
 function closeSettings(){ hideModal('modalSettings'); }
-
-/* Édition directe dans Paramétrages (autosave) */
-let _saveTimer=null;
-function autosaveSettings(){
-  clearTimeout(_saveTimer);
-  _saveTimer=setTimeout(async()=>{ enforceLHUnicity(); await save(); renderAll(); }, 400);
-}
 
 function buildSettingsGrid(){
   const g=$('cfgGrid'); if(!g) return; g.innerHTML="";
@@ -348,27 +336,20 @@ function buildSettingsGrid(){
       <select data-id="${esc(v.id)}" data-f="attribution">
         ${["","LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","Prev","LOG"].map(a=>`<option ${a===(d.attribution||"")?"selected":""}>${a}</option>`).join("")}
       </select>
-      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
-        <button class="btn danger" onclick="removeVehicle('${esc(v.id)}')">🗑️ Supprimer</button>
-      </div>
+      <div style="text-align:right;margin-top:6px"><button class="btn danger" onclick="removeVehicle('${esc(v.id)}')">🗑️ Supprimer</button></div>
     `;
     g.appendChild(wrap);
-  });
-
-  // Bind autosave
-  g.querySelectorAll('[data-id]').forEach(inp=>{
-    inp.oninput = ()=>{
-      const id=inp.dataset.id, f=inp.dataset.f, val=inp.value;
-      if(!data[id]) data[id]={};
-      data[id][f]=val;
-      const sv=(data._settings.vehs||[]).find(v=>v.id===id);
-      if(sv){ if(f==="name") sv.name=val; if(f==="plaque") sv.plaque=val; if(f==="attribution") sv.attrib=val; }
-      autosaveSettings();
-    };
   });
 }
 
 async function saveSettings(){
+  document.querySelectorAll('#cfgGrid [data-id]').forEach(inp=>{
+    const id=inp.dataset.id, f=inp.dataset.f, val=inp.value;
+    if(!data[id]) data[id]={};
+    data[id][f]=val;
+    const sv=(data._settings.vehs||[]).find(v=>v.id===id);
+    if(sv){ if(f==="name") sv.name=val; if(f==="plaque") sv.plaque=val; if(f==="attribution") sv.attrib=val; }
+  });
   enforceLHUnicity();
   await save(); renderAll(); alert("Paramètres enregistrés.");
 }
@@ -407,7 +388,7 @@ function enforceLHUnicity(){
 }
 
 function openReassignModal(fromVeh, attrib){
-  hideModal('modalSettings'); // garantir une seule modale
+  hideModal('modalSettings'); // s'assurer qu'une seule modale est ouverte
   _rea={fromVeh, attrib, selected:null, candidates:(data._settings.vehs||[]).map(v=>v.id).filter(id=>id!==fromVeh && (data[id]?.statut||"Disponible")!=="Indisponible")};
   $('rea_fromVeh').textContent=fromVeh; $('rea_attrib').textContent=attrib; $('rea_attrib2').textContent=attrib;
   $('rea_search').value=""; renderReassignCandidates(); showModal('modalReassign');
@@ -437,7 +418,7 @@ async function liberateOnly(){
 async function confirmReassign(){
   if(!_rea.selected) return alert("Sélectionne un véhicule repreneur.");
 
-  // Supprime l’attribution des autres
+  // Supprime l’attribution de tous ceux qui la portent
   (data._settings.vehs||[]).forEach(v=>{
     if((data[v.id]?.attribution||"").toUpperCase()===_rea.attrib.toUpperCase()){
       data[v.id].attribution=""; 
@@ -446,7 +427,7 @@ async function confirmReassign(){
     }
   });
 
-  // Libère sur l’indispo
+  // Libère sur le véhicule indispo
   if(data[_rea.fromVeh]){
     data[_rea.fromVeh].attribution="";
     const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh);
@@ -464,6 +445,7 @@ async function confirmReassign(){
   cancelReassign();
   alert(`${_rea.attrib} est maintenant attribué à ${_rea.selected}.`);
 }
+
 
 /* ====== Persistance ====== */
 async function save(){ await saveKey(STORAGE_KEY, data); }
