@@ -1,301 +1,212 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Dispatch – Tableau de garde</title>
-
 <style>
-:root {
-  --bg:#071022;--panel:#0f1724;--line:#213243;
-  --txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6;
-}
-body {
-  background:var(--bg);
-  color:var(--txt);
-  font-family:"Segoe UI",Arial,sans-serif;
-  margin:0;
-  padding:0;
-}
-h1 {
-  text-align:center;
-  margin:20px 0;
-}
-section {
-  background:var(--panel);
-  border:1px solid var(--line);
-  border-radius:12px;
-  padding:12px;
-  margin:12px auto;
-  width:90%;
-  max-width:1200px;
-}
-label {
-  color:var(--mut);
-  font-size:13px;
-}
-input,textarea,select {
-  background:#081427;
-  color:#fff;
-  border:1px solid var(--line);
-  border-radius:8px;
-  padding:6px 8px;
-  margin-bottom:8px;
-  width:100%;
-  font-size:14px;
-}
-textarea {
-  resize:none;
-}
-table {
-  width:100%;
-  border-collapse:collapse;
-  margin-top:10px;
-  font-size:14px;
-}
-th,td {
-  border:1px solid var(--line);
-  padding:8px;
-  text-align:center;
-}
-th {
-  background:#13233b;
-}
-.statusBox {
-  display:flex;
-  justify-content:space-evenly;
-  margin-top:10px;
-}
-.statusBox div {
-  flex:1;
-  text-align:center;
-  padding:8px;
-  border-radius:8px;
-  background:#102030;
-  margin:0 4px;
-  color:#fff;
-  font-size:14px;
-  font-weight:600;
-}
-@media (max-width:700px){
-  table{font-size:12px}
-  th,td{padding:6px}
-}
+  :root{--bg:#071022;--panel:#0f1724;--line:#213243;--txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Segoe UI,Inter,Arial,sans-serif}
+  h1{margin:16px auto;text-align:center;color:#cfe1ff}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px auto;width:92%;max-width:1200px}
+  label{font-size:13px;color:var(--mut)}
+  input,select,textarea{width:100%;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:#081427;color:#fff}
+  textarea{min-height:80px;resize:none}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border:1px solid var(--line);padding:6px;text-align:center;vertical-align:top}
+  th{background:#13233b;color:#dbe7ff;font-size:13px}
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
+  .stat{background:#102030;border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center}
+  .mut{color:var(--mut);font-size:12px}
 </style>
 </head>
-
 <body>
-<h1>Tableau de garde</h1>
 
-<!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-
-<!-- 🔐 Garde d'accès : redirection UNIQUEMENT si accès direct sans login -->
+<!-- 🔒 Guard: accès uniquement si token présent -->
 <script>
 (function ensureAuth(){
   const token = localStorage.getItem("dispatch_idToken");
-  const cameFromIndex = localStorage.getItem("dispatch_logged_via_index");
-  // Si pas de token OU pas passé par l'écran d'accueil => on renvoie vers index
-  if(!token || !cameFromIndex){
-    location.href = "index.html";
-    return;
-  }
+  if(!token){ location.href = "index.html"; }
 })();
 </script>
 
-<!-- ==================== CONTENU PAGE ==================== -->
+<!-- Bridge Firebase REST (global, non-module) -->
+<script src="store-bridge.js"></script>
 
-<section id="commandement">
-  <h2>Postes de commandement</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
-    <div>
-      <label>Officier de semaine</label>
-      <input id="off_sem" />
-    </div>
-    <div>
-      <label>Officier de garde</label>
-      <input id="off_gar" />
-    </div>
-    <div>
-      <label>Chef de groupe</label>
-      <input id="chef_grp" />
-    </div>
-    <div>
-      <label>Chef de poste</label>
-      <input id="chef_poste" />
-    </div>
-    <div>
-      <label>Responsable des opérations</label>
-      <input id="resp_op" />
-    </div>
-    <div>
-      <label>1er centraliste</label>
-      <input id="cent1" />
-    </div>
-    <div>
-      <label>2e centraliste</label>
-      <input id="cent2" />
-    </div>
+<h1>Tableau de garde</h1>
+
+<div class="card">
+  <h3 style="margin:0 0 8px">Postes de commandement</h3>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
+    <div><label>Officier de semaine</label><input data-role="officier_semaine"></div>
+    <div><label>Officier de garde</label><input data-role="officier_garde"></div>
+    <div><label>Responsable opérations</label><input data-role="responsable_operations"></div>
+    <div><label>Chef de groupe</label><input data-role="chef_groupe"></div>
+    <div><label>Chef de poste</label><input data-role="chef_poste"></div>
+    <div><label>1er centraliste</label><input data-role="centraliste_1"></div>
+    <div><label>2e centraliste</label><input data-role="centraliste_2"></div>
   </div>
-</section>
+</div>
 
-<section id="notes">
-  <h2>Notes globales</h2>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-    <div>
-      <label>Matériel à récupérer</label>
-      <textarea id="mat_recup" rows="3" placeholder="Ex: Oxygène, attelles..."></textarea>
-    </div>
-    <div>
-      <label>Informations & remarques</label>
-      <textarea id="infos" rows="3" placeholder="Ex: Route barrée rue X, travaux..."></textarea>
-    </div>
+<div class="card">
+  <h3 style="margin:0 0 8px">Notes globales</h3>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div><label>🧰 Matériel à récupérer</label><textarea id="note_materiel" placeholder="Ex: O₂, attelles, pansements…"></textarea></div>
+    <div><label>ℹ️ Informations & remarques</label><textarea id="note_infos" placeholder="Ex: Route barrée, travaux…"></textarea></div>
   </div>
-</section>
+  <p class="mut">Ces notes s’affichent dans la bannière TV (OUT / Matériel / Infos).</p>
+</div>
 
-<section id="vehicules">
-  <h2>Véhicules</h2>
-
-  <table id="tableVeh">
-    <thead>
-      <tr>
-        <th>Véhicule</th>
-        <th>Attribution</th>
-        <th>Chauffeur</th>
-        <th>Soins</th>
-        <th>3ᵉ Homme</th>
-        <th>Statut</th>
-        <th>Commentaire</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-
-  <div class="statusBox">
-    <div id="nbDispo">Disponibles : 0</div>
-    <div id="nbSortis">Sortis : 0</div>
-    <div id="nbRes">Réserve : 0</div>
-    <div id="nbIndispo">Indisponibles : 0</div>
+<div class="card">
+  <h3 style="margin:0 0 8px">Véhicules</h3>
+  <div style="overflow:auto;max-height:60vh">
+    <table>
+      <thead>
+        <tr>
+          <th>Véhicule</th>
+          <th>Attribution</th>
+          <th>Chauffeur</th>
+          <th>Soins</th>
+          <th>3ᵉ Homme</th>
+          <th>Km</th>
+          <th>Statut</th>
+          <th>Commentaire</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
   </div>
-</section>
+  <div class="stats">
+    <div class="stat">Disponibles<br><b id="cDispo">0</b></div>
+    <div class="stat">Sortis<br><b id="cSorti">0</b></div>
+    <div class="stat">Réserve<br><b id="cReserve">0</b></div>
+    <div class="stat">Indisponibles<br><b id="cIndispo">0</b></div>
+  </div>
+</div>
 
 <script>
-// ==================== CONFIG FIREBASE ====================
-const firebaseConfig = {
-  apiKey: "AIzaSyCP6ZClAectP8OPneAeOYGYdRYO0CvnbnQ",
-  authDomain: "racs-dispatch.firebaseapp.com",
-  databaseURL: "https://racs-dispatch-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "racs-dispatch",
-  storageBucket: "racs-dispatch.firebasestorage.app",
-  messagingSenderId: "589135271261",
-  appId: "1:589135271261:web:d080a5da49a061929b84b4"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+/* ========= Config locale ========= */
+const STORAGE_KEY = "dispatch_parc_vehicules";
+const ATTRIBS = ["","LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","Prev","LOG","TMS","OFF"];
+let data = {};
+let isEditing = false;
+let typingTimer = null;
 
-// ==================== RÉFÉRENCES DB ====================
-const refCmd   = db.ref("dispatch_commandement");
-const refNotes = db.ref("dispatch_notes");
-const refVeh   = db.ref("dispatch_parc_vehicules");
-
-// ==================== MISE À JOUR AUTOMATIQUE DES BLOCS ====================
-
-// 1. Commandement
-refCmd.on("value", snap => {
-  const v = snap.val() || {};
-  off_sem.value     = v.off_sem     || "";
-  off_gar.value     = v.off_gar     || "";
-  chef_grp.value    = v.chef_grp    || "";
-  chef_poste.value  = v.chef_poste  || "";
-  resp_op.value     = v.resp_op     || "";
-  cent1.value       = v.cent1       || "";
-  cent2.value       = v.cent2       || "";
-});
-
-// sauvegarde quand on change un champ dans la zone commandement
-document.querySelectorAll("#commandement input").forEach(inp => {
-  inp.addEventListener("change", () => {
-    refCmd.update({
-      off_sem:     off_sem.value,
-      off_gar:     off_gar.value,
-      chef_grp:    chef_grp.value,
-      chef_poste:  chef_poste.value,
-      resp_op:     resp_op.value,
-      cent1:       cent1.value,
-      cent2:       cent2.value
-    });
+/* ========= Utilitaires ========= */
+const $ = (id)=>document.getElementById(id);
+function ensure(){
+  if(!data || typeof data!=='object') data = {};
+  if(!data._settings) data._settings = { vehs: [] };
+  if(!data._roles) data._roles = {
+    officier_semaine:"", officier_garde:"",
+    responsable_operations:"", chef_groupe:"",
+    chef_poste:"", centraliste_1:"", centraliste_2:""
+  };
+  if(!data._notes) data._notes = { materiel:"", infos:"" };
+  (data._settings.vehs||[]).forEach(v=>{
+    if(!data[v.id]) data[v.id] = {
+      XO:"", S:"", PS:"", km:"", statut:"Disponible", commentaire:"",
+      attribution: v.attrib||"", plaque: v.plaque||"", name: v.name||v.id
+    };
   });
-});
+}
 
-// 2. Notes globales
-refNotes.on("value", snap => {
-  const v = snap.val() || {};
-  mat_recup.value = v.mat_recup || "";
-  infos.value     = v.infos     || "";
-});
+/* ========= Rendu ========= */
+function renderAll(){ renderRoles(); renderNotes(); renderTable(); renderStats(); }
 
-document.querySelectorAll("#notes textarea").forEach(txt => {
-  txt.addEventListener("change", () => {
-    refNotes.update({
-      mat_recup: mat_recup.value,
-      infos:     infos.value
-    });
+function renderRoles(){
+  document.querySelectorAll('[data-role]').forEach(inp=>{
+    const k=inp.dataset.role;
+    inp.value = data._roles[k] || "";
+    inp.oninput = async e=>{
+      isEditing = true;
+      clearTimeout(typingTimer);
+      data._roles[k] = e.target.value;
+      await save();
+      typingTimer = setTimeout(()=>isEditing=false, 1500);
+    };
   });
-});
+}
 
-// 3. Véhicules
-refVeh.on("value", snap => {
-  const tbody = document.querySelector("#tableVeh tbody");
-  tbody.innerHTML = "";
+function renderNotes(){
+  $('note_materiel').value = data._notes.materiel || "";
+  $('note_infos').value    = data._notes.infos    || "";
+  $('note_materiel').oninput = async e=>{
+    isEditing = true; clearTimeout(typingTimer);
+    data._notes.materiel = e.target.value; await save();
+    typingTimer = setTimeout(()=>isEditing=false, 1500);
+  };
+  $('note_infos').oninput = async e=>{
+    isEditing = true; clearTimeout(typingTimer);
+    data._notes.infos = e.target.value; await save();
+    typingTimer = setTimeout(()=>isEditing=false, 1500);
+  };
+}
 
-  const vehData = snap.val() || {};
-  let dispo=0, sorti=0, res=0, indispo=0;
-
-  Object.entries(vehData).forEach(([id, v]) => {
-    // v doit contenir : attribution, chauffeur, soigneur, h3, statut, commentaire
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>${id}</td>
-      <td><input value="${v.attribution||""}" data-key="${id}" data-field="attribution"></td>
-      <td><input value="${v.chauffeur||""}" data-key="${id}" data-field="chauffeur"></td>
-      <td><input value="${v.soigneur||""}" data-key="${id}" data-field="soigneur"></td>
-      <td><input value="${v.h3||""}" data-key="${id}" data-field="h3"></td>
-      <td>
-        <select data-key="${id}" data-field="statut">
-          <option ${v.statut==="Disponible"?"selected":""}>Disponible</option>
-          <option ${v.statut==="Sorti"?"selected":""}>Sorti</option>
-          <option ${v.statut==="Réserve"?"selected":""}>Réserve</option>
-          <option ${v.statut==="Indisponible"?"selected":""}>Indisponible</option>
-        </select>
-      </td>
-      <td><input value="${v.commentaire||""}" data-key="${id}" data-field="commentaire"></td>
-    `;
-    tbody.appendChild(tr);
-
-    if(v.statut==="Disponible")      dispo++;
-    else if(v.statut==="Sorti")      sorti++;
-    else if(v.statut==="Réserve")    res++;
-    else if(v.statut==="Indisponible") indispo++;
+function renderTable(){
+  const tb = $('tbody'); tb.innerHTML="";
+  (data._settings.vehs||[]).forEach(v=>{
+    const d = data[v.id];
+    tb.insertAdjacentHTML('beforeend', `
+      <tr>
+        <td><b>${d.name||v.id}</b><br><span class="mut">${d.plaque||""}</span></td>
+        <td>
+          <select data-v="${v.id}" data-k="attribution">
+            ${ATTRIBS.map(a=>`<option ${a===(d.attribution||"")?"selected":""}>${a}</option>`).join("")}
+          </select>
+        </td>
+        <td><input data-v="${v.id}" data-k="XO" value="${d.XO||""}" placeholder="Chauffeur"></td>
+        <td><input data-v="${v.id}" data-k="S" value="${d.S||""}" placeholder="Soins"></td>
+        <td><input data-v="${v.id}" data-k="PS" value="${d.PS||""}" placeholder="3e"></td>
+        <td><input data-v="${v.id}" data-k="km" value="${d.km||""}" inputmode="numeric" placeholder="Km"></td>
+        <td>
+          <select data-v="${v.id}" data-k="statut">
+            ${["Disponible","Sorti","Réserve","Indisponible"].map(s=>`<option ${s===(d.statut||"")?"selected":""}>${s}</option>`).join("")}
+          </select>
+        </td>
+        <td><input data-v="${v.id}" data-k="commentaire" value="${d.commentaire||""}" placeholder="Remarque"></td>
+      </tr>
+    `);
   });
 
-  nbDispo.textContent    = "Disponibles : "    + dispo;
-  nbSortis.textContent   = "Sortis : "         + sorti;
-  nbRes.textContent      = "Réserve : "        + res;
-  nbIndispo.textContent  = "Indisponibles : "  + indispo;
-});
+  // Bind inputs
+  document.querySelectorAll('input[data-v],select[data-v]').forEach(el=>{
+    el.oninput = async ()=>{
+      isEditing = true; clearTimeout(typingTimer);
+      const id = el.dataset.v, k = el.dataset.k;
+      if(k==="km") el.value = el.value.replace(/[^\d]/g,'');
+      data[id][k] = el.value;
+      await save(); renderStats();
+      typingTimer = setTimeout(()=>isEditing=false, 1500);
+    };
+  });
+}
 
-// quand on modifie une cellule du tableau véhicules -> on met à jour firebase
-document.addEventListener("change", e => {
-  if(e.target && e.target.dataset && e.target.dataset.key){
-    const vehId  = e.target.dataset.key;
-    const field  = e.target.dataset.field;
-    const value  = e.target.value;
-    refVeh.child(vehId).update({ [field]: value });
-  }
-});
+function renderStats(){
+  const list=(data._settings.vehs||[]).map(v=>data[v.id]);
+  $('cDispo').textContent  = list.filter(x=>x.statut==="Disponible").length;
+  $('cSorti').textContent  = list.filter(x=>x.statut==="Sorti").length;
+  $('cReserve').textContent= list.filter(x=>x.statut==="Réserve").length;
+  $('cIndispo').textContent= list.filter(x=>x.statut==="Indisponible").length;
+}
+
+/* ========= Persistance ========= */
+async function save(){ await saveKey(STORAGE_KEY, data); }
+
+// boot + polling (sans éjecter)
+async function boot(){
+  data = await readKey(STORAGE_KEY) || {};
+  ensure(); renderAll();
+  // poll toutes les 5s si on n’édite pas
+  setInterval(async ()=>{
+    if(isEditing) return;
+    const fresh = await readKey(STORAGE_KEY) || {};
+    // si ça change ailleurs, on met à jour l’affichage
+    const a = JSON.stringify(data), b = JSON.stringify(fresh);
+    if(a!==b){ data=fresh; ensure(); renderAll(); }
+  }, 5000);
+}
+boot();
 </script>
-
 </body>
 </html>
