@@ -25,13 +25,11 @@
   .chip{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:6px 10px}
   .status{display:inline-block;padding:4px 8px;border-radius:8px;font-weight:700;font-size:12px}
   .s-dispo{background:#2e7d32}.s-sorti{background:#3a8bf2}.s-res{background:#f4b400;color:#000}.s-indispo{background:#e74c3c}
-
-  /* Modale (ré-attribution) */
+  /* Modale ré-attribution */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9000}
   .modal.show{display:flex}
   .modal .box{background:#121821;border:1px solid #223044;border-radius:12px;padding:14px;max-width:640px;width:95%;max-height:85vh;overflow:auto}
   body.modal-open{overflow:hidden}
-
   @media (max-width: 768px){
     .header h1{font-size:18px}
     h3{font-size:18px}
@@ -43,8 +41,8 @@
 </head>
 <body>
 
-<!-- Bridge Firebase (assure-toi que store-bridge.js contient l’URL de ta base) -->
-<script src="store-bridge.js" defer></script>
+<!-- Bridge Firebase REST (global). DOIT être un script normal, sans type="module" -->
+<script src="store-bridge.js"></script>
 
 <div class="header">
   <h1>Tableau de garde</h1>
@@ -153,9 +151,11 @@ if (typeof readKey !== 'function' || typeof saveKey !== 'function') {
 }
 
 const STORAGE_KEY = "dispatch_parc_vehicules";
+const BACKUP_KEY  = "dispatch_parc_vehicules_backup";
 const LH_SET = new Set(["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8"]);
 let data = {};
 let _rea = { fromVeh:null, attrib:"", selected:null, candidates:[] };
+let _pollTimer = null, _lastJSON = "";
 
 const $ = (id)=>document.getElementById(id);
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]);}
@@ -187,8 +187,8 @@ document.addEventListener('click', (e)=>{
 function ensure(){
   if(!data || typeof data!=='object') data = {};
   if(!data._settings) data._settings = { vehs: [] };
-  if(!data._roles) data._roles = {};
-  if(!data._notes) data._notes = { materiel:"", infos:"" };
+  if(!data._roles)    data._roles    = {};
+  if(!data._notes)    data._notes    = { materiel:"", infos:"" };
   (data._settings.vehs||[]).forEach(v=>{
     if(!data[v.id]) data[v.id] = {
       XO:"",S:"",PS:"",attribution:v.attrib||"",plaque:v.plaque||"",
@@ -209,9 +209,9 @@ function renderRoles(){
 }
 function renderNotes(){
   $('note_materiel').value = data._notes.materiel||"";
-  $('note_infos').value = data._notes.infos||"";
+  $('note_infos').value    = data._notes.infos||"";
   $('note_materiel').oninput = async e=>{ data._notes.materiel=e.target.value; await save(); };
-  $('note_infos').oninput = async e=>{ data._notes.infos=e.target.value; await save(); };
+  $('note_infos').oninput    = async e=>{ data._notes.infos=e.target.value; await save(); };
 }
 
 function renderTable(){
@@ -247,7 +247,7 @@ function renderTable(){
       if(k==="km") el.value = el.value.replace(/[^\d]/g,'');
       data[id][k]=el.value;
 
-      // Auto-heure de sortie si passe "Sorti" et heure vide
+      // Auto-heure sortie si passe "Sorti" et vide
       if(k==="statut" && el.value==="Sorti" && !data[id].heure_sortie){
         const d=new Date(); const hh=String(d.getHours()).padStart(2,"0"), mm=String(d.getMinutes()).padStart(2,"0");
         data[id].heure_sortie = `${hh}:${mm}`;
@@ -263,6 +263,7 @@ function renderTable(){
     };
   });
 }
+
 function renderStats(){
   const list=(data._settings.vehs||[]).map(v=>data[v.id]);
   $('cDispo').textContent = list.filter(v=>v.statut==="Disponible").length;
@@ -270,6 +271,7 @@ function renderStats(){
   $('cReserve').textContent = list.filter(v=>v.statut==="Réserve").length;
   $('cIndispo').textContent = list.filter(v=>v.statut==="Indisponible").length;
 }
+
 function renderOut(){
   const box=$('outList'); box.innerHTML="";
   (data._settings.vehs||[]).forEach(v=>{
@@ -284,15 +286,6 @@ function renderOut(){
 }
 
 /* LH unicité + ré-attribution */
-function enforceLHUnicity(){
-  const seen={};
-  (data._settings.vehs||[]).forEach(v=>{
-    const a=(data[v.id]?.attribution||"").toUpperCase();
-    if(LH_SET.has(a)){ if(seen[a]) data[v.id].attribution=""; else seen[a]=v.id; }
-    const sv=(data._settings.vehs||[]).find(x=>x.id===v.id); if(sv) sv.attrib=data[v.id].attribution||"";
-  });
-}
-
 function openReassignModal(fromVeh, attrib){
   _rea={fromVeh, attrib, selected:null,
         candidates:(data._settings.vehs||[]).map(v=>v.id)
@@ -319,12 +312,12 @@ function renderReassignCandidates(){
 function cancelReassign(){ hideModal('modalReassign'); _rea={fromVeh:null,attrib:"",selected:null,candidates:[]}; }
 async function liberateOnly(){
   if(!_rea.fromVeh) return cancelReassign();
-  data[_rea.fromVeh].attribution=""; const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh); if(sv) sv.attrib="";
+  data[_rea.fromVeh].attribution=""; 
+  const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh); if(sv) sv.attrib="";
   await save(); renderAll(); cancelReassign(); alert("Attribution libérée.");
 }
 async function confirmReassign(){
   if(!_rea.selected) return alert("Sélectionne un véhicule repreneur.");
-
   // Retire l’attribution des autres véhicules qui la portent
   (data._settings.vehs||[]).forEach(v=>{
     if((data[v.id]?.attribution||"").toUpperCase()===_rea.attrib.toUpperCase()){
@@ -333,14 +326,12 @@ async function confirmReassign(){
       if(sv) sv.attrib="";
     }
   });
-
   // Libère sur le véhicule indisponible
   if(data[_rea.fromVeh]){
     data[_rea.fromVeh].attribution="";
     const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh);
     if(sv) sv.attrib="";
   }
-
   // Assigne au repreneur
   if(!data[_rea.selected]) data[_rea.selected]={};
   data[_rea.selected].attribution=_rea.attrib;
@@ -353,14 +344,40 @@ async function confirmReassign(){
   alert(`${_rea.attrib} est maintenant attribué à ${_rea.selected}.`);
 }
 
-/* Persistance */
-async function save(){ await saveKey(STORAGE_KEY, data); }
+/* Sauvegarde + backup local périodique */
+async function save(){
+  await saveKey(STORAGE_KEY, data);
+  try { localStorage.setItem(BACKUP_KEY, JSON.stringify(data)); } catch {}
+}
+setInterval(()=>{ try { localStorage.setItem(BACKUP_KEY, JSON.stringify(data)); } catch {} }, 15000);
 
-/* Boot */
-(async()=>{
-  data = await readKey(STORAGE_KEY);
+/* Poll serveur pour sync avec Paramétrages */
+async function pollServer(){
+  const fresh = await readKey(STORAGE_KEY) || {};
+  const now = JSON.stringify(fresh);
+  if (now !== _lastJSON) {
+    _lastJSON = now;
+    data = fresh; ensure(); renderAll();
+  }
+}
+
+/* Boot + restauration si serveur vide */
+async function boot(){
+  let server = await readKey(STORAGE_KEY) || {};
+  const backup = (()=>{ try{return JSON.parse(localStorage.getItem(BACKUP_KEY)||"{}");}catch{return{}} })();
+  const isEmpty = (obj)=> !obj || (Object.keys(obj).length===0);
+  if (isEmpty(server) && !isEmpty(backup)) {
+    data = backup;
+    await saveKey(STORAGE_KEY, data); // pousse vers le serveur
+  } else {
+    data = server;
+  }
   ensure(); renderAll();
-})();
+  _lastJSON = JSON.stringify(data);
+  _pollTimer = setInterval(pollServer, 5000);
+}
+
+boot();
 </script>
 </body>
 </html>
