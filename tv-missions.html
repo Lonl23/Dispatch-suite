@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TV — Missions en cours</title>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#121821; --line:#223044;
+    --text:#e8eef5; --muted:#9fb2c9; --accent:#3a8bf2;
+    --ok:#2ecc71; --warn:#f1c40f; --danger:#e74c3c; --info:#00c2ff;
+    --badge:#0f1520;
+    --ticker-bg:#b00020; --ticker-fg:#ffffff;
+  }
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;}
+  .wrap{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+
+  /* Header */
+  .header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#0d131c;border-bottom:1px solid var(--line)}
+  .title{font-size:28px;font-weight:800;letter-spacing:.5px}
+  .meta{display:flex;gap:16px;align-items:center;color:var(--muted);font-size:16px}
+  .pill{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:6px 12px;color:#cfe1ff}
+
+  /* Grid of missions */
+  .content{flex:1;overflow:auto;padding:16px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  @media (max-width:1400px){ .grid{grid-template-columns:repeat(2,1fr);} }
+  @media (max-width:1000px){ .grid{grid-template-columns:1fr;} }
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-height:240px}
+  .card-header{display:flex;justify-content:space-between;align-items:flex-start}
+  .veh{font-size:28px;font-weight:900}
+  .attr{margin-left:8px;font-size:14px;border:1px solid #2c3d52;padding:2px 8px;border-radius:999px;background:var(--badge)}
+  .type{font-size:14px;color:#ffea99;border:1px solid #5a4b16;background:#221b06;padding:2px 8px;border-radius:8px}
+  .info-row{display:flex;gap:14px;flex-wrap:wrap;color:#dbe7f5}
+  .label{color:var(--muted);margin-right:6px}
+
+  /* Renforts badges */
+  .badges{display:flex;gap:8px;flex-wrap:wrap}
+  .badge{background:var(--badge);border:1px solid #2c3d52;border-radius:999px;padding:4px 10px;font-size:14px}
+  .badge.pompiers{border-color:#ff6b6b;color:#ffb3b3}
+  .badge.police{border-color:#61dafb;color:#bfefff}
+  .badge.smur{border-color:#9b59b6;color:#e3c6f1}
+
+  /* Timeline */
+  .timeline{display:flex;align-items:flex-start;gap:12px;margin-top:4px}
+  .step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center}
+  .dot{width:14px;height:14px;border-radius:50%;background:#2c3d52;border:2px solid #2c3d52;box-shadow:0 0 0 2px #182030}
+  .dot.active{background:var(--accent);border-color:var(--accent)}
+  .line{height:2px;background:#2c3d52;flex:1;margin:6px 6px 0 6px}
+  .st-label{margin-top:6px;font-size:12px;color:var(--muted)}
+  .st-time{margin-top:2px;font-size:12px;color:#cfe1ff}
+
+  /* Extra flags */
+  .flags{display:flex;gap:8px;flex-wrap:wrap}
+  .flag{font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid}
+  .flag.devie{color:#fff7d6;border-color:#d1a300;background:#3a2a00}
+  .flag.indispo{color:#ffd5d5;border-color:#ff6b6b;background:#3a0f12}
+  .flag.annule{color:#e0e0e0;border-color:#888;background:#1e1e1e}
+  .flag.retour{color:#c6ffd3;border-color:#2ecc71;background:#0a2a17}
+
+  /* Ticker */
+  .ticker{height:48px;background:var(--ticker-bg);color:var(--ticker-fg);display:flex;align-items:center;overflow:hidden;border-top:1px solid #7a0016}
+  .marquee{white-space:nowrap;display:flex;gap:64px}
+  .marquee .chunk{display:flex;align-items:center;gap:12px}
+  .marquee .tag{background:#7a0016;border:1px solid #ffccd5;padding:2px 8px;border-radius:6px;font-weight:700}
+  .marquee .sep{opacity:.8}
+  .scroll{
+    display:flex;gap:64px;will-change:transform;
+    animation: scroll 40s linear infinite;
+  }
+  .scroll:hover{animation-play-state:paused}
+  @keyframes scroll {
+    from { transform: translateX(0); }
+    to   { transform: translateX(-50%); }
+  }
+
+  /* Empty state */
+  .empty{opacity:.6;text-align:center;padding:40px;border:1px dashed #2c3d52;border-radius:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div class="title">Missions en cours</div>
+    <div class="meta">
+      <div class="pill" id="clock">--:--</div>
+      <div class="pill"><span id="count">0</span> mission(s)</div>
+    </div>
+  </div>
+
+  <div class="content">
+    <div id="grid" class="grid"></div>
+  </div>
+
+  <!-- Ticker -->
+  <div class="ticker">
+    <div class="marquee">
+      <!-- We duplicate the content to allow seamless infinite scroll -->
+      <div id="band1" class="scroll"></div>
+      <div id="band2" class="scroll" aria-hidden="true"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* Storage keys */
+const MISSIONS_KEY = "dispatch_missions";
+const DISPATCH_KEY = "dispatch_parc_vehicules";
+
+/* Status flow */
+const FLOW = ["Départ","Sur place","En charge","Arrivé hôpital","Retour dispo","Rentré base"];
+const EXTRAS = ["Dévié","Mise indispo","Annulé par CU112","Retour au poste"];
+
+let missions = {};
+let dispatchData = {};
+
+/* Helpers */
+const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function get(obj, path, def=""){ try { return path.split('.').reduce((o,k)=>o?.[k], obj) ?? def; } catch { return def; } }
+
+/* Load from localStorage */
+function loadAll(){
+  try{ missions = JSON.parse(localStorage.getItem(MISSIONS_KEY)||"{}"); }catch{ missions={}; }
+  try{ dispatchData = JSON.parse(localStorage.getItem(DISPATCH_KEY)||"{}"); }catch{ dispatchData={}; }
+}
+
+/* Render clock */
+function renderClock(){
+  const d=new Date();
+  const z=n=>String(n).padStart(2,'0');
+  document.getElementById('clock').textContent = `${z(d.getHours())}:${z(d.getMinutes())} — ${z(d.getDate())}/${z(d.getMonth()+1)}/${d.getFullYear()}`;
+}
+
+/* Build mission cards (active only) */
+function renderMissions(){
+  const grid = document.getElementById('grid');
+  const active = Object.values(missions).filter(m=>!m.done);
+  // Sort by "Départ" time desc if available, else by id desc
+  active.sort((a,b)=>{
+    const ad = a.statuts?.["Départ"]||"", bd = b.statuts?.["Départ"]||"";
+    if (ad && bd) return ad<bd?1:-1;
+    return (b.id||"")<(a.id||"")? -1 : 1;
+  });
+
+  document.getElementById('count').textContent = active.length;
+
+  if (!active.length){
+    grid.innerHTML = `<div class="empty">Aucune mission en cours</div>`;
+    return;
+  }
+
+  grid.innerHTML = "";
+  active.forEach(m=>{
+    const renf = m.renforts || {};
+    const is112 = (m.type === "112");
+    const flags = [];
+    if (m.statuts?.["Dévié"]) flags.push(`<span class="flag devie">Dévié</span>`);
+    if (m.statuts?.["Mise indispo"]) flags.push(`<span class="flag indispo">Mise indispo</span>`);
+    if (m.statuts?.["Annulé par CU112"]) flags.push(`<span class="flag annule">Annulé CU112</span>`);
+    if (m.statuts?.["Retour au poste"]) flags.push(`<span class="flag retour">Retour au poste</span>`);
+
+    // Timeline nodes
+    const stepsHtml = FLOW.map((label, idx)=>{
+      const active = Boolean(m.statuts && m.statuts[label]);
+      const time = esc(m.statuts?.[label] || "");
+      const node = `
+        <div class="step">
+          <div class="dot ${active?'active':''}"></div>
+          <div class="st-label">${esc(label)}</div>
+          <div class="st-time">${time}</div>
+        </div>`;
+      // add connector line between nodes except after last
+      return idx< FLOW.length-1 ? node + `<div class="line"></div>` : node;
+    }).join("");
+
+    // Address line
+    const addrParts = [m?.adresse?.rue, m?.adresse?.num, m?.adresse?.cp, m?.adresse?.ville].filter(Boolean).map(esc);
+    const addr = addrParts.join(", ");
+
+    const card = document.createElement('div');
+    card.className = "card";
+    card.innerHTML = `
+      <div class="card-header">
+        <div>
+          <span class="veh">${esc(m.veh||"—")}</span>
+          ${m.attr ? `<span class="attr">${esc(m.attr)}</span>` : ""}
+        </div>
+        <div class="badges">
+          ${m.type ? `<span class="badge">${esc(m.type)}</span>` : ""}
+          ${renf.pompiers?`<span class="badge pompiers">Pompiers</span>`:""}
+          ${renf.police?`<span class="badge police">Police</span>`:""}
+          ${renf.smur?`<span class="badge smur">SMUR</span>`:""}
+        </div>
+      </div>
+
+      ${is112 ? `
+      <div class="info-row">
+        <div><span class="label">CU112:</span> ${esc(m.centrale||"—")}</div>
+        <div><span class="label">N°:</span> ${esc(m.num112||"—")}</div>
+        <div><span class="label">Départ:</span> ${esc(m.depart112||"—")}</div>
+      </div>` : ""}
+
+      <div class="info-row"><span class="label">Motif:</span> ${esc(m.motif||"—")}</div>
+      ${addr ? `<div class="info-row"><span class="label">Adresse:</span> ${addr}</div>` : ""}
+
+      ${flags.length? `<div class="flags">${flags.join("")}</div>`: ""}
+
+      <div class="timeline">${stepsHtml}</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+/* Build bottom ticker (OUT + notes) */
+function buildTicker(){
+  // Read OUT vehicles (Indisponible) + notes from dispatchData
+  const notes = get(dispatchData, "_notes", {materiel:"", infos:""});
+  const vehOrder = get(dispatchData, "_settings.vehs", []).map(v=>v.id);
+  const outs = [];
+  vehOrder.forEach(id=>{
+    const d = dispatchData[id];
+    if (d?.statut === "Indisponible"){
+      let label = (d?.name || id);
+      if (d?.attribution) label += ` [${d.attribution}]`;
+      if (d?.commentaire) label += ` — ${d.commentaire}`;
+      outs.push(label);
+    }
+  });
+
+  const chunks = [];
+  if (outs.length){
+    chunks.push(`<span class="tag">VÉHICULE OUT</span><span>${esc(outs.join("  •  "))}</span>`);
+  }
+  if ((notes.materiel||"").trim()){
+    chunks.push(`<span class="tag">MATÉRIEL</span><span>${esc(notes.materiel.replace(/\s+/g,' ').trim())}</span>`);
+  }
+  if ((notes.infos||"").trim()){
+    chunks.push(`<span class="tag">INFOS</span><span>${esc(notes.infos.replace(/\s+/g,' ').trim())}</span>`);
+  }
+
+  const content = chunks.length ? chunks.map(c=>`<span class="chunk">${c}</span>`).join('<span class="sep">|</span>') : `<span class="chunk"><span>Aucune information</span></span>`;
+
+  const band1 = document.getElementById('band1');
+  const band2 = document.getElementById('band2');
+  band1.innerHTML = content + content; // doubled inside each band for ultra-smooth loop
+  band2.innerHTML = band1.innerHTML;   // second band mirrors first; both scroll min 50% width for seamless effect
+}
+
+/* Render all */
+function renderAll(){
+  renderClock();
+  renderMissions();
+  buildTicker();
+}
+
+/* Boot */
+function boot(){
+  loadAll();
+  renderAll();
+  // clock tick
+  setInterval(renderClock, 1000);
+}
+
+/* Sync when other tabs modify data */
+window.addEventListener('storage', (e)=>{
+  if (e.key === MISSIONS_KEY || e.key === DISPATCH_KEY){
+    loadAll();
+    renderAll();
+  }
+});
+
+/* First load */
+boot();
+</script>
+</body>
+</html>
