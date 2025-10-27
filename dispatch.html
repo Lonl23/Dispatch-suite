@@ -1,98 +1,13 @@
-<!doctype html>
-<html lang="fr">
-<head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Dispatch – Tableau de garde</title>
-<style>
-  :root{--bg:#071022;--panel:#0f1724;--line:#213243;--txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6}
-  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Segoe UI,Inter,Arial,sans-serif}
-  h1{margin:16px auto;text-align:center;color:#cfe1ff}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px auto;width:92%;max-width:1200px}
-  label{font-size:13px;color:var(--mut)}
-  input,select,textarea{width:100%;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:#081427;color:#fff}
-  textarea{min-height:80px;resize:none}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{border:1px solid var(--line);padding:6px;text-align:center;vertical-align:top}
-  th{background:#13233b;color:#dbe7ff;font-size:13px}
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
-  .stat{background:#102030;border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center}
-  .mut{color:var(--mut);font-size:12px}
-</style>
-</head>
-<body>
-
-<!-- 🔒 Guard: accès uniquement si token présent -->
 <script>
-(function ensureAuth(){
-  const token = localStorage.getItem("dispatch_idToken");
-  if(!token){ location.href = "index.html"; }
-})();
-</script>
-
-<!-- Bridge Firebase REST (global, non-module) -->
-<script src="store-bridge.js"></script>
-
-<h1>Tableau de garde</h1>
-
-<div class="card">
-  <h3 style="margin:0 0 8px">Postes de commandement</h3>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
-    <div><label>Officier de semaine</label><input data-role="officier_semaine"></div>
-    <div><label>Officier de garde</label><input data-role="officier_garde"></div>
-    <div><label>Responsable opérations</label><input data-role="responsable_operations"></div>
-    <div><label>Chef de groupe</label><input data-role="chef_groupe"></div>
-    <div><label>Chef de poste</label><input data-role="chef_poste"></div>
-    <div><label>1er centraliste</label><input data-role="centraliste_1"></div>
-    <div><label>2e centraliste</label><input data-role="centraliste_2"></div>
-  </div>
-</div>
-
-<div class="card">
-  <h3 style="margin:0 0 8px">Notes globales</h3>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-    <div><label>🧰 Matériel à récupérer</label><textarea id="note_materiel" placeholder="Ex: O₂, attelles, pansements…"></textarea></div>
-    <div><label>ℹ️ Informations & remarques</label><textarea id="note_infos" placeholder="Ex: Route barrée, travaux…"></textarea></div>
-  </div>
-  <p class="mut">Ces notes s’affichent dans la bannière TV (OUT / Matériel / Infos).</p>
-</div>
-
-<div class="card">
-  <h3 style="margin:0 0 8px">Véhicules</h3>
-  <div style="overflow:auto;max-height:60vh">
-    <table>
-      <thead>
-        <tr>
-          <th>Véhicule</th>
-          <th>Attribution</th>
-          <th>Chauffeur</th>
-          <th>Soins</th>
-          <th>3ᵉ Homme</th>
-          <th>Km</th>
-          <th>Statut</th>
-          <th>Commentaire</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
-  </div>
-  <div class="stats">
-    <div class="stat">Disponibles<br><b id="cDispo">0</b></div>
-    <div class="stat">Sortis<br><b id="cSorti">0</b></div>
-    <div class="stat">Réserve<br><b id="cReserve">0</b></div>
-    <div class="stat">Indisponibles<br><b id="cIndispo">0</b></div>
-  </div>
-</div>
-
-<script>
-/* ========= Config locale ========= */
+// ====== CONFIG ======
 const STORAGE_KEY = "dispatch_parc_vehicules";
 const ATTRIBS = ["","LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","Prev","LOG","TMS","OFF"];
+
 let data = {};
 let isEditing = false;
 let typingTimer = null;
 
-/* ========= Utilitaires ========= */
+// ====== UTILS ======
 const $ = (id)=>document.getElementById(id);
 function ensure(){
   if(!data || typeof data!=='object') data = {};
@@ -111,7 +26,11 @@ function ensure(){
   });
 }
 
-/* ========= Rendu ========= */
+function toast(msg){
+  console.log("[DISPATCH]", msg);
+}
+
+// ====== RENDU ======
 function renderAll(){ renderRoles(); renderNotes(); renderTable(); renderStats(); }
 
 function renderRoles(){
@@ -123,30 +42,25 @@ function renderRoles(){
       clearTimeout(typingTimer);
       data._roles[k] = e.target.value;
       await save();
-      typingTimer = setTimeout(()=>isEditing=false, 1500);
+      typingTimer = setTimeout(()=>isEditing=false, 1200);
     };
   });
 }
 
 function renderNotes(){
-  $('note_materiel').value = data._notes.materiel || "";
-  $('note_infos').value    = data._notes.infos    || "";
-  $('note_materiel').oninput = async e=>{
-    isEditing = true; clearTimeout(typingTimer);
-    data._notes.materiel = e.target.value; await save();
-    typingTimer = setTimeout(()=>isEditing=false, 1500);
-  };
-  $('note_infos').oninput = async e=>{
-    isEditing = true; clearTimeout(typingTimer);
-    data._notes.infos = e.target.value; await save();
-    typingTimer = setTimeout(()=>isEditing=false, 1500);
-  };
+  const nm = $('note_materiel'), ni = $('note_infos');
+  if (!nm || !ni) return;
+  nm.value = data._notes.materiel || "";
+  ni.value = data._notes.infos    || "";
+  nm.oninput = async e=>{ isEditing=true; clearTimeout(typingTimer); data._notes.materiel=e.target.value; await save(); typingTimer=setTimeout(()=>isEditing=false,1200); };
+  ni.oninput = async e=>{ isEditing=true; clearTimeout(typingTimer); data._notes.infos   =e.target.value; await save(); typingTimer=setTimeout(()=>isEditing=false,1200); };
 }
 
 function renderTable(){
-  const tb = $('tbody'); tb.innerHTML="";
+  const tb = $('tbody'); if(!tb){ console.warn("tbody introuvable"); return; }
+  tb.innerHTML="";
   (data._settings.vehs||[]).forEach(v=>{
-    const d = data[v.id];
+    const d = data[v.id] || {};
     tb.insertAdjacentHTML('beforeend', `
       <tr>
         <td><b>${d.name||v.id}</b><br><span class="mut">${d.plaque||""}</span></td>
@@ -169,44 +83,167 @@ function renderTable(){
     `);
   });
 
-  // Bind inputs
   document.querySelectorAll('input[data-v],select[data-v]').forEach(el=>{
     el.oninput = async ()=>{
       isEditing = true; clearTimeout(typingTimer);
       const id = el.dataset.v, k = el.dataset.k;
       if(k==="km") el.value = el.value.replace(/[^\d]/g,'');
+      if(!data[id]) data[id] = {};
       data[id][k] = el.value;
       await save(); renderStats();
-      typingTimer = setTimeout(()=>isEditing=false, 1500);
+      typingTimer = setTimeout(()=>isEditing=false, 1200);
     };
   });
 }
 
 function renderStats(){
-  const list=(data._settings.vehs||[]).map(v=>data[v.id]);
-  $('cDispo').textContent  = list.filter(x=>x.statut==="Disponible").length;
-  $('cSorti').textContent  = list.filter(x=>x.statut==="Sorti").length;
-  $('cReserve').textContent= list.filter(x=>x.statut==="Réserve").length;
-  $('cIndispo').textContent= list.filter(x=>x.statut==="Indisponible").length;
+  const cd=$('cDispo'), cs=$('cSorti'), cr=$('cReserve'), ci=$('cIndispo');
+  const list=(data._settings.vehs||[]).map(v=>data[v.id] || {});
+  if(cd) cd.textContent = list.filter(x=>x.statut==="Disponible").length;
+  if(cs) cs.textContent = list.filter(x=>x.statut==="Sorti").length;
+  if(cr) cr.textContent = list.filter(x=>x.statut==="Réserve").length;
+  if(ci) ci.textContent = list.filter(x=>x.statut==="Indisponible").length;
 }
 
-/* ========= Persistance ========= */
+// ====== PERSISTANCE via store-bridge ======
+if (typeof readKey !== 'function' || typeof saveKey !== 'function') {
+  alert("store-bridge.js introuvable : impossible de lire/écrire Firebase.");
+}
+
 async function save(){ await saveKey(STORAGE_KEY, data); }
 
-// boot + polling (sans éjecter)
-async function boot(){
-  data = await readKey(STORAGE_KEY) || {};
-  ensure(); renderAll();
-  // poll toutes les 5s si on n’édite pas
-  setInterval(async ()=>{
-    if(isEditing) return;
-    const fresh = await readKey(STORAGE_KEY) || {};
-    // si ça change ailleurs, on met à jour l’affichage
-    const a = JSON.stringify(data), b = JSON.stringify(fresh);
-    if(a!==b){ data=fresh; ensure(); renderAll(); }
-  }, 5000);
+// ====== LECTURE multi-schémas ======
+// Schéma A (UNIFIÉ) attendu : { _settings:{vehs:[...]}, _roles:{...}, _notes:{...}, <vehId>:{...} }
+async function loadUnified(){
+  const obj = await readKey(STORAGE_KEY) || {};
+  // minimal pour le considérer “valide” : présence de _settings.vehs (même vide)
+  if (obj && typeof obj==='object' && obj._settings && Array.isArray(obj._settings.vehs)) {
+    return obj;
+  }
+  return null;
 }
+
+// Schéma B (LEGACY) : tout est éclaté dans 3 clés distinctes
+//  - dispatch_commandement
+//  - dispatch_notes
+//  - dispatch_parc_vehicules (plateau des véhicules à plat)
+async function loadLegacy(){
+  try{
+    const legacyVeh   = await readKey("dispatch_parc_vehicules") || {};
+    const legacyRoles = await readKey("dispatch_commandement") || {};
+    const legacyNotes = await readKey("dispatch_notes") || {};
+    // Si legacyVeh ressemble à un objet avec des propriétés de véhicules (et PAS _settings)
+    const keys = Object.keys(legacyVeh||{});
+    const maybeVehs = keys.filter(k=>typeof (legacyVeh[k])==='object' && !k.startsWith('_'));
+    if (maybeVehs.length===0) return null;
+
+    // Construire data unifiée
+    const vehsArr = maybeVehs.map(id=>{
+      const d = legacyVeh[id] || {};
+      return { id, name: d.name || id, attrib: d.attribution || "", plaque: d.plaque || "" };
+    });
+
+    const unified = {
+      _settings: { vehs: vehsArr },
+      _roles: {
+        officier_semaine: legacyRoles.off_sem || "",
+        officier_garde: legacyRoles.off_gar || "",
+        responsable_operations: legacyRoles.resp_op || "",
+        chef_groupe: legacyRoles.chef_grp || "",
+        chef_poste: legacyRoles.chef_poste || "",
+        centraliste_1: legacyRoles.cent1 || "",
+        centraliste_2: legacyRoles.cent2 || ""
+      },
+      _notes: {
+        materiel: legacyNotes.mat_recup || "",
+        infos: legacyNotes.infos || ""
+      }
+    };
+
+    // Injecter le détail par véhicule
+    maybeVehs.forEach(id=>{
+      const d = legacyVeh[id] || {};
+      unified[id] = {
+        XO: d.chauffeur || "", S: d.soigneur || "", PS: d.h3 || "",
+        km: d.km || "", statut: d.statut || "Disponible", commentaire: d.commentaire || "",
+        attribution: d.attribution || "", plaque: d.plaque || "", name: d.name || id
+      };
+    });
+
+    return unified;
+  }catch(e){
+    console.warn("loadLegacy error", e);
+    return null;
+  }
+}
+
+// ====== DEBUG WIDGET ======
+(function debugWidget(){
+  const btn = document.createElement('button');
+  btn.textContent = "🔎 Debug";
+  btn.style.position='fixed'; btn.style.right='10px'; btn.style.bottom='70px';
+  btn.style.zIndex='9999'; btn.style.background='#444'; btn.style.border='1px solid #777';
+  btn.style.borderRadius='8px'; btn.style.padding='8px 10px'; btn.style.cursor='pointer';
+  btn.onclick = async ()=>{
+    try{
+      const unified = await readKey(STORAGE_KEY);
+      alert("Clé principale:\n" + JSON.stringify(unified, null, 2).slice(0, 5000));
+    }catch(e){
+      alert("Erreur lecture clé principale: " + e.message);
+    }
+  };
+  document.body.appendChild(btn);
+})();
+
+// ====== BOOT ======
+async function boot(){
+  try{
+    // 1) Tente schéma UNIFIÉ
+    let got = await loadUnified();
+    // 2) Sinon, tente schéma LEGACY (et si trouvé, on l’écrit au bon format)
+    if(!got){
+      toast("Schéma unifié vide -> tentative legacy");
+      const legacy = await loadLegacy();
+      if(legacy){
+        toast("Legacy détecté -> migration en mémoire (sans écraser), affichage…");
+        got = legacy;
+        // On n’écrase pas automatiquement la base, on affiche seulement.
+        // Si tu veux “upgrader” ta base au schéma unifié, décommente la ligne ci-dessous:
+        // await saveKey(STORAGE_KEY, got);
+      }
+    }
+    // 3) Si toujours rien, on affiche un message
+    if(!got){
+      toast("Aucune donnée trouvée. Vérifie l’URL Firebase dans store-bridge.js et la clé utilisée par parametres.html");
+      data = { _settings:{vehs:[]}, _roles:{}, _notes:{} };
+    }else{
+      data = got;
+    }
+
+    ensure(); renderAll();
+
+    // Polling sans éjecter l’édition
+    setInterval(async ()=>{
+      if(isEditing) return;
+      const fresh = await readKey(STORAGE_KEY) || {};
+      // Si schéma inexistant mais legacy présent, recharge legacy comme fallback
+      if(!fresh || !fresh._settings){
+        const legacy = await loadLegacy();
+        if(legacy) {
+          data = legacy; ensure(); renderAll();
+          return;
+        }
+      }
+      if (JSON.stringify(fresh)!==JSON.stringify(data)){
+        data = fresh; ensure(); renderAll();
+      }
+    }, 5000);
+
+  }catch(e){
+    console.error("BOOT ERROR", e);
+    alert("Erreur de chargement. Vérifie la console (F12) et l’URL Firebase dans store-bridge.js.");
+  }
+}
+
 boot();
 </script>
-</body>
-</html>
