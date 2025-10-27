@@ -8,20 +8,79 @@
 <style>
 :root {
   --bg:#071022;--panel:#0f1724;--line:#213243;
-  --txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6;--ok:#2e7d32;
+  --txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6;
 }
-body {background:var(--bg);color:var(--txt);font-family:"Segoe UI",Arial,sans-serif;margin:0;}
-h1{text-align:center;margin:20px 0;}
-section{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px auto;width:90%;max-width:1200px;}
-label{color:var(--mut);font-size:13px;}
-input,textarea,select{background:#081427;color:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:8px;width:100%;}
-table{width:100%;border-collapse:collapse;margin-top:10px;}
-th,td{border:1px solid var(--line);padding:8px;text-align:center;}
-th{background:#13233b;}
-button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:bold;}
-.statusBox{display:flex;justify-content:space-evenly;margin-top:10px;}
-.statusBox div{flex:1;text-align:center;padding:8px;border-radius:8px;background:#102030;margin:0 4px;}
-.hidden{display:none;}
+body {
+  background:var(--bg);
+  color:var(--txt);
+  font-family:"Segoe UI",Arial,sans-serif;
+  margin:0;
+  padding:0;
+}
+h1 {
+  text-align:center;
+  margin:20px 0;
+}
+section {
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+  margin:12px auto;
+  width:90%;
+  max-width:1200px;
+}
+label {
+  color:var(--mut);
+  font-size:13px;
+}
+input,textarea,select {
+  background:#081427;
+  color:#fff;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:6px 8px;
+  margin-bottom:8px;
+  width:100%;
+  font-size:14px;
+}
+textarea {
+  resize:none;
+}
+table {
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+  font-size:14px;
+}
+th,td {
+  border:1px solid var(--line);
+  padding:8px;
+  text-align:center;
+}
+th {
+  background:#13233b;
+}
+.statusBox {
+  display:flex;
+  justify-content:space-evenly;
+  margin-top:10px;
+}
+.statusBox div {
+  flex:1;
+  text-align:center;
+  padding:8px;
+  border-radius:8px;
+  background:#102030;
+  margin:0 4px;
+  color:#fff;
+  font-size:14px;
+  font-weight:600;
+}
+@media (max-width:700px){
+  table{font-size:12px}
+  th,td{padding:6px}
+}
 </style>
 </head>
 
@@ -33,43 +92,52 @@ button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8p
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
-<!-- Redirection conditionnelle -->
+<!-- 🔐 Garde d'accès : redirection UNIQUEMENT si accès direct sans login -->
 <script>
-(async function ensureAuth(){
+(function ensureAuth(){
   const token = localStorage.getItem("dispatch_idToken");
   const cameFromIndex = localStorage.getItem("dispatch_logged_via_index");
-  
-  // Si pas connecté ou pas passé par index → redirection
+  // Si pas de token OU pas passé par l'écran d'accueil => on renvoie vers index
   if(!token || !cameFromIndex){
     location.href = "index.html";
     return;
   }
-
-  // Vérifie rapidement que le token Firebase est encore valide
-  try{
-    const url = "https://racs-dispatch-default-rtdb.europe-west1.firebasedatabase.app/.info/connected.json?auth="+encodeURIComponent(token);
-    const r = await fetch(url, { cache:"no-store" });
-    if(r.status !== 200) throw 0;
-  }catch{
-    localStorage.removeItem("dispatch_idToken");
-    localStorage.removeItem("dispatch_uid");
-    localStorage.removeItem("dispatch_logged_via_index");
-    location.href = "index.html";
-  }
 })();
 </script>
 
-<!-- Corps de la page -->
+<!-- ==================== CONTENU PAGE ==================== -->
+
 <section id="commandement">
   <h2>Postes de commandement</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
-    <div><label>Officier de semaine</label><input id="off_sem" /></div>
-    <div><label>Officier de garde</label><input id="off_gar" /></div>
-    <div><label>Chef de groupe</label><input id="chef_grp" /></div>
-    <div><label>Chef de poste</label><input id="chef_poste" /></div>
-    <div><label>Responsable des opérations</label><input id="resp_op" /></div>
-    <div><label>1er centraliste</label><input id="cent1" /></div>
-    <div><label>2e centraliste</label><input id="cent2" /></div>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;">
+    <div>
+      <label>Officier de semaine</label>
+      <input id="off_sem" />
+    </div>
+    <div>
+      <label>Officier de garde</label>
+      <input id="off_gar" />
+    </div>
+    <div>
+      <label>Chef de groupe</label>
+      <input id="chef_grp" />
+    </div>
+    <div>
+      <label>Chef de poste</label>
+      <input id="chef_poste" />
+    </div>
+    <div>
+      <label>Responsable des opérations</label>
+      <input id="resp_op" />
+    </div>
+    <div>
+      <label>1er centraliste</label>
+      <input id="cent1" />
+    </div>
+    <div>
+      <label>2e centraliste</label>
+      <input id="cent2" />
+    </div>
   </div>
 </section>
 
@@ -89,6 +157,7 @@ button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8p
 
 <section id="vehicules">
   <h2>Véhicules</h2>
+
   <table id="tableVeh">
     <thead>
       <tr>
@@ -103,6 +172,7 @@ button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8p
     </thead>
     <tbody></tbody>
   </table>
+
   <div class="statusBox">
     <div id="nbDispo">Disponibles : 0</div>
     <div id="nbSortis">Sortis : 0</div>
@@ -112,7 +182,7 @@ button{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8p
 </section>
 
 <script>
-// CONFIG FIREBASE
+// ==================== CONFIG FIREBASE ====================
 const firebaseConfig = {
   apiKey: "AIzaSyCP6ZClAectP8OPneAeOYGYdRYO0CvnbnQ",
   authDomain: "racs-dispatch.firebaseapp.com",
@@ -125,94 +195,107 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-// RÉFÉRENCES DANS LA BASE
-const refCmd = db.ref("dispatch_commandement");
-const refVeh = db.ref("dispatch_parc_vehicules");
+// ==================== RÉFÉRENCES DB ====================
+const refCmd   = db.ref("dispatch_commandement");
 const refNotes = db.ref("dispatch_notes");
+const refVeh   = db.ref("dispatch_parc_vehicules");
 
-// CHARGEMENT DES DONNÉES
-refCmd.on("value", snap=>{
-  const v=snap.val()||{};
-  off_sem.value=v.off_sem||"";
-  off_gar.value=v.off_gar||"";
-  chef_grp.value=v.chef_grp||"";
-  chef_poste.value=v.chef_poste||"";
-  resp_op.value=v.resp_op||"";
-  cent1.value=v.cent1||"";
-  cent2.value=v.cent2||"";
+// ==================== MISE À JOUR AUTOMATIQUE DES BLOCS ====================
+
+// 1. Commandement
+refCmd.on("value", snap => {
+  const v = snap.val() || {};
+  off_sem.value     = v.off_sem     || "";
+  off_gar.value     = v.off_gar     || "";
+  chef_grp.value    = v.chef_grp    || "";
+  chef_poste.value  = v.chef_poste  || "";
+  resp_op.value     = v.resp_op     || "";
+  cent1.value       = v.cent1       || "";
+  cent2.value       = v.cent2       || "";
 });
 
-refNotes.on("value", snap=>{
-  const v=snap.val()||{};
-  mat_recup.value=v.mat_recup||"";
-  infos.value=v.infos||"";
-});
-
-// SAUVEGARDE AUTO
-document.querySelectorAll("#commandement input").forEach(inp=>{
-  inp.addEventListener("change",()=>{
+// sauvegarde quand on change un champ dans la zone commandement
+document.querySelectorAll("#commandement input").forEach(inp => {
+  inp.addEventListener("change", () => {
     refCmd.update({
-      off_sem:off_sem.value,
-      off_gar:off_gar.value,
-      chef_grp:chef_grp.value,
-      chef_poste:chef_poste.value,
-      resp_op:resp_op.value,
-      cent1:cent1.value,
-      cent2:cent2.value
-    });
-  });
-});
-document.querySelectorAll("#notes textarea").forEach(txt=>{
-  txt.addEventListener("change",()=>{
-    refNotes.update({
-      mat_recup:mat_recup.value,
-      infos:infos.value
+      off_sem:     off_sem.value,
+      off_gar:     off_gar.value,
+      chef_grp:    chef_grp.value,
+      chef_poste:  chef_poste.value,
+      resp_op:     resp_op.value,
+      cent1:       cent1.value,
+      cent2:       cent2.value
     });
   });
 });
 
-// VÉHICULES
-refVeh.on("value", snap=>{
-  const tbody=document.querySelector("#tableVeh tbody");
-  tbody.innerHTML="";
-  const data=snap.val()||{};
-  let dispo=0,sorti=0,res=0,indispo=0;
-  Object.entries(data).forEach(([id,v])=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`
+// 2. Notes globales
+refNotes.on("value", snap => {
+  const v = snap.val() || {};
+  mat_recup.value = v.mat_recup || "";
+  infos.value     = v.infos     || "";
+});
+
+document.querySelectorAll("#notes textarea").forEach(txt => {
+  txt.addEventListener("change", () => {
+    refNotes.update({
+      mat_recup: mat_recup.value,
+      infos:     infos.value
+    });
+  });
+});
+
+// 3. Véhicules
+refVeh.on("value", snap => {
+  const tbody = document.querySelector("#tableVeh tbody");
+  tbody.innerHTML = "";
+
+  const vehData = snap.val() || {};
+  let dispo=0, sorti=0, res=0, indispo=0;
+
+  Object.entries(vehData).forEach(([id, v]) => {
+    // v doit contenir : attribution, chauffeur, soigneur, h3, statut, commentaire
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
       <td>${id}</td>
-      <td><input value="${v.attribution||""}" data-key="${id}" data-field="attribution"/></td>
-      <td><input value="${v.chauffeur||""}" data-key="${id}" data-field="chauffeur"/></td>
-      <td><input value="${v.soigneur||""}" data-key="${id}" data-field="soigneur"/></td>
-      <td><input value="${v.h3||""}" data-key="${id}" data-field="h3"/></td>
-      <td><select data-key="${id}" data-field="statut">
-        <option ${v.statut=="Disponible"?"selected":""}>Disponible</option>
-        <option ${v.statut=="Sorti"?"selected":""}>Sorti</option>
-        <option ${v.statut=="Réserve"?"selected":""}>Réserve</option>
-        <option ${v.statut=="Indisponible"?"selected":""}>Indisponible</option>
-      </select></td>
-      <td><input value="${v.commentaire||""}" data-key="${id}" data-field="commentaire"/></td>
+      <td><input value="${v.attribution||""}" data-key="${id}" data-field="attribution"></td>
+      <td><input value="${v.chauffeur||""}" data-key="${id}" data-field="chauffeur"></td>
+      <td><input value="${v.soigneur||""}" data-key="${id}" data-field="soigneur"></td>
+      <td><input value="${v.h3||""}" data-key="${id}" data-field="h3"></td>
+      <td>
+        <select data-key="${id}" data-field="statut">
+          <option ${v.statut==="Disponible"?"selected":""}>Disponible</option>
+          <option ${v.statut==="Sorti"?"selected":""}>Sorti</option>
+          <option ${v.statut==="Réserve"?"selected":""}>Réserve</option>
+          <option ${v.statut==="Indisponible"?"selected":""}>Indisponible</option>
+        </select>
+      </td>
+      <td><input value="${v.commentaire||""}" data-key="${id}" data-field="commentaire"></td>
     `;
     tbody.appendChild(tr);
-    if(v.statut=="Disponible")dispo++;
-    else if(v.statut=="Sorti")sorti++;
-    else if(v.statut=="Réserve")res++;
-    else indispo++;
+
+    if(v.statut==="Disponible")      dispo++;
+    else if(v.statut==="Sorti")      sorti++;
+    else if(v.statut==="Réserve")    res++;
+    else if(v.statut==="Indisponible") indispo++;
   });
-  nbDispo.textContent="Disponibles : "+dispo;
-  nbSortis.textContent="Sortis : "+sorti;
-  nbRes.textContent="Réserve : "+res;
-  nbIndispo.textContent="Indisponibles : "+indispo;
+
+  nbDispo.textContent    = "Disponibles : "    + dispo;
+  nbSortis.textContent   = "Sortis : "         + sorti;
+  nbRes.textContent      = "Réserve : "        + res;
+  nbIndispo.textContent  = "Indisponibles : "  + indispo;
 });
 
-// MISE À JOUR CHAMPS
-document.addEventListener("change",e=>{
-  if(e.target.dataset && e.target.dataset.key){
-    const key=e.target.dataset.key;
-    const field=e.target.dataset.field;
-    refVeh.child(key).update({ [field]: e.target.value });
+// quand on modifie une cellule du tableau véhicules -> on met à jour firebase
+document.addEventListener("change", e => {
+  if(e.target && e.target.dataset && e.target.dataset.key){
+    const vehId  = e.target.dataset.key;
+    const field  = e.target.dataset.field;
+    const value  = e.target.value;
+    refVeh.child(vehId).update({ [field]: value });
   }
 });
 </script>
+
 </body>
 </html>
