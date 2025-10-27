@@ -7,10 +7,11 @@
 <style>
   :root{
     --bg:#0a0f16; --panel:#121821; --line:#1f2c3e;
-    --text:#f1f5fa; --muted:#9bb5d3; --accent:#3a8bf2;
-    /* Couleurs hall (Seulement Disponible/Indisponible) */
-    --ok:#2e7d32;     /* Disponible */
-    --bad:#e74c3c;    /* Indisponible */
+    --text:#f1f5fa; --muted:#9bb5d3;
+    --ok-bg:#15351c;      /* vert foncé bloc entier = Disponible */
+    --ok-bd:#2e7d32;
+    --bad-bg:#3a1212;     /* rouge foncé bloc entier = Indisponible */
+    --bad-bd:#e74c3c;
     --ticker-bg:#a00020; --ticker-fg:#fff;
   }
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
@@ -26,10 +27,10 @@
 
   /* Roles bandeau compact */
   .roles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
-    padding:6px 10px;background:#101a2a;border-bottom:1px solid var(--line)}
+    padding:6px 10px;background:#101a2a;border-bottom:1px solid #223146}
   .role{background:#142035;border:1px solid #223146;border-radius:8px;
     padding:4px 8px;min-width:140px;text-align:center;font-size:14px}
-  .role span{display:block;color:var(--muted);font-size:11px}
+  .role span{display:block;color:#9bb5d3;font-size:11px}
 
   /* Split principal */
   .main{display:grid;grid-template-columns:1fr 1fr;gap:10px;
@@ -37,7 +38,7 @@
   .leftPane,.rightPane{background:#0f1624;border:1px solid #223146;border-radius:12px;
     padding:8px;overflow:auto}
 
-  /* Hall plus compact */
+  /* Hall compact */
   .section-title{margin:0 0 6px 0;color:#cfe1ff;font-size:16px;text-align:center}
   .hall-frame{border:2px solid #33465f;border-radius:10px;padding:10px}
   .ext-row{display:flex;justify-content:center;margin-bottom:12px}
@@ -48,17 +49,18 @@
 
   .slot{
     background:#121e31;border:2px solid #425672;border-radius:10px;
-    padding:8px 10px;min-height:88px; /* ↓ plus petit pour 1080p */
+    padding:8px 10px;min-height:88px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center
   }
-  .slot .code{color:var(--muted);font-weight:700;letter-spacing:.5px;margin-bottom:6px;font-size:13px}
+  /* cacher les libellés d’emplacement */
+  .slot .code{display:none}
   .slot .veh{font-size:16px;font-weight:800}
   .slot .sub{font-size:12px;color:#b8c9e0;margin-top:2px}
-  /* Couleurs hall (uniquement Dispo/Indispo) */
-  .slot.ok{box-shadow:0 0 0 3px rgba(46,125,50,.35) inset}
-  .slot.bad{box-shadow:0 0 0 3px rgba(231,76,60,.45) inset}
+  /* Couleur bloc ENTIER (pas de bord uniquement) */
+  .slot.ok{ background:var(--ok-bg); border-color:var(--ok-bd); }
+  .slot.bad{ background:var(--bad-bg); border-color:var(--bad-bd); }
 
-  /* Colonnes (pas d’emplacement) */
+  /* Colonnes (pas d’emplacement affiché) */
   .cols{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
   .col{background:#121b2a;border:1px solid #223146;border-radius:10px;display:flex;flex-direction:column;min-height:120px}
   .col h3{margin:0;padding:6px;text-align:center;border-bottom:1px solid #223146;color:#cfe1ff;font-size:15px}
@@ -106,25 +108,25 @@
       <div class="hall-grid">
         <!-- Colonne gauche : H6→H10 -->
         <div class="stack">
-          <div class="slot" id="slot-H6"><div class="code">H6</div><div class="veh" style="opacity:.6">—</div></div>
-          <div class="slot" id="slot-H7"><div class="code">H7</div><div class="veh" style="opacity:.6">—</div></div>
-          <div class="slot" id="slot-H8"><div class="code">H8</div><div class="veh" style="opacity:.6">—</div></div>
-          <div class="slot" id="slot-H9"><div class="code">H9</div><div class="veh" style="opacity:.6">—</div></div>
-          <div class="slot" id="slot-H10"><div class="code">H10</div><div class="veh" style="opacity:.6">—</div></div>
+          <div class="slot" id="slot-H6"><div class="code">H6</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H7"><div class="code">H7</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H8"><div class="code">H8</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H9"><div class="code">H9</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H10"><div class="code">H10</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
         </div>
         <!-- Colonne droite : H5→H1 -->
         <div class="stack">
-          <div class="slot" id="slot-H5"><div class="code">H5</div><div class="veh" style="opacity:.6">—</div></div>
-          <div class="slot" id="slot-H4"><div class="code">H4</div><div class="veh" style="opacity:.6">—</div></div>
-          <div class="slot" id="slot-H3"><div class="code">H3</div><div class="veh" style="opacity:.6">—</div></div>
-          <div class="slot" id="slot-H2"><div class="code">H2</div><div class="veh" style="opacity:.6">—</div></div>
-          <div class="slot" id="slot-H1"><div class="code">H1</div><div class="veh" style="opacity:.6">—</div></div>
+          <div class="slot" id="slot-H5"><div class="code">H5</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H4"><div class="code">H4</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H3"><div class="code">H3</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H2"><div class="code">H2</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H1"><div class="code">H1</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- DROITE : COLONNES STATUTS (pas d’emplacements affichés) -->
+  <!-- DROITE : COLONNES STATUTS (pas d’emplacements) -->
   <div class="rightPane">
     <div class="cols">
       <div class="col"><h3>Sortis</h3><div id="col-sortis" class="list"></div></div>
@@ -190,19 +192,23 @@ function renderRoles(){
     .map(([k,l])=>`<div class="role"><span>${l}</span>${esc(r[k]||"-")}</div>`).join("");
 }
 
-/* Hall — couleurs uniquement Dispo/Indispo */
+/* Hall — couleur bloc ENTIER: Dispo/Indispo seulement */
 function slotClassForStatus(s){
   if(s==="Disponible") return "ok";
   if(s==="Indisponible") return "bad";
-  return ""; // Sorti & Réserve : pas de code couleur
+  return ""; // Sorti & Réserve : neutre
 }
 const H_SLOTS=["H6","H7","H8","H9","H10","H5","H4","H3","H2","H1"];
 function clearHall(){
-  $("#slot-EXT").innerHTML=`<div class="code">Extérieur</div><div class="veh" style="opacity:.6">—</div>`;
+  const ext=$("#slot-EXT");
+  ext.classList.remove("ok","bad");
+  ext.querySelector('.veh').textContent="—";
+  ext.querySelector('.sub').textContent="";
   H_SLOTS.forEach(h=>{
     const el=$(`#slot-${h}`);
-    if(el) el.innerHTML = `<div class="code">${h}</div><div class="veh" style="opacity:.6">—</div>`;
-    el?.classList.remove("ok","bad");
+    el.classList.remove("ok","bad");
+    el.querySelector('.veh').textContent="—";
+    const sub=el.querySelector('.sub'); if(sub) sub.textContent="";
   });
 }
 function renderHall(){
@@ -217,11 +223,9 @@ function renderHall(){
     const cl=slotClassForStatus(d.statut||"");
     box.classList.remove("ok","bad");
     if(cl) box.classList.add(cl);
-    box.innerHTML = `
-      <div class="code">${/ext/i.test(emp)?"Extérieur":esc(emp||"")}</div>
-      <div class="veh">${esc(d.name||v.id)}</div>
-      <div class="sub">${d.attribution?`[${esc(d.attribution)}] `:""}${esc(d.plaque||"")}</div>
-    `;
+    box.querySelector('.veh').textContent = (d.name||v.id);
+    const sub = box.querySelector('.sub');
+    if(sub) sub.textContent = `${d.attribution?`[${d.attribution}] `:""}${d.plaque||""}`;
   });
 }
 
