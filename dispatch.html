@@ -2,257 +2,236 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<title>Dispatch – Tableau de garde</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dispatch – Tableau de garde</title>
 <style>
-  :root{--bg:#0b0f14;--panel:#121821;--line:#223044;--text:#e8eef5;--muted:#93a7bf;--accent:#3a8bf2;--danger:#e74c3c;--ok:#2e7d32}
-  html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
-  .header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#121821;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
-  .header h1{margin:0;font-size:22px;color:#cfe1ff}
-  .btn{background:#3a8bf2;border:0;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;text-decoration:none;display:inline-block}
-  .container{max-width:1200px;margin:12px auto;padding:0 12px}
-  .card{background:#121821;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
-  .muted{color:var(--muted);font-size:12px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
-  input,select,textarea{width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid #2c3d52;background:#0f1520;color:#fff}
-  textarea{min-height:96px}
-  table{width:100%;border-collapse:collapse}
-  th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
-  th{background:#182030;font-size:12px;letter-spacing:.4px;position:sticky;top:0}
-  .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chip{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:6px 10px}
-  .status{display:inline-block;padding:4px 8px;border-radius:8px;font-weight:700;font-size:12px}
-  .s-dispo{background:#2e7d32}.s-sorti{background:#3a8bf2}.s-res{background:#f4b400;color:#000}.s-indispo{background:#e74c3c}
+  body {
+    margin:0;
+    font-family:Segoe UI,Inter,sans-serif;
+    background:#0a0f16;
+    color:#f1f5fa;
+  }
+  header {
+    background:#111b2b;
+    padding:10px 20px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  header h1 { margin:0; font-size:26px; color:#cfe1ff; }
+  header button {
+    background:#3a8bf2;
+    color:white;
+    border:none;
+    padding:6px 14px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+  }
+  main { padding:15px; }
+  table {
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+    font-size:15px;
+  }
+  th,td {
+    border:1px solid #1f2c3e;
+    padding:6px;
+    text-align:center;
+  }
+  th { background:#182030; }
+  input, select, textarea {
+    width:95%;
+    background:#111b2b;
+    color:#f1f5fa;
+    border:1px solid #2a364d;
+    border-radius:4px;
+    padding:4px;
+    font-size:14px;
+  }
+  textarea { height:60px; resize:none; }
+  .notes {
+    margin-top:20px;
+    display:flex;
+    gap:10px;
+  }
+  .notes div {
+    flex:1;
+    display:flex;
+    flex-direction:column;
+  }
+  .notes label { margin-bottom:4px; font-weight:bold; }
+  .roles {
+    margin-top:15px;
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+    gap:10px;
+  }
+  .roles div { display:flex; flex-direction:column; }
+  .roles label { font-weight:bold; margin-bottom:4px; }
 </style>
 </head>
 <body>
-
-<!-- Bridge Firebase REST (script normal, pas "module") -->
 <script src="store-bridge.js"></script>
 
-<div class="header">
+<header>
   <h1>Tableau de garde</h1>
-  <a href="parametres.html" target="_blank" class="btn">⚙️ Paramétrages</a>
-</div>
+  <button onclick="window.open('parametres.html','_blank')">Paramétrages</button>
+</header>
 
-<div class="container">
+<main>
+  <div class="roles">
+    <div><label>Officier de semaine</label><input data-rolekey="officier_semaine"></div>
+    <div><label>Officier de garde</label><input data-rolekey="officier_garde"></div>
+    <div><label>Responsable opérations</label><input data-rolekey="responsable_operations"></div>
+    <div><label>Chef de groupe</label><input data-rolekey="chef_groupe"></div>
+    <div><label>Chef de poste</label><input data-rolekey="chef_poste"></div>
+    <div><label>1er centraliste</label><input data-rolekey="centraliste_1"></div>
+    <div><label>2ème centraliste</label><input data-rolekey="centraliste_2"></div>
+  </div>
 
-  <!-- Rôles -->
-  <div class="card">
-    <h3 style="margin:0 0 8px">Postes de commandement</h3>
-    <div class="grid3">
-      <div><label>Officier de semaine</label><input data-rolekey="officier_semaine"></div>
-      <div><label>Officier de garde</label><input data-rolekey="officier_garde"></div>
-      <div><label>Responsable des opérations</label><input data-rolekey="responsable_operations"></div>
-      <div><label>Chef de groupe</label><input data-rolekey="chef_groupe"></div>
-      <div><label>Chef de poste</label><input data-rolekey="chef_poste"></div>
-      <div><label>1er centraliste</label><input data-rolekey="centraliste_1"></div>
-      <div><label>2e centraliste</label><input data-rolekey="centraliste_2"></div>
+  <table id="dispatchTable">
+    <thead>
+      <tr>
+        <th>Véhicule</th>
+        <th>Attribution</th>
+        <th>Chauffeur</th>
+        <th>Soins</th>
+        <th>3ᵉ homme</th>
+        <th>Kilométrage</th>
+        <th>Statut</th>
+        <th>Commentaire</th>
+      </tr>
+    </thead>
+    <tbody id="vehBody"></tbody>
+  </table>
+
+  <div class="notes">
+    <div>
+      <label>🧰 Matériel à récupérer</label>
+      <textarea id="materiel"></textarea>
+    </div>
+    <div>
+      <label>ℹ️ Informations et remarques</label>
+      <textarea id="infos"></textarea>
     </div>
   </div>
-
-  <!-- Notes -->
-  <div class="card">
-    <h3 style="margin:0 0 8px">Notes globales</h3>
-    <div class="grid2">
-      <div><label>Matériel à récupérer</label><textarea id="note_materiel" placeholder="Ex: Oxymètre, attelles..."></textarea></div>
-      <div><label>Informations & remarques</label><textarea id="note_infos" placeholder="Ex: Route barrée rue X, travaux..."></textarea></div>
-    </div>
-    <p class="muted">Ces notes apparaîtront dans la bannière TV (OUT / Matériel / Infos).</p>
-  </div>
-
-  <!-- Stats -->
-  <div class="card">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center">
-      <div><div class="status s-dispo">Disponibles</div><div id="cDispo" style="font-size:20px;margin-top:6px">0</div></div>
-      <div><div class="status s-sorti">Sortis</div><div id="cSorti" style="font-size:20px;margin-top:6px">0</div></div>
-      <div><div class="status s-res">Réserve</div><div id="cReserve" style="font-size:20px;margin-top:6px">0</div></div>
-      <div><div class="status s-indispo">Indisponibles</div><div id="cIndispo" style="font-size:20px;margin-top:6px">0</div></div>
-    </div>
-  </div>
-
-  <!-- Tableau -->
-  <div class="card">
-    <h3 style="margin:0 0 8px">Véhicules</h3>
-    <div style="overflow:auto; max-height:60vh;">
-      <table>
-        <thead>
-          <tr>
-            <th>Véhicule</th>
-            <th>Attribution</th>
-            <th>Chauffeur</th>
-            <th>Soins</th>
-            <th>3ᵉ Homme</th>
-            <th>Km</th>
-            <th>Statut</th>
-            <th>Commentaire</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- OUT -->
-  <div class="card">
-    <h3 style="margin:0 0 8px">Véhicules OUT</h3>
-    <div id="outList" class="chips"></div>
-  </div>
-
-</div>
+</main>
 
 <script>
-/* Fallback si bridge absent */
-if (typeof readKey !== 'function' || typeof saveKey !== 'function') {
-  console.warn("store-bridge.js manquant -> fallback localStorage");
-  window.readKey = async (k)=>{ try{return JSON.parse(localStorage.getItem(k)||"{}");}catch{return{}} };
-  window.saveKey = async (k,o)=>{ localStorage.setItem(k, JSON.stringify(o||{})); };
-}
-
-/* Constantes & état */
 const STORAGE_KEY = "dispatch_parc_vehicules";
-const BACKUP_KEY  = "dispatch_parc_vehicules_backup";
 let data = {};
-let _lastJSON = "";
-let pollTimer = null;
+let typingTimeout = null;
+let isEditing = false;
 
-const $ = (id)=>document.getElementById(id);
-const ATTRIBS = ["","LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","Prev","LOG","TMS","OFF"];
-
-function ensure(){
-  if(!data || typeof data!=='object') data = {};
-  if(!data._settings) data._settings = { vehs: [] };
-  if(!data._roles) data._roles = {
-    officier_semaine:"", officier_garde:"", responsable_operations:"",
-    chef_groupe:"", chef_poste:"", centraliste_1:"", centraliste_2:""
-  };
-  if(!data._notes) data._notes = { materiel:"", infos:"" };
-  (data._settings.vehs||[]).forEach(v=>{
-    if(!data[v.id]) data[v.id] = {
-      XO:"", S:"", PS:"", km:"", statut:"Disponible", commentaire:"",
-      attribution: v.attrib||"", plaque: v.plaque||"", name: v.name||v.id
-    };
-  });
+/* Chargement initial */
+async function refresh() {
+  if (isEditing) return; // suspend la synchro pendant l'édition
+  const d = await readKey(STORAGE_KEY) || {};
+  data = d;
+  ensure();
+  renderRoles();
+  renderVehs();
+  renderNotes();
 }
 
-function renderAll(){ renderRoles(); renderNotes(); renderTable(); renderStats(); renderOut(); }
+/* Création si vide */
+function ensure() {
+  if (!data || typeof data !== 'object') data = {};
+  if (!data._settings) data._settings = { vehs: [] };
+  if (!data._roles) data._roles = {
+    officier_semaine:"", officier_garde:"",
+    responsable_operations:"", chef_groupe:"",
+    chef_poste:"", centraliste_1:"", centraliste_2:""
+  };
+  if (!data._notes) data._notes = { materiel:"", infos:"" };
+}
 
-/* Rôles : bind + sauvegarde immédiate */
-function renderRoles(){
+/* Sauvegarde */
+async function save() {
+  await saveKey(STORAGE_KEY, data);
+}
+
+/* Rôles */
+function renderRoles() {
   document.querySelectorAll('[data-rolekey]').forEach(inp=>{
     const k = inp.dataset.rolekey;
     inp.value = data._roles[k] || "";
-    inp.oninput = async e => { data._roles[k] = e.target.value; await save(); };
-  });
-}
-
-/* Notes : bind + sauvegarde immédiate */
-function renderNotes(){
-  $('note_materiel').value = data._notes.materiel || "";
-  $('note_infos').value    = data._notes.infos || "";
-  $('note_materiel').oninput = async e => { data._notes.materiel = e.target.value; await save(); };
-  $('note_infos').oninput    = async e => { data._notes.infos    = e.target.value; await save(); };
-}
-
-/* Tableau véhicules */
-function renderTable(){
-  const tb = $('tbody'); tb.innerHTML = "";
-  (data._settings.vehs||[]).forEach(v=>{
-    const d = data[v.id];
-    tb.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td><b>${d.name||v.id}</b><br><span class="muted">${d.plaque||""}</span></td>
-        <td>
-          <select data-v="${v.id}" data-k="attribution">
-            ${ATTRIBS.map(a=>`<option ${a===(d.attribution||"")?"selected":""}>${a}</option>`).join("")}
-          </select>
-        </td>
-        <td><input data-v="${v.id}" data-k="XO" value="${d.XO||""}" placeholder="Chauffeur"></td>
-        <td><input data-v="${v.id}" data-k="S" value="${d.S||""}" placeholder="Soins"></td>
-        <td><input data-v="${v.id}" data-k="PS" value="${d.PS||""}" placeholder="3e"></td>
-        <td><input data-v="${v.id}" data-k="km" value="${d.km||""}" placeholder="Km"></td>
-        <td>
-          <select data-v="${v.id}" data-k="statut">
-            <option ${d.statut==="Disponible"?"selected":""}>Disponible</option>
-            <option ${d.statut==="Sorti"?"selected":""}>Sorti</option>
-            <option ${d.statut==="Réserve"?"selected":""}>Réserve</option>
-            <option ${d.statut==="Indisponible"?"selected":""}>Indisponible</option>
-          </select>
-        </td>
-        <td><input data-v="${v.id}" data-k="commentaire" value="${d.commentaire||""}" placeholder="Remarque"></td>
-      </tr>
-    `);
-  });
-
-  document.querySelectorAll('input[data-v],select[data-v]').forEach(el=>{
-    el.oninput = async ()=>{
-      const id = el.dataset.v, k = el.dataset.k;
-      if(k==="km") el.value = el.value.replace(/[^\d]/g,'');
-      data[id][k] = el.value;
-      await save(); renderStats(); renderOut();
+    inp.oninput = async (e)=>{
+      isEditing = true;
+      clearTimeout(typingTimeout);
+      data._roles[k] = e.target.value;
+      await save();
+      typingTimeout = setTimeout(()=>isEditing=false, 2000);
     };
   });
 }
 
-/* Stats & OUT */
-function renderStats(){
-  const list=(data._settings.vehs||[]).map(v=>data[v.id]);
-  $('cDispo').textContent = list.filter(v=>v.statut==="Disponible").length;
-  $('cSorti').textContent = list.filter(v=>v.statut==="Sorti").length;
-  $('cReserve').textContent = list.filter(v=>v.statut==="Réserve").length;
-  $('cIndispo').textContent = list.filter(v=>v.statut==="Indisponible").length;
+/* Notes */
+function renderNotes() {
+  document.getElementById("materiel").value = data._notes.materiel || "";
+  document.getElementById("infos").value = data._notes.infos || "";
+
+  document.getElementById("materiel").oninput = async (e)=>{
+    isEditing = true;
+    clearTimeout(typingTimeout);
+    data._notes.materiel = e.target.value;
+    await save();
+    typingTimeout = setTimeout(()=>isEditing=false, 2000);
+  };
+  document.getElementById("infos").oninput = async (e)=>{
+    isEditing = true;
+    clearTimeout(typingTimeout);
+    data._notes.infos = e.target.value;
+    await save();
+    typingTimeout = setTimeout(()=>isEditing=false, 2000);
+  };
 }
-function renderOut(){
-  const box=$('outList'); box.innerHTML="";
-  (data._settings.vehs||[]).forEach(v=>{
-    const d=data[v.id];
-    if(d.statut==="Indisponible"){
-      const div=document.createElement('div');
-      div.className="chip";
-      div.innerHTML = `<b>${d.name||v.id}</b> ${d.attribution?`[${d.attribution}]`:""} ${d.commentaire?`— ${d.commentaire}`:""}`;
-      box.appendChild(div);
-    }
+
+/* Véhicules */
+function renderVehs() {
+  const tb = document.getElementById("vehBody");
+  tb.innerHTML = "";
+  const vehs = (data._settings?.vehs) || [];
+  vehs.forEach(v=>{
+    const d = data[v.id] || {};
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td>${d.name||v.id}</td>
+      <td>${d.attribution||""}</td>
+      <td><input data-id="${v.id}" data-f="XO" value="${d.XO||""}"></td>
+      <td><input data-id="${v.id}" data-f="S" value="${d.S||""}"></td>
+      <td><input data-id="${v.id}" data-f="PS" value="${d.PS||""}"></td>
+      <td><input data-id="${v.id}" data-f="km" value="${d.km||""}" type="number" min="0"></td>
+      <td>
+        <select data-id="${v.id}" data-f="statut">
+          ${["Disponible","Sorti","Réserve","Indisponible"].map(s=>`<option ${s===(d.statut||"")?"selected":""}>${s}</option>`).join("")}
+        </select>
+      </td>
+      <td><input data-id="${v.id}" data-f="commentaire" value="${d.commentaire||""}"></td>
+    `;
+    tb.appendChild(row);
+  });
+
+  tb.querySelectorAll("input,select").forEach(inp=>{
+    inp.oninput = async (e)=>{
+      isEditing = true;
+      clearTimeout(typingTimeout);
+      const id = e.target.dataset.id;
+      const field = e.target.dataset.f;
+      const val = e.target.value;
+      if (!data[id]) data[id] = {};
+      data[id][field] = val;
+      await save();
+      typingTimeout = setTimeout(()=>isEditing=false, 2000);
+    };
   });
 }
 
-/* Sauvegarde serveur + backup local */
-async function save(){
-  await saveKey(STORAGE_KEY, data);
-  try { localStorage.setItem(BACKUP_KEY, JSON.stringify(data)); } catch {}
-}
-
-/* Poll Firebase pour synchro avec Paramétrages */
-async function poll(){
-  const fresh = await readKey(STORAGE_KEY) || {};
-  const now = JSON.stringify(fresh);
-  if (now !== _lastJSON) {
-    _lastJSON = now;
-    data = fresh; ensure(); renderAll();
-  }
-}
-
-/* Boot + restauration depuis backup si serveur vide */
-async function boot(){
-  let server = await readKey(STORAGE_KEY) || {};
-  const backup = (()=>{ try{return JSON.parse(localStorage.getItem(BACKUP_KEY)||"{}");}catch{return{}} })();
-  const isEmpty = (o)=> !o || Object.keys(o).length===0;
-
-  data = (!isEmpty(server) ? server : backup);
-  ensure(); renderAll();
-
-  _lastJSON = JSON.stringify(data);
-  pollTimer = setInterval(poll, 5000);
-
-  // Si serveur vide mais backup présent, push vers serveur
-  if (isEmpty(server) && !isEmpty(backup)) {
-    await saveKey(STORAGE_KEY, data);
-    _lastJSON = JSON.stringify(data);
-  }
-}
-
-boot();
+/* Démarrage */
+refresh();
+setInterval(()=>{ if(!isEditing) refresh(); }, 5000);
 </script>
 </body>
 </html>
