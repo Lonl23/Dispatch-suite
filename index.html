@@ -3,80 +3,142 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Connexion - Dispatch</title>
+<title>Accueil – Dispatch</title>
 <style>
-  body{font-family:Segoe UI,Inter,Arial;background:#071022;color:#eef3fb;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
-  .card{background:#0f1724;padding:22px;border-radius:12px;width:360px;box-shadow:0 6px 30px rgba(0,0,0,.6)}
-  h1{margin:0 0 12px;font-size:20px}
-  label{font-size:13px;color:#9fb3d0}
-  input{width:100%;padding:10px;border-radius:8px;border:1px solid #213243;background:#071428;color:#fff;margin-top:6px;margin-bottom:12px}
-  button{width:100%;padding:10px;border-radius:8px;border:0;background:#2f7bf6;color:#fff;font-weight:700}
-  .muted{font-size:13px;color:#9fb3d0;margin-top:10px;text-align:center}
+  :root{--bg:#071022;--panel:#0f1724;--line:#213243;--txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6;--ok:#2e7d32}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Segoe UI,Inter,Arial,sans-serif}
+  .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+  .card{background:var(--panel);padding:22px;border-radius:14px;box-shadow:0 6px 30px rgba(0,0,0,.5);border:1px solid var(--line)}
+  .hidden{display:none}
+  h1{margin:0 0 12px;font-size:22px}
+  label{font-size:13px;color:var(--mut)}
+  input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:#081427;color:#fff;margin-top:6px;margin-bottom:12px}
+  button,.btn{display:inline-block;text-decoration:none;text-align:center;cursor:pointer;background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:700}
+  .mut{color:var(--mut);font-size:13px}
+  .menu{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:740px;width:100%}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .panel h2{margin:0 0 10px;font-size:18px;color:#cfe1ff}
+  .grid-btn{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+  .topbar{position:fixed;top:0;left:0;right:0;background:#0b1426;border-bottom:1px solid var(--line);padding:8px 14px;display:flex;justify-content:space-between;align-items:center}
+  .topbar .right{display:flex;gap:8px;align-items:center}
+  .logout{background:#b23b3b}
 </style>
 </head>
 <body>
 
-<!-- Firebase -->
+<!-- Firebase (compat pour simplicité) -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
-<div class="card">
-  <h1>Connexion Dispatch</h1>
-  <label>Email</label>
-  <input id="email" type="email" value="centrale@acsrs.be" />
-  <label>Mot de passe</label>
-  <input id="password" type="password" value="Password01$" />
-  <button id="btnLogin">Se connecter</button>
-  <p class="muted" id="msg"></p>
+<div id="topbar" class="topbar hidden">
+  <div><b>Dispatch</b> — connecté : <span id="who"></span></div>
+  <div class="right">
+    <a class="btn" href="tv-grid.html" target="_blank">Ouvrir une TV</a>
+    <button class="btn logout" onclick="logout()">Déconnexion</button>
+  </div>
+</div>
+
+<div class="wrap">
+  <!-- Carte de connexion -->
+  <div id="loginCard" class="card" style="width:360px">
+    <h1>Connexion</h1>
+    <label>Email</label>
+    <input id="email" type="email" value="centrale@acsrs.be" />
+    <label>Mot de passe</label>
+    <input id="password" type="password" value="Password01$" />
+    <button id="btnLogin">Se connecter</button>
+    <p id="msg" class="mut" style="margin-top:10px"></p>
+  </div>
+
+  <!-- Menu des modes (après login) -->
+  <div id="menuCard" class="menu hidden">
+    <div class="panel">
+      <h2>🛠️ Mode Édition</h2>
+      <div class="grid-btn">
+        <a class="btn" href="dispatch.html">Tableau de garde</a>
+        <a class="btn" href="missions.html">Missions</a>
+        <a class="btn" href="parametres.html" target="_blank">Paramétrages (nouvel onglet)</a>
+      </div>
+      <p class="mut" style="margin-top:8px">Édition = écritures autorisées (Firebase rules). Paramétrages s'ouvre dans un nouvel onglet.</p>
+    </div>
+    <div class="panel">
+      <h2>📺 Mode Affichage</h2>
+      <div class="grid-btn">
+        <a class="btn" href="tv-grid.html" target="_blank">TV Véhicules</a>
+        <a class="btn" href="tv-missions.html" target="_blank">TV Missions</a>
+      </div>
+      <p class="mut" style="margin-top:8px">Affichage = lecture seule (possible de créer un compte “tv@” dédié).</p>
+    </div>
+  </div>
 </div>
 
 <script>
-  // ⚠️ Remplace par ta config Firebase
-  const firebaseConfig = {
-     apiKey: "AIzaSyCP6ZClAectP8OPneAeoYGYdRYO0CvnbnQ",
-     authDomain: "racs-dispatch.firebaseapp.com",
-     databaseURL: "https://racs-dispatch-default-rtdb.europe-west1.firebasedatabase.app",
-     projectId: "racs-dispatch",
-     storageBucket: "racs-dispatch.firebasestorage.app",
-     messagingSenderId: "589135271261",
-     appId: "1:589135271261:web:d080a5da49a061929b84b4"
-  };
-  firebase.initializeApp(firebaseConfig);
-  const auth = firebase.auth();
+/* 1) Config Firebase — remplace par la tienne */
+const firebaseConfig = {
+  apiKey: "AIzaSyCP6ZClAectP8OPneAeoYGYdRYO0CvnbnQ",
+  authDomain: "racs-dispatch.firebaseapp.com",
+  databaseURL: "https://racs-dispatch-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "racs-dispatch",
+  storageBucket: "racs-dispatch.firebasestorage.app",
+  messagingSenderId: "589135271261",
+  appId: "1:589135271261:web:d080a5da49a061929b84b4"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 
-  const emailInput = document.getElementById("email");
-  const passInput  = document.getElementById("password");
-  const msg = document.getElementById("msg");
+const loginCard = document.getElementById('loginCard');
+const menuCard  = document.getElementById('menuCard');
+const msg       = document.getElementById('msg');
+const whoSpan   = document.getElementById('who');
+const topbar    = document.getElementById('topbar');
 
-  document.getElementById("btnLogin").onclick = async () => {
-    msg.textContent = "Connexion...";
-    try {
-      const res = await auth.signInWithEmailAndPassword(emailInput.value.trim(), passInput.value);
-      const user = res.user;
-      const idToken = await user.getIdToken(/* forceRefresh */ true);
-      // Stocke le token et l'uid en localStorage (utilisé par store-bridge.js)
-      localStorage.setItem("dispatch_idToken", idToken);
-      localStorage.setItem("dispatch_uid", user.uid);
-      // Redirige vers dispatch
-      window.location.href = "dispatch.html";
-    } catch (err) {
-      console.error(err);
-      msg.textContent = "Erreur : " + (err.message || err.code);
-    }
-  };
+document.getElementById('btnLogin').onclick = async ()=>{
+  msg.textContent = "Connexion…";
+  try{
+    const res = await auth.signInWithEmailAndPassword(
+      document.getElementById('email').value.trim(),
+      document.getElementById('password').value
+    );
+    const idToken = await res.user.getIdToken(true);
+    localStorage.setItem("dispatch_idToken", idToken);
+    localStorage.setItem("dispatch_uid", res.user.uid);
+    showMenu(res.user);
+  }catch(e){
+    console.error(e);
+    msg.textContent = e.message || "Erreur de connexion";
+  }
+};
 
-  // Si déjà connecté, redirige
-  auth.onAuthStateChanged(async u=>{
-    if(u){
-      const t = await u.getIdToken();
-      localStorage.setItem("dispatch_idToken", t);
-      localStorage.setItem("dispatch_uid", u.uid);
-      // si on est déjà sur index, on peut rediriger
-      if(location.pathname.endsWith("index.html") || location.pathname==="/" || location.pathname.endsWith("/")){
-        window.location.href = "dispatch.html";
-      }
-    }
-  });
+function showMenu(user){
+  whoSpan.textContent = user.email || user.uid;
+  topbar.classList.remove('hidden');
+  loginCard.classList.add('hidden');
+  menuCard.classList.remove('hidden');
+}
+
+function showLogin(){
+  topbar.classList.add('hidden');
+  menuCard.classList.add('hidden');
+  loginCard.classList.remove('hidden');
+}
+
+function logout(){
+  localStorage.removeItem("dispatch_idToken");
+  localStorage.removeItem("dispatch_uid");
+  auth.signOut().finally(()=>location.reload());
+}
+
+/* 2) Si déjà connecté, montrer directement le menu (pas de redirection auto) */
+auth.onAuthStateChanged(async user=>{
+  if(user){
+    const t = await user.getIdToken();
+    localStorage.setItem("dispatch_idToken", t);
+    localStorage.setItem("dispatch_uid", user.uid);
+    showMenu(user);
+  }else{
+    showLogin();
+  }
+});
 </script>
 </body>
 </html>
