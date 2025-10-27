@@ -15,13 +15,11 @@
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;}
   .wrap{display:flex;flex-direction:column;height:100vh;overflow:hidden}
 
-  /* Header */
   .header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#0d131c;border-bottom:1px solid var(--line)}
   .title{font-size:28px;font-weight:800;letter-spacing:.5px}
   .meta{display:flex;gap:16px;align-items:center;color:var(--muted);font-size:16px}
   .pill{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:6px 12px;color:#cfe1ff}
 
-  /* Grid of missions */
   .content{flex:1;overflow:auto;padding:16px}
   .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
   @media (max-width:1400px){ .grid{grid-template-columns:repeat(2,1fr);} }
@@ -35,14 +33,12 @@
   .info-row{display:flex;gap:14px;flex-wrap:wrap;color:#dbe7f5}
   .label{color:var(--muted);margin-right:6px}
 
-  /* Renforts badges */
   .badges{display:flex;gap:8px;flex-wrap:wrap}
   .badge{background:var(--badge);border:1px solid #2c3d52;border-radius:999px;padding:4px 10px;font-size:14px}
   .badge.pompiers{border-color:#ff6b6b;color:#ffb3b3}
   .badge.police{border-color:#61dafb;color:#bfefff}
   .badge.smur{border-color:#9b59b6;color:#e3c6f1}
 
-  /* Timeline */
   .timeline{display:flex;align-items:flex-start;gap:12px;margin-top:4px}
   .step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center}
   .dot{width:14px;height:14px;border-radius:50%;background:#2c3d52;border:2px solid #2c3d52;box-shadow:0 0 0 2px #182030}
@@ -51,7 +47,6 @@
   .st-label{margin-top:6px;font-size:12px;color:var(--muted)}
   .st-time{margin-top:2px;font-size:12px;color:#cfe1ff}
 
-  /* Extra flags */
   .flags{display:flex;gap:8px;flex-wrap:wrap}
   .flag{font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid}
   .flag.devie{color:#fff7d6;border-color:#d1a300;background:#3a2a00}
@@ -59,7 +54,6 @@
   .flag.annule{color:#e0e0e0;border-color:#888;background:#1e1e1e}
   .flag.retour{color:#c6ffd3;border-color:#2ecc71;background:#0a2a17}
 
-  /* Ticker */
   .ticker{height:48px;background:var(--ticker-bg);color:var(--ticker-fg);display:flex;align-items:center;overflow:hidden;border-top:1px solid #7a0016}
   .marquee{white-space:nowrap;display:flex;gap:64px}
   .marquee .chunk{display:flex;align-items:center;gap:12px}
@@ -75,11 +69,22 @@
     to   { transform: translateX(-50%); }
   }
 
-  /* Empty state */
   .empty{opacity:.6;text-align:center;padding:40px;border:1px dashed #2c3d52;border-radius:12px}
 </style>
 </head>
 <body>
+
+<!-- Guard : exige d’être connecté via index.html -->
+<script>
+(function(){
+  if(!localStorage.getItem("dispatch_idToken")){
+    location.href="index.html";
+  }
+})();
+</script>
+
+<script src="store-bridge.js"></script>
+
 <div class="wrap">
   <div class="header">
     <div class="title">Missions en cours</div>
@@ -93,10 +98,8 @@
     <div id="grid" class="grid"></div>
   </div>
 
-  <!-- Ticker -->
   <div class="ticker">
     <div class="marquee">
-      <!-- We duplicate the content to allow seamless infinite scroll -->
       <div id="band1" class="scroll"></div>
       <div id="band2" class="scroll" aria-hidden="true"></div>
     </div>
@@ -104,39 +107,50 @@
 </div>
 
 <script>
-/* Storage keys */
+/* Clés */
 const MISSIONS_KEY = "dispatch_missions";
 const DISPATCH_KEY = "dispatch_parc_vehicules";
 
-/* Status flow */
-const FLOW = ["Départ","Sur place","En charge","Arrivé hôpital","Retour dispo","Rentré base"];
-const EXTRAS = ["Dévié","Mise indispo","Annulé par CU112","Retour au poste"];
-
+/* État */
 let missions = {};
 let dispatchData = {};
+let pollTimer = null;
 
 /* Helpers */
 const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 function get(obj, path, def=""){ try { return path.split('.').reduce((o,k)=>o?.[k], obj) ?? def; } catch { return def; } }
 
-/* Load from localStorage */
-function loadAll(){
-  try{ missions = JSON.parse(localStorage.getItem(MISSIONS_KEY)||"{}"); }catch{ missions={}; }
-  try{ dispatchData = JSON.parse(localStorage.getItem(DISPATCH_KEY)||"{}"); }catch{ dispatchData={}; }
-}
-
-/* Render clock */
+/* Horloge */
 function renderClock(){
-  const d=new Date();
-  const z=n=>String(n).padStart(2,'0');
+  const d=new Date(), z=n=>String(n).padStart(2,'0');
   document.getElementById('clock').textContent = `${z(d.getHours())}:${z(d.getMinutes())} — ${z(d.getDate())}/${z(d.getMonth()+1)}/${d.getFullYear()}`;
 }
 
-/* Build mission cards (active only) */
+/* Fetch Firebase (lecture seule) + sync localStorage */
+async function fetchAll(){
+  try{
+    const [m, disp] = await Promise.all([
+      readKey(MISSIONS_KEY),          // { id: { ... } }
+      readKey(DISPATCH_KEY)           // dispatch_parc_vehicules
+    ]);
+    // Sauvegarde en localStorage pour synchro inter-onglets et fallback
+    localStorage.setItem(MISSIONS_KEY, JSON.stringify(m || {}));
+    localStorage.setItem(DISPATCH_KEY, JSON.stringify(disp || {}));
+    missions = m || {};
+    dispatchData = disp || {};
+  }catch(e){
+    console.warn("Lecture Firebase échouée, fallback localStorage", e);
+    try{ missions = JSON.parse(localStorage.getItem(MISSIONS_KEY) || "{}"); }catch{ missions = {}; }
+    try{ dispatchData = JSON.parse(localStorage.getItem(DISPATCH_KEY) || "{}"); }catch{ dispatchData = {}; }
+  }
+}
+
+/* Rendu des missions en cours */
+const FLOW = ["Départ","Sur place","En charge","Arrivé hôpital","Retour dispo","Rentré base"];
 function renderMissions(){
   const grid = document.getElementById('grid');
-  const active = Object.values(missions).filter(m=>!m.done);
-  // Sort by "Départ" time desc if available, else by id desc
+  const active = Object.values(missions || {}).filter(m=>!m.done);
+
   active.sort((a,b)=>{
     const ad = a.statuts?.["Départ"]||"", bd = b.statuts?.["Départ"]||"";
     if (ad && bd) return ad<bd?1:-1;
@@ -160,7 +174,6 @@ function renderMissions(){
     if (m.statuts?.["Annulé par CU112"]) flags.push(`<span class="flag annule">Annulé CU112</span>`);
     if (m.statuts?.["Retour au poste"]) flags.push(`<span class="flag retour">Retour au poste</span>`);
 
-    // Timeline nodes
     const stepsHtml = FLOW.map((label, idx)=>{
       const active = Boolean(m.statuts && m.statuts[label]);
       const time = esc(m.statuts?.[label] || "");
@@ -170,11 +183,9 @@ function renderMissions(){
           <div class="st-label">${esc(label)}</div>
           <div class="st-time">${time}</div>
         </div>`;
-      // add connector line between nodes except after last
       return idx< FLOW.length-1 ? node + `<div class="line"></div>` : node;
     }).join("");
 
-    // Address line
     const addrParts = [m?.adresse?.rue, m?.adresse?.num, m?.adresse?.cp, m?.adresse?.ville].filter(Boolean).map(esc);
     const addr = addrParts.join(", ");
 
@@ -212,9 +223,8 @@ function renderMissions(){
   });
 }
 
-/* Build bottom ticker (OUT + notes) */
+/* Bannière (reprend exactement ta logique) */
 function buildTicker(){
-  // Read OUT vehicles (Indisponible) + notes from dispatchData
   const notes = get(dispatchData, "_notes", {materiel:"", infos:""});
   const vehOrder = get(dispatchData, "_settings.vehs", []).map(v=>v.id);
   const outs = [];
@@ -240,37 +250,40 @@ function buildTicker(){
   }
 
   const content = chunks.length ? chunks.map(c=>`<span class="chunk">${c}</span>`).join('<span class="sep">|</span>') : `<span class="chunk"><span>Aucune information</span></span>`;
-
   const band1 = document.getElementById('band1');
   const band2 = document.getElementById('band2');
-  band1.innerHTML = content + content; // doubled inside each band for ultra-smooth loop
-  band2.innerHTML = band1.innerHTML;   // second band mirrors first; both scroll min 50% width for seamless effect
+  band1.innerHTML = content + content;
+  band2.innerHTML = band1.innerHTML;
 }
 
-/* Render all */
+/* Rendu général */
 function renderAll(){
   renderClock();
   renderMissions();
   buildTicker();
 }
 
-/* Boot */
-function boot(){
-  loadAll();
+/* Boot + polling */
+async function boot(){
+  await fetchAll();
   renderAll();
-  // clock tick
   setInterval(renderClock, 1000);
+  pollTimer = setInterval(async ()=>{
+    await fetchAll();
+    renderAll();
+  }, 5000);
 }
 
-/* Sync when other tabs modify data */
+/* Sync inter-onglets (si une autre page écrit en localStorage) */
 window.addEventListener('storage', (e)=>{
   if (e.key === MISSIONS_KEY || e.key === DISPATCH_KEY){
-    loadAll();
+    try{ missions = JSON.parse(localStorage.getItem(MISSIONS_KEY) || "{}"); }catch{ missions = {}; }
+    try{ dispatchData = JSON.parse(localStorage.getItem(DISPATCH_KEY) || "{}"); }catch{ dispatchData = {}; }
     renderAll();
   }
 });
 
-/* First load */
+/* Go */
 boot();
 </script>
 </body>
