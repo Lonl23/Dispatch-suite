@@ -8,10 +8,10 @@
   :root {
     --bg:#0a0f16; --panel:#121821; --line:#1f2c3e;
     --text:#f1f5fa;
-    --dispo:#1b5e20;
-    --sorti:#1565c0;
-    --reserve:#f57c00;
-    --indispo:#b71c1c;
+    --dispo:#1b5e20;   /* vert */
+    --sorti:#1565c0;   /* bleu */
+    --reserve:#f57c00; /* orange */
+    --indispo:#b71c1c; /* rouge */
   }
   html, body {
     margin:0; padding:0;
@@ -89,10 +89,11 @@
   #marquee{
     display:inline-block;
     will-change: transform;
+    transform: translate3d(0,0,0);
   }
   #marquee .track{
     display:inline-block;
-    padding-right:60px;
+    padding-right:60px; /* espace entre répétitions */
   }
 </style>
 </head>
@@ -136,6 +137,7 @@ if(typeof readKey!=='function'){alert("store-bridge.js manquant");}
 const STORAGE_KEY="dispatch_parc_vehicules";
 let state={};
 
+/* Tri par attribution */
 const ORDER=["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","TMS","PREV","OFF"];
 const rankMap=Object.fromEntries(ORDER.map((k,i)=>[k,i]));
 function attribRank(str){
@@ -192,7 +194,7 @@ async function refresh(){
   state=d;
   renderRoles();
   renderColumns();
-  renderBanner();
+  updateBannerText(); // ⚠️ ne rebuild l’animation que si texte changé
 }
 
 /* Rôles */
@@ -226,43 +228,68 @@ function renderColumns(){
   });
 }
 
-/* Bannière fluide parfaite */
-let marqueeRAF=null, marqueeLast=0, marqueeX=0, marqueeW=0;
-function renderBanner(){
-  const n=state._notes||{};
-  const segments=[];
-  if(n.materiel) segments.push(`⚠️ Matériel : ${n.materiel}`);
-  if(n.infos)    segments.push(`ℹ️ Infos : ${n.infos}`);
-  (state._settings?.vehs||[]).forEach(v=>{
-    const d=state[v.id];
-    if(d?.statut==="Indisponible"){
-      segments.push(`🚑 ${d.name||v.id}${d.attribution?` [${d.attribution}]`:""} : ${d.commentaire||"Indispo"}`);
-    }
-  });
-  const text=segments.length?segments.join("   •   "):"Aucune information disponible actuellement.";
+/* ===== BANNIÈRE ULTRA-FLUIDE (sans saut) ===== */
+let marqueeRAF=null, marqueeStart=0, marqueeWidth=0, marqueeSpeed=80, marqueeTextCache="", needMeasure=false;
+
+function buildBannerDOM(text){
   const m=document.getElementById("marquee");
   m.innerHTML="";
   const t1=document.createElement("span"); t1.className="track"; t1.textContent=text;
   const t2=document.createElement("span"); t2.className="track"; t2.textContent=text;
   m.appendChild(t1); m.appendChild(t2);
-  if(marqueeRAF) cancelAnimationFrame(marqueeRAF);
-  marqueeX=0; marqueeW=0; marqueeLast=performance.now();
-  requestAnimationFrame(()=>{
-    marqueeW=t1.offsetWidth+60;
-    if(marqueeW<10) marqueeW=1000;
-    const speed=80;
-    function step(now){
-      const dt=(now-marqueeLast)/1000; marqueeLast=now;
-      marqueeX-=speed*dt;
-      if(marqueeX<=-marqueeW) marqueeX+=marqueeW;
-      m.style.transform=`translateX(${marqueeX}px)`;
-      marqueeRAF=requestAnimationFrame(step);
-    }
-    marqueeRAF=requestAnimationFrame(step);
-  });
+  // Mesure au frame suivant
+  needMeasure=true;
 }
 
-/* Boucle auto */
+function updateBannerText(){
+  // Construit le texte à partir de l’état
+  const n=state._notes||{};
+  const seg=[];
+  if(n.materiel) seg.push(`⚠️ Matériel : ${n.materiel}`);
+  if(n.infos)    seg.push(`ℹ️ Infos : ${n.infos}`);
+  (state._settings?.vehs||[]).forEach(v=>{
+    const d=state[v.id];
+    if(d?.statut==="Indisponible"){
+      seg.push(`🚑 ${d.name||v.id}${d.attribution?` [${d.attribution}]`:""} : ${d.commentaire||"Indispo"}`);
+    }
+  });
+  const text=seg.length?seg.join("   •   "):"Aucune information disponible actuellement.";
+  // Si inchangé → ne pas reconstruire (sinon “saut”)
+  if(text===marqueeTextCache) return;
+  marqueeTextCache=text;
+  buildBannerDOM(text);
+  // Restart time origin (recalage propre)
+  marqueeStart=performance.now();
+  if(marqueeRAF) cancelAnimationFrame(marqueeRAF);
+  marqueeRAF=requestAnimationFrame(marqueeTick);
+}
+
+function marqueeTick(now){
+  // Mesure lazy pour éviter NaN sur offsetWidth au 1er frame
+  if(needMeasure){
+    const first=document.querySelector('#marquee .track');
+    marqueeWidth=(first?first.offsetWidth:0)+60;
+    if(marqueeWidth<10) marqueeWidth=1000; // fallback
+    needMeasure=false;
+    // reset time origin pour une boucle parfaite
+    marqueeStart=performance.now();
+  }
+  const m=document.getElementById("marquee");
+  const elapsed=(now - marqueeStart)/1000; // sec
+  // offset = - (vitesse * temps) modulo largeur -> boucle sans saut
+  const offset = - ((marqueeSpeed * elapsed) % marqueeWidth);
+  m.style.transform=`translate3d(${offset}px,0,0)`;
+  marqueeRAF=requestAnimationFrame(marqueeTick);
+}
+
+// Recalcule largeur si la fenêtre change (évite “trou” après resize)
+window.addEventListener('resize', ()=>{
+  needMeasure=true;
+  marqueeStart=performance.now();
+});
+
+
+// ====== Boucle auto ======
 refresh();
 setInterval(refresh,5000);
 </script>
