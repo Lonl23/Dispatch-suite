@@ -34,6 +34,9 @@ legend{color:var(--accent)}
 .renforts{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}
 .renforts label{margin:0;font-size:13px;color:#e8eef5;display:flex;gap:6px;align-items:center}
 .thin{font-weight:400;opacity:.9}
+.subgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (max-width:1100px){ .subgrid{grid-template-columns:1fr} }
+.help{font-size:12px;color:#9fb2c9}
 </style>
 </head>
 <body>
@@ -70,8 +73,11 @@ legend{color:var(--accent)}
   <label>Motif du transport</label>
   <input id="mMotif" placeholder="Ex: Malaise, dialyse, transfert…">
 
+  <label>Commentaire mission</label>
+  <textarea id="mComment" placeholder="Infos complémentaires utiles à la centrale / équipage…"></textarea>
+
   <fieldset>
-    <legend>Adresse</legend>
+    <legend>Adresse (lieu d’appel)</legend>
     <div class="grid">
       <div><label>Rue</label><input id="mRue"></div>
       <div><label>Numéro / Boîte</label><input id="mNum"></div>
@@ -80,12 +86,112 @@ legend{color:var(--accent)}
     </div>
   </fieldset>
 
-  <div class="renforts">
-    <span class="thin">Renforts :</span>
-    <label><input type="checkbox" id="rfPompiers"> Pompiers</label>
-    <label><input type="checkbox" id="rfPolice"> Police</label>
-    <label><input type="checkbox" id="rfSmur"> SMUR</label>
-  </div>
+  <fieldset id="pecField" style="display:none">
+    <legend>PEC (TMS)</legend>
+    <div class="help">Lieu de prise en charge (TMS) : Domicile ou Structure (Hôpital/MR(S))</div>
+    <div class="renforts" style="margin-top:6px">
+      <label><input type="radio" name="pecType" value="dom" checked> Domicile</label>
+      <label><input type="radio" name="pecType" value="str"> Hôpital / MR(S)</label>
+    </div>
+    <div id="pec_dom" class="grid" style="margin-top:6px">
+      <div><label>Rue</label><input id="pec_rue"></div>
+      <div><label>N°</label><input id="pec_num"></div>
+      <div><label>CP</label><input id="pec_cp" maxlength="4" list="cpOptions"></div>
+      <div><label>Localité</label><input id="pec_ville" list="villeOptions"></div>
+    </div>
+    <div id="pec_str" style="display:none;margin-top:6px">
+      <div><label>Recherche structure</label><input id="pec_hop_search" list="pecHopList" placeholder="CHU / Clinique …"><datalist id="pecHopList"></datalist></div>
+      <div class="grid" style="margin-top:6px">
+        <div><label>Nom sélectionné</label><input id="pec_hop_name" readonly></div>
+        <div><label>Adresse</label><input id="pec_hop_addr" readonly></div>
+        <div><label>CP</label><input id="pec_cp2"></div>
+        <div><label>Localité</label><input id="pec_ville2"></div>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Destination (112 & TMS)</legend>
+    <div class="help">Domicile ou Structure (Hôpital/MR(S)) — recherche Internet disponible</div>
+    <div class="renforts" style="margin-top:6px">
+      <label><input type="radio" name="destType" value="dom" checked> Domicile</label>
+      <label><input type="radio" name="destType" value="str"> Hôpital / MR(S)</label>
+    </div>
+    <div id="dest_dom" class="grid" style="margin-top:6px">
+      <div><label>Rue</label><input id="dest_rue"></div>
+      <div><label>N°</label><input id="dest_num"></div>
+      <div><label>CP</label><input id="dest_cp" maxlength="4" list="cpOptions"></div>
+      <div><label>Localité</label><input id="dest_ville" list="villeOptions"></div>
+    </div>
+    <div id="dest_str" style="display:none;margin-top:6px">
+      <div><label>Recherche structure</label><input id="dest_hop_search" list="destHopList" placeholder="Saint-Luc / Erasme …"><datalist id="destHopList"></datalist></div>
+      <div class="grid" style="margin-top:6px">
+        <div><label>Nom sélectionné</label><input id="dest_hop_name" readonly></div>
+        <div><label>Adresse</label><input id="dest_hop_addr" readonly></div>
+        <div><label>CP</label><input id="dest_cp2"></div>
+        <div><label>Localité</label><input id="dest_ville2"></div>
+      </div>
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Renforts</legend>
+    <div class="renforts">
+      <span class="thin">Raccourcis :</span>
+      <label><input type="checkbox" id="rfPompiers"> Pompiers</label>
+      <label><input type="checkbox" id="rfPolice"> Police</label>
+      <label><input type="checkbox" id="rfSmur"> SMUR</label>
+      <label><input type="checkbox" id="rfAmbu112"> Ambu 112</label>
+      <label><input type="checkbox" id="rfRacs"> RACS</label>
+    </div>
+    <div class="subgrid" style="margin-top:10px">
+      <div>
+        <h4>Pompiers</h4>
+        <label>Statut d’appel</label>
+        <select id="rf_p_appel"><option></option><option>Appelé</option><option>Confirmé</option><option>Refusé</option><option>En route</option><option>Non dispo</option></select>
+        <label>Sur place</label>
+        <select id="rf_p_sp"><option></option><option>Inconnu</option><option>Oui</option><option>Non</option></select>
+        <label>Commentaire</label>
+        <textarea id="rf_p_com"></textarea>
+      </div>
+      <div>
+        <h4>RACS</h4>
+        <label>Statut d’appel</label>
+        <select id="rf_r_appel"><option></option><option>Appelé</option><option>Confirmé</option><option>Refusé</option><option>En route</option><option>Non dispo</option></select>
+        <label>Sur place</label>
+        <select id="rf_r_sp"><option></option><option>Inconnu</option><option>Oui</option><option>Non</option></select>
+        <label>Commentaire</label>
+        <textarea id="rf_r_com"></textarea>
+      </div>
+      <div>
+        <h4>SMUR</h4>
+        <label>Statut d’appel</label>
+        <select id="rf_s_appel"><option></option><option>Appelé</option><option>Confirmé</option><option>Refusé</option><option>En route</option><option>Non dispo</option></select>
+        <label>Sur place</label>
+        <select id="rf_s_sp"><option></option><option>Inconnu</option><option>Oui</option><option>Non</option></select>
+        <label>Commentaire</label>
+        <textarea id="rf_s_com"></textarea>
+      </div>
+      <div>
+        <h4>Ambu 112</h4>
+        <label>Statut d’appel</label>
+        <select id="rf_a_appel"><option></option><option>Appelé</option><option>Confirmé</option><option>Refusé</option><option>En route</option><option>Non dispo</option></select>
+        <label>Sur place</label>
+        <select id="rf_a_sp"><option></option><option>Inconnu</option><option>Oui</option><option>Non</option></select>
+        <label>Commentaire</label>
+        <textarea id="rf_a_com"></textarea>
+      </div>
+      <div>
+        <h4>Police</h4>
+        <label>Statut d’appel</label>
+        <select id="rf_pol_appel"><option></option><option>Appelé</option><option>Confirmé</option><option>Refusé</option><option>En route</option><option>Non dispo</option></select>
+        <label>Sur place</label>
+        <select id="rf_pol_sp"><option></option><option>Inconnu</option><option>Oui</option><option>Non</option></select>
+        <label>Commentaire</label>
+        <textarea id="rf_pol_com"></textarea>
+      </div>
+    </div>
+  </fieldset>
 
   <div class="small" id="kmHint" style="margin-top:6px;opacity:.9"></div>
 
@@ -118,7 +224,7 @@ legend{color:var(--accent)}
   </table>
 </div>
 
-<!-- Référentiel CP -> Ville (colle ici le JSON complet si tu l’as) -->
+<!-- Référentiel CP -> Ville (rapide ; garde si pas d’ODWB complet) -->
 <script type="application/json" id="postalData">
 {
   "1000":"Bruxelles","1310":"La Hulpe","1300":"Wavre","1330":"Rixensart","1340":"Ottignies",
@@ -139,7 +245,6 @@ let dispatchData={}, missions={}, archive={};
 /* ================== Status ================== */
 const FLOW = ["Départ","Sur place","En charge","Arrivé hôpital","Retour dispo","Rentré base"];
 const EXTRAS = ["Dévié","Mise indispo","Annulé par CU112","Retour au poste"];
-// Clôture: autorisée UNIQUEMENT si l’un de ces statuts est présent (Annulé n’autorise PAS)
 const CLOSE_GUARDS = new Set(["Dévié","Mise indispo","Retour au poste"]);
 
 /* ================== Utils ================== */
@@ -164,29 +269,32 @@ let CP_MAP = {};
     const cp = (e.target.value||"").trim();
     if (CP_MAP[cp]) document.getElementById('mLocalite').value = CP_MAP[cp];
   });
+  ["pec_cp","dest_cp"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('input', ev=>{
+      const cp=(ev.target.value||"").trim();
+      const outId = id==="pec_cp" ? "pec_ville" : "dest_ville";
+      if(CP_MAP[cp]) document.getElementById(outId).value = CP_MAP[cp];
+    });
+  });
 })();
 
 /* ================== Km départ auto (plaque) ================== */
 function getPlateByVeh(v){ return dispatchData?.[v]?.plaque || ""; }
-
-// Cherche le + grand km connu pour une plaque : dispatch + missions + archives
 function bestKmForPlate(plaque){
   let best = 0;
   if (!plaque) return best;
-  // dispatch
   const vehs = (dispatchData._settings?.vehs||[]).map(v=>v.id);
   vehs.forEach(id=>{
     const d=dispatchData[id]; if(d && d.plaque===plaque){
       const k=parseInt(d.km||"0",10); if(!isNaN(k) && k>best) best=k;
     }
   });
-  // missions terminées (du store courant)
   Object.values(missions||{}).forEach(m=>{
     if(m && m.done && m.plaque===plaque){
       const k=parseInt(m.kmRet||m.kmret||"0",10); if(!isNaN(k) && k>best) best=k;
     }
   });
-  // archives
   Object.values(archive||{}).forEach(m=>{
     if(m && m.plaque===plaque){
       const k=parseInt(m.kmRet||m.kmret||"0",10); if(!isNaN(k) && k>best) best=k;
@@ -199,24 +307,42 @@ function bestKmForPlate(plaque){
 function populateVeh(){
   const sel=document.getElementById('mVeh'); sel.innerHTML="<option value=''>—</option>";
   const settings = dispatchData._settings?.vehs || [];
-  settings.forEach(v=>{
-    sel.insertAdjacentHTML("beforeend",`<option value="${esc(v.id)}">${esc(v.id)}</option>`);
-  });
+  settings.forEach(v=>{ sel.insertAdjacentHTML("beforeend",`<option value="${esc(v.id)}">${esc(v.id)}</option>`); });
 }
 document.getElementById('mVeh').addEventListener('change', ()=>{
   const id = document.getElementById('mVeh').value;
   const d = dispatchData[id];
   const attr = d ? (d.attribution||"") : "";
   document.getElementById('mAttr').value = attr;
-
-  // Km best pour la plaque
   const plate = getPlateByVeh(id);
   const best = bestKmForPlate(plate);
   document.getElementById('kmHint').textContent = plate ? `Km départ suggéré pour ${plate} : ${best}` : "";
 });
 document.getElementById('mType').addEventListener('change', ()=>{
-  document.getElementById('zone112').style.display = (document.getElementById('mType').value==="112")? "block":"none";
+  const is112 = document.getElementById('mType').value==="112";
+  document.getElementById('zone112').style.display = is112? "block":"none";
+  document.getElementById('pecField').style.display = (document.getElementById('mType').value==="TMS")? "block":"none";
 });
+
+/* ================== Renforts checkboxes -> objets détaillés ================== */
+function readRenfortsForm(){
+  const obj={};
+  const setBlock=(key, checked, appelId, spId, comId)=>{
+    const r={
+      enabled: !!checked,
+      appel: (document.getElementById(appelId)?.value||""),
+      sur_place: (document.getElementById(spId)?.value||""),
+      comment: (document.getElementById(comId)?.value||"").trim()
+    };
+    if(checked || r.appel || r.sur_place || r.comment) obj[key]=r;
+  };
+  setBlock("Pompiers", document.getElementById('rfPompiers').checked, 'rf_p_appel','rf_p_sp','rf_p_com');
+  setBlock("RACS",     document.getElementById('rfRacs').checked,     'rf_r_appel','rf_r_sp','rf_r_com');
+  setBlock("SMUR",     document.getElementById('rfSmur').checked,     'rf_s_appel','rf_s_sp','rf_s_com');
+  setBlock("Ambu 112", document.getElementById('rfAmbu112').checked,  'rf_a_appel','rf_a_sp','rf_a_com');
+  setBlock("Police",   document.getElementById('rfPolice').checked,   'rf_pol_appel','rf_pol_sp','rf_pol_com');
+  return obj;
+}
 
 /* ================== Création ================== */
 function startMission(){
@@ -228,30 +354,41 @@ function startMission(){
   if(!motif) return alert("Motif requis.");
 
   const plaque = getPlateByVeh(veh);
-  const kmStart = bestKmForPlate(plaque); // km départ auto
+  const kmStart = bestKmForPlate(plaque);
 
-  const renforts = {
-    pompiers: document.getElementById('rfPompiers').checked,
-    police: document.getElementById('rfPolice').checked,
-    smur: document.getElementById('rfSmur').checked
-  };
+  // PEC (TMS)
+  let pec = null;
+  if(type==="TMS"){
+    const pecType = document.querySelector('input[name="pecType"]:checked')?.value || 'dom';
+    pec = (pecType==='dom')
+      ? { type:'dom', rue:val('pec_rue'), num:val('pec_num'), cp:val('pec_cp'), ville:val('pec_ville') }
+      : { type:'str', name:val('pec_hop_name'), addr:val('pec_hop_addr'), cp:val('pec_cp2'), ville:val('pec_ville2') };
+  }
+
+  // Destination (tous types)
+  const destType = document.querySelector('input[name="destType"]:checked')?.value || 'dom';
+  const destination = (destType==='dom')
+    ? { type:'dom', rue:val('dest_rue'), num:val('dest_num'), cp:val('dest_cp'), ville:val('dest_ville') }
+    : { type:'str', name:val('dest_hop_name'), addr:val('dest_hop_addr'), cp:val('dest_cp2'), ville:val('dest_ville2') };
+
+  const renforts = readRenfortsForm();
 
   const mission = {
     id: String(Date.now()),
     day: todayKey(),
     veh, attr, type, motif,
     plaque,
+    comment: document.getElementById('mComment').value.trim() || "",
     renforts,
     centrale: (document.getElementById('mCentrale').value||""),
     num112: (document.getElementById('mNum112').value||""),
     depart112: (document.getElementById('mDepart').value||""),
     adresse: {
-      rue: document.getElementById('mRue').value||"",
-      num: document.getElementById('mNum').value||"",
-      cp:  document.getElementById('mCP').value||"",
-      ville: document.getElementById('mLocalite').value||""
+      rue: val('mRue'), num: val('mNum'), cp: val('mCP'), ville: val('mLocalite')
     },
-    statuts: { "Départ": hhmm(now()) },   // Départ fixé à la création
+    pec,
+    destination,
+    statuts: { "Départ": hhmm(now()) },
     kmDep: kmStart ? String(kmStart) : "",
     kmRet: "",
     done: false
@@ -265,6 +402,74 @@ function startMission(){
 
   renderActive(); alert("Mission démarrée.");
 }
+function val(id){ return (document.getElementById(id)?.value||"").trim(); }
+
+/* ================== Recherche hôpital (OSM Nominatim) ================== */
+function attachHospitalSearch(searchId, listId, outNameId, outAddrId, outCPId, outVilleId){
+  const NOM_URL="https://nominatim.openstreetmap.org/search";
+  const input=document.getElementById(searchId), dlist=document.getElementById(listId);
+  const outName=document.getElementById(outNameId), outAddr=document.getElementById(outAddrId);
+  const outCP=outCPId?document.getElementById(outCPId):null;
+  const outVille=outVilleId?document.getElementById(outVilleId):null;
+  const mem=new Map();
+
+  function fmt(r){
+    const name=r.display_name?.split(",")[0]||r.name||"Structure";
+    const a=r.address||{};
+    const rue=[a.road,a.house_number].filter(Boolean).join(" ");
+    const cp=a.postcode||"";
+    const city=a.city||a.town||a.village||a.municipality||"";
+    const line=[rue,cp,city].filter(Boolean).join(", ");
+    return {name,line,cp,city};
+  }
+  const doSearch=async()=>{
+    const q=input.value.trim();
+    if(q.length<3){ dlist.innerHTML=""; return; }
+    const key=q.toLowerCase();
+    if(mem.has(key)){ render(mem.get(key)); return; }
+    const url=`${NOM_URL}?format=jsonv2&addressdetails=1&countrycodes=be&limit=20&q=${encodeURIComponent(q+" hospital clinic clinique hopital centre hospitalier CHU UZ")}`;
+    try{
+      const res=await fetch(url,{cache:"no-store"});
+      const arr=await res.json();
+      const items=arr.map(r=>{const f=fmt(r);return {k:String(r.place_id),name:f.name,line:f.line,cp:f.cp,city:f.city};});
+      mem.set(key,items); render(items);
+    }catch{ dlist.innerHTML=""; }
+  };
+  const render=(items)=>{ dlist.innerHTML=items.map(it=>`<option value="${esc(it.name)} — ${esc(it.line)}"></option>`).join(""); };
+  const choose=()=>{
+    const val=(input.value||"").trim().toLowerCase();
+    let choice=null;
+    for(const arr of mem.values()){
+      const f=arr.find(it=>(`${it.name} — ${it.line}`).toLowerCase()===val || it.name.toLowerCase()===val);
+      if(f){ choice=f; break; }
+    }
+    outName.value = choice?choice.name:input.value;
+    outAddr.value = choice?(choice.line||""):"";
+    if(choice){
+      if(outCP && choice.cp) outCP.value=choice.cp;
+      if(outVille && choice.city) outVille.value=choice.city;
+    }
+  };
+  input.addEventListener('input', ()=>{ clearTimeout(input._t); input._t=setTimeout(doSearch,300); });
+  input.addEventListener('change', choose);
+  input.addEventListener('blur', choose);
+}
+attachHospitalSearch('pec_hop_search','pecHopList','pec_hop_name','pec_hop_addr','pec_cp2','pec_ville2');
+attachHospitalSearch('dest_hop_search','destHopList','dest_hop_name','dest_hop_addr','dest_cp2','dest_ville2');
+
+/* ================== Toggles PEC / DEST ================== */
+document.querySelectorAll('input[name="pecType"]').forEach(r=>{
+  r.onchange=()=>{
+    document.getElementById('pec_dom').style.display = (r.value==='dom')?'grid':'none';
+    document.getElementById('pec_str').style.display = (r.value==='str')?'block':'none';
+  };
+});
+document.querySelectorAll('input[name="destType"]').forEach(r=>{
+  r.onchange=()=>{
+    document.getElementById('dest_dom').style.display = (r.value==='dom')?'grid':'none';
+    document.getElementById('dest_str').style.display = (r.value==='str')?'block':'none';
+  };
+});
 
 /* ================== Rendu missions actives (EDITABLES) ================== */
 function renderActive(){
@@ -278,8 +483,13 @@ function renderActive(){
       const active = Boolean(m.statuts && m.statuts[st]);
       return `<button ${active?'class="active"':''} onclick="setStatus('${id}','${st}')">${st}</button>`;
     }).join("");
-    const show112 = (m.type==="112");
-    const renf = m.renforts||{pompiers:false,police:false,smur:false};
+
+    // petits helpers renforts
+    const R=(s,k,def="")=>esc(m.renforts?.[s]?.[k]??def);
+    const C=(s,k)=> (m.renforts?.[s]?.[k]??"")==="" ? "" : (m.renforts?.[s]?.[k]??"");
+
+    const renfChk = (s)=> (m.renforts?.[s]?.enabled ? 'checked' : '');
+    const setSel = (val, arr)=> arr.map(x=>`<option ${val===x?"selected":""}>${x}</option>`).join("");
 
     div.innerHTML = `
       <div class="row">
@@ -298,8 +508,11 @@ function renderActive(){
       <label>Motif</label>
       <input value="${esc(m.motif||"")}" oninput="editField('${id}','motif',this.value)">
 
+      <label>Commentaire mission</label>
+      <textarea oninput="editField('${id}','comment',this.value)">${esc(m.comment||"")}</textarea>
+
       <fieldset>
-        <legend>Adresse</legend>
+        <legend>Adresse (lieu d’appel)</legend>
         <div class="grid">
           <div><label>Rue</label><input value="${esc(m.adresse?.rue||"")}" oninput="editAddr('${id}','rue',this.value)"></div>
           <div><label>Numéro / Boîte</label><input value="${esc(m.adresse?.num||"")}" oninput="editAddr('${id}','num',this.value)"></div>
@@ -308,14 +521,64 @@ function renderActive(){
         </div>
       </fieldset>
 
-      <div class="renforts">
-        <span class="thin">Renforts :</span>
-        <label><input type="checkbox" ${renf.pompiers?'checked':''} onchange="toggleRenfort('${id}','pompiers',this.checked)"> Pompiers</label>
-        <label><input type="checkbox" ${renf.police?'checked':''} onchange="toggleRenfort('${id}','police',this.checked)"> Police</label>
-        <label><input type="checkbox" ${renf.smur?'checked':''} onchange="toggleRenfort('${id}','smur',this.checked)"> SMUR</label>
-      </div>
+      ${m.type==="TMS" ? `
+      <fieldset>
+        <legend>PEC (TMS)</legend>
+        <div class="renforts">
+          <label><input type="radio" name="pec_${id}" value="dom" ${m.pec?.type!=='str'?'checked':''} onchange="togglePecType('${id}',this.value)"> Domicile</label>
+          <label><input type="radio" name="pec_${id}" value="str" ${m.pec?.type==='str'?'checked':''} onchange="togglePecType('${id}',this.value)"> Hôpital / MR(S)</label>
+        </div>
+        <div id="pec_dom_${id}" class="grid" style="margin-top:6px; ${m.pec?.type==='str'?'display:none':''}">
+          <div><label>Rue</label><input value="${esc(m.pec?.rue||"")}" oninput="editPec('${id}','rue',this.value)"></div>
+          <div><label>N°</label><input value="${esc(m.pec?.num||"")}" oninput="editPec('${id}','num',this.value)"></div>
+          <div><label>CP</label><input value="${esc(m.pec?.cp||"")}" maxlength="4" oninput="editPec('${id}','cp',this.value)"></div>
+          <div><label>Localité</label><input value="${esc(m.pec?.ville||"")}" oninput="editPec('${id}','ville',this.value)"></div>
+        </div>
+        <div id="pec_str_${id}" style="margin-top:6px; ${m.pec?.type==='str'?'':'display:none'}">
+          <div class="grid">
+            <div><label>Nom</label><input value="${esc(m.pec?.name||"")}" oninput="editPec('${id}','name',this.value)"></div>
+            <div><label>Adresse</label><input value="${esc(m.pec?.addr||"")}" oninput="editPec('${id}','addr',this.value)"></div>
+            <div><label>CP</label><input value="${esc(m.pec?.cp||"")}" maxlength="4" oninput="editPec('${id}','cp',this.value)"></div>
+            <div><label>Localité</label><input value="${esc(m.pec?.ville||"")}" oninput="editPec('${id}','ville',this.value)"></div>
+          </div>
+        </div>
+      </fieldset>` : ``}
 
-      <div id="blk112_${id}" style="${show112?'':'display:none'};margin-top:6px">
+      <fieldset>
+        <legend>Destination</legend>
+        <div class="renforts">
+          <label><input type="radio" name="dest_${id}" value="dom" ${m.destination?.type!=='str'?'checked':''} onchange="toggleDestType('${id}',this.value)"> Domicile</label>
+          <label><input type="radio" name="dest_${id}" value="str" ${m.destination?.type==='str'?'checked':''} onchange="toggleDestType('${id}',this.value)"> Hôpital / MR(S)</label>
+        </div>
+        <div id="dest_dom_${id}" class="grid" style="margin-top:6px; ${m.destination?.type==='str'?'display:none':''}">
+          <div><label>Rue</label><input value="${esc(m.destination?.rue||"")}" oninput="editDest('${id}','rue',this.value)"></div>
+          <div><label>N°</label><input value="${esc(m.destination?.num||"")}" oninput="editDest('${id}','num',this.value)"></div>
+          <div><label>CP</label><input value="${esc(m.destination?.cp||"")}" maxlength="4" oninput="editDest('${id}','cp',this.value)"></div>
+          <div><label>Localité</label><input value="${esc(m.destination?.ville||"")}" oninput="editDest('${id}','ville',this.value)"></div>
+        </div>
+        <div id="dest_str_${id}" style="margin-top:6px; ${m.destination?.type==='str'?'':'display:none'}">
+          <div class="grid">
+            <div><label>Nom</label><input value="${esc(m.destination?.name||"")}" oninput="editDest('${id}','name',this.value)"></div>
+            <div><label>Adresse</label><input value="${esc(m.destination?.addr||"")}" oninput="editDest('${id}','addr',this.value)"></div>
+            <div><label>CP</label><input value="${esc(m.destination?.cp||"")}" maxlength="4" oninput="editDest('${id}','cp',this.value)"></div>
+            <div><label>Localité</label><input value="${esc(m.destination?.ville||"")}" oninput="editDest('${id}','ville',this.value)"></div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Renforts (détaillés)</legend>
+        <div class="subgrid">
+          ${renderRenfortBlock(id,m,"Pompiers","p")}
+          ${renderRenfortBlock(id,m,"RACS","r")}
+          ${renderRenfortBlock(id,m,"SMUR","s")}
+          ${renderRenfortBlock(id,m,"Ambu 112","a")}
+          ${renderRenfortBlock(id,m,"Police","pol")}
+        </div>
+      </fieldset>
+
+      ${m.type==="112" ? `
+      <div id="blk112_${id}" style="margin-top:6px">
         <label>Centrale 112</label>
         <select onchange="editField('${id}','centrale',this.value)">
           ${["","Mons","Namur","Arlon","Liège","Leuven","Bruxelles","Autres"].map(x=>`<option ${m.centrale===x?"selected":""} value="${x}">${x||"—"}</option>`).join("")}
@@ -326,7 +589,7 @@ function renderActive(){
         <select onchange="editField('${id}','depart112',this.value)">
           ${["Normal","Médical"].map(x=>`<option ${m.depart112===x?"selected":""}>${x}</option>`).join("")}
         </select>
-      </div>
+      </div>`:""}
 
       <div class="status-btns">${statusButtons}</div>
 
@@ -349,38 +612,45 @@ function renderActive(){
   });
 }
 
+/* sous-rendu renforts */
+function renderRenfortBlock(id,m,label,short){
+  const r=m.renforts?.[label]||{};
+  const chk = r.enabled ? "checked" : "";
+  const appelOpts=["","Appelé","Confirmé","Refusé","En route","Non dispo"].map(x=>`<option ${r.appel===x?"selected":""}>${x}</option>`).join("");
+  const spOpts=["","Inconnu","Oui","Non"].map(x=>`<option ${r.sur_place===x?"selected":""}>${x}</option>`).join("");
+  return `
+  <div>
+    <h4><label><input type="checkbox" ${chk} onchange="renfortToggle('${id}','${label}',this.checked)"> ${label}</label></h4>
+    <label>Statut d’appel</label>
+    <select onchange="renfortEdit('${id}','${label}','appel',this.value)">${appelOpts}</select>
+    <label>Sur place</label>
+    <select onchange="renfortEdit('${id}','${label}','sur_place',this.value)">${spOpts}</select>
+    <label>Commentaire</label>
+    <textarea oninput="renfortEdit('${id}','${label}','comment',this.value)">${esc(r.comment||"")}</textarea>
+  </div>`;
+}
+
 /* Editions inline */
 function editField(id,key,val){
   const m=missions[id]; if(!m) return;
   m[key]=val;
   if(key==="type"){
-    const blk=document.getElementById('blk112_'+id);
-    if(blk) blk.style.display = (val==="112")?"block":"none";
+    // Affiche PEC si TMS
+    setTimeout(()=>renderActive(),0);
   }
   saveMissions();
 }
 function editAddr(id,key,val){
   const m=missions[id]; if(!m) return;
-  m.adresse = m.adresse||{};
-  m.adresse[key]=val;
+  m.adresse = m.adresse||{}; m.adresse[key]=val;
   saveMissions();
 }
 function editAddrCP(id,val){
   const m=missions[id]; if(!m) return;
-  m.adresse = m.adresse||{};
-  m.adresse.cp = val;
+  m.adresse = m.adresse||{}; m.adresse.cp = val;
   if(CP_MAP[val]) m.adresse.ville = CP_MAP[val];
-  saveMissions();
-  renderActive();
+  saveMissions(); renderActive();
 }
-function toggleRenfort(id,key,checked){
-  const m=missions[id]; if(!m) return;
-  m.renforts=m.renforts||{pompiers:false,police:false,smur:false};
-  m.renforts[key]=checked;
-  saveMissions();
-}
-
-/* Km live */
 function updKm(id, which, val){
   const m=missions[id]; if(!m) return;
   if(which==="dep") m.kmDep = val;
@@ -388,18 +658,53 @@ function updKm(id, which, val){
   saveMissions();
 }
 
+/* PEC / DEST edits */
+function togglePecType(id,kind){
+  const m=missions[id]; if(!m) return;
+  m.pec = m.pec||{}; m.pec.type = kind;
+  saveMissions(); renderActive();
+}
+function editPec(id,key,val){
+  const m=missions[id]; if(!m) return;
+  m.pec = m.pec||{type:'dom'}; m.pec[key]=val;
+  saveMissions();
+}
+function toggleDestType(id,kind){
+  const m=missions[id]; if(!m) return;
+  m.destination = m.destination||{}; m.destination.type = kind;
+  saveMissions(); renderActive();
+}
+function editDest(id,key,val){
+  const m=missions[id]; if(!m) return;
+  m.destination = m.destination||{type:'dom'}; m.destination[key]=val;
+  saveMissions();
+}
+
+/* Renforts */
+function renfortToggle(id,label,checked){
+  const m=missions[id]; if(!m) return;
+  m.renforts=m.renforts||{};
+  m.renforts[label]=m.renforts[label]||{};
+  m.renforts[label].enabled = !!checked;
+  saveMissions(); renderActive();
+}
+function renfortEdit(id,label,key,val){
+  const m=missions[id]; if(!m) return;
+  m.renforts=m.renforts||{}; m.renforts[label]=m.renforts[label]||{};
+  m.renforts[label][key]=val;
+  // synchro rapide: si on met appel/sur place/comment, on considère enabled
+  if(key!=="comment" || val.trim()!=="") m.renforts[label].enabled = true;
+  saveMissions();
+}
+
 /* ================== Actions de statut ================== */
 function setStatus(id, st){
   const m = missions[id]; if(!m) return;
   if(!m.statuts) m.statuts = {};
-  if(m.statuts[st]) return; // déjà posé
-
-  // Marque l'heure
+  if(m.statuts[st]) return;
   m.statuts[st] = hhmm(now());
 
-  // Effets spéciaux
   if (st === "Dévié"){
-    // Même ambulance, nouvelle mission éditable
     const veh = m.veh;
     const plaque = m.plaque || getPlateByVeh(veh);
     const kmStart = bestKmForPlate(plaque);
@@ -409,16 +714,17 @@ function setStatus(id, st){
       veh, attr: (dispatchData[veh]?.attribution||m.attr||""),
       type: "", motif: "",
       plaque,
-      renforts: {pompiers:false,police:false,smur:false},
+      comment:"",
+      renforts: {},
       centrale: "", num112: "", depart112: "Normal",
       adresse: { rue:"", num:"", cp:"", ville:"" },
+      destination: { type:'dom', rue:"", num:"", cp:"", ville:"" },
       statuts: { "Départ": hhmm(now()) },
       kmDep: kmStart ? String(kmStart) : "",
       kmRet: "",
       done:false
     };
     missions[newM.id]=newM;
-    // s'assurer que le véhicule reste "Sorti"
     dispatchData[veh] = dispatchData[veh]||{};
     dispatchData[veh].statut="Sorti";
     saveDispatch();
@@ -448,27 +754,21 @@ function setStatus(id, st){
 /* ================== Clôture ================== */
 function closeMission(id){
   const m = missions[id]; if(!m) return;
-
-  // Garde : statut autorisant la clôture (EXCLUT "Annulé par CU112")
   const hasGuard = Object.keys(m.statuts||{}).some(s=>CLOSE_GUARDS.has(s));
   if(!hasGuard){
     alert("Impossible de clôturer : activer l’un des statuts Dévié, Mise indispo ou Retour au poste.");
     return;
   }
-  // Garde : kms
   const dep = parseInt(m.kmDep||"",10);
   const ret = parseInt(m.kmRet||"",10);
   if(!(dep>0 && ret>0)){
     alert("Impossible de clôturer : indique les kilomètres départ et retour.");
     return;
   }
-
-  // Δ km & heures
   m.diffKm = ret - dep;
   m.done = true;
   m.heures = { ...m.statuts };
 
-  // Dispatch : KM véhicule et dispo si pas indispo
   const v = m.veh;
   if(dispatchData[v]){
     dispatchData[v].km = String(ret);
@@ -483,18 +783,16 @@ function closeMission(id){
 function formatRenforts(r){
   if(!r) return "—";
   const arr=[];
-  if(r.pompiers) arr.push("Pompiers");
-  if(r.police) arr.push("Police");
-  if(r.smur) arr.push("SMUR");
+  for (const k of ["Pompiers","RACS","SMUR","Ambu 112","Police"]){
+    if(r[k]?.enabled) arr.push(k);
+  }
   return arr.length?arr.join(", "):"—";
 }
-
 function renderDone(){
   const tb = document.querySelector("#tableDone tbody");
   tb.innerHTML="";
   const today = todayKey();
   const done = Object.values(missions).filter(m=>m.done && m.day===today);
-  // ordre décroissant par heure "Départ"
   done.sort((a,b)=> (b.statuts?.["Départ"]||"") < (a.statuts?.["Départ"]||"") ? -1 : 1);
   done.forEach(m=>{
     const heures = Object.entries(m.heures||{}).map(([k,v])=>`${esc(k)}: ${esc(v)}`).join("<br>");
@@ -504,7 +802,7 @@ function renderDone(){
         <td>${esc(m.veh)}</td>
         <td>${esc(m.attr||"—")}</td>
         <td>${esc(m.type||"—")}</td>
-        <td>${esc(m.motif||"—")}</td>
+        <td>${esc(m.motif||"—")}${m.comment?`<br><span class="small">💬 ${esc(m.comment)}</span>`:""}</td>
         <td>${esc(formatRenforts(m.renforts))}</td>
         <td>${(m.diffKm??"")}</td>
         <td>${heures}</td>
@@ -518,17 +816,15 @@ function deleteSelectedDone(){
   const pw = prompt("Mot de passe administrateur :");
   if (pw===null) return;
   if (pw !== ADMIN_PASSWORD){ alert("Mot de passe incorrect."); return; }
-
   const checks = Array.from(document.querySelectorAll(".selDone:checked"));
   if (!checks.length){ alert("Sélectionne au moins une mission."); return; }
-
   let movedCount=0;
   checks.forEach(ch=>{
     const id = ch.dataset.id;
     const m = missions[id];
     if(!m) return;
-    archive[id] = m;  // archive
-    delete missions[id]; // retire du jour
+    archive[id] = m;
+    delete missions[id];
     movedCount++;
   });
   if (movedCount>0){ saveArchive(); saveMissions(); renderDone(); alert(`${movedCount} mission(s) déplacée(s) vers l’archive.`); }
