@@ -16,28 +16,20 @@
   .header h1{font-size:28px;color:#cfe1ff;margin:0}
   .header .right{display:flex;align-items:center;gap:20px;font-size:18px}
   .meteo{font-size:18px;font-weight:600}
-  .roles{background:#121b2a;padding:8px 20px;display:grid;
-    grid-template-columns:repeat(3,1fr);gap:8px;text-align:center;font-size:17px}
-  .roles div span{color:#9bb5d3;display:block;font-size:13px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
-    gap:10px;padding:10px 20px;overflow:auto;height:calc(100vh - 210px);}
-  .veh{background:#1a2436;border-radius:10px;padding:8px;border:1px solid var(--line);
-    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
-  .veh h3{margin:6px 0 2px 0}
-  .veh small{color:#9bb5d3;font-size:13px}
-  .veh .stat{padding:4px 10px;border-radius:8px;font-weight:700;margin-top:4px;font-size:15px}
+  .roles{background:#121b2a;padding:8px 20px;text-align:center;font-size:16px;display:flex;flex-wrap:wrap;justify-content:center;gap:16px}
+  .roles div{padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:#1a2335;min-width:150px}
+  .roles span{display:block;color:#9bb5d3;font-size:13px}
+  table{width:100%;border-collapse:collapse;font-size:18px;margin-top:10px}
+  th,td{border:1px solid var(--line);padding:6px 10px;text-align:center}
+  th{background:#182030;font-weight:600;letter-spacing:.5px}
   .s-dispo{background:var(--ok)}
   .s-sorti{background:var(--accent)}
   .s-res{background:var(--warn);color:#000}
   .s-indispo{background:var(--bad)}
-  /* Bannière défilement */
   .banner{position:absolute;bottom:0;left:0;width:100%;background:#a00;color:#fff;
     overflow:hidden;white-space:nowrap;font-size:22px;font-weight:600;padding:6px 0;}
-  .banner span{display:inline-block;padding-right:50px;animation:scroll 40s linear infinite;}
-  @keyframes scroll{
-    0%{transform:translateX(0)}
-    100%{transform:translateX(-50%)}
-  }
+  .banner span{display:inline-block;padding-right:60px;animation:scroll 40s linear infinite;}
+  @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 </style>
 </head>
 <body>
@@ -54,7 +46,23 @@
 
 <div id="roles" class="roles">Chargement des rôles...</div>
 
-<div id="grid" class="grid"></div>
+<div style="padding:0 20px;overflow:auto;height:calc(100vh - 210px);">
+  <table id="vehTable">
+    <thead>
+      <tr>
+        <th>Véhicule</th>
+        <th>Attribution</th>
+        <th>Chauffeur</th>
+        <th>Soins</th>
+        <th>3ᵉ Homme</th>
+        <th>Kilométrage</th>
+        <th>Statut</th>
+        <th>Commentaire</th>
+      </tr>
+    </thead>
+    <tbody id="vehBody"></tbody>
+  </table>
+</div>
 
 <div class="banner"><span id="bannerText">Chargement des informations...</span></div>
 
@@ -74,35 +82,35 @@ const roleMap={
   centraliste_2:"2e centraliste"
 };
 
-/* Mise à jour heure/date */
+/* Heure + Date */
 function updateDate(){
   const d=new Date();
   const jours=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
-  const mois=["janv.","févr.","mars","avr.","mai","juin","juil.","août","sept.","oct.","nov.","déc."];
+  const mois=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
   const txt=`${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()} — ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
   document.getElementById("datetime").textContent=txt;
 }
 setInterval(updateDate,1000);updateDate();
 
-/* Météo La Hulpe */
+/* Météo */
 async function loadMeteo(){
   try{
     const res=await fetch("https://api.open-meteo.com/v1/forecast?latitude=50.73&longitude=4.48&current=temperature_2m,weather_code&timezone=Europe/Brussels");
     const js=await res.json();
     const temp=js.current.temperature_2m;
     const code=js.current.weather_code;
-    const meteoMap={0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",95:"⛈️"};
-    document.getElementById("meteo").textContent=`${meteoMap[code]||"☁️"} ${temp}°C La Hulpe`;
+    const map={0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",95:"⛈️"};
+    document.getElementById("meteo").textContent=`${map[code]||"☁️"} ${temp}°C La Hulpe`;
   }catch(e){console.log("Météo erreur",e);}
 }
 loadMeteo();setInterval(loadMeteo,600000);
 
-/* Lecture Firebase + rendu */
+/* Rafraîchissement global */
 async function refresh(){
   const d=await readKey(STORAGE_KEY)||{};
   state=d;
   renderRoles();
-  renderVehs();
+  renderTable();
   renderBanner();
 }
 
@@ -114,43 +122,50 @@ function renderRoles(){
     .map(([k,label])=>`<div><span>${label}</span>${r[k]||"-"}</div>`).join("");
 }
 
-/* Véhicules */
-function renderVehs(){
-  const box=document.getElementById("grid");
+/* Tableau véhicules */
+function renderTable(){
+  const tb=document.getElementById("vehBody");
+  tb.innerHTML="";
   const vehs=(state._settings?.vehs)||[];
-  box.innerHTML=vehs.map(v=>{
+  vehs.forEach(v=>{
     const d=state[v.id]||{};
-    let c="s-dispo";
-    if(d.statut==="Sorti")c="s-sorti";
+    let c="";
+    if(d.statut==="Disponible")c="s-dispo";
+    else if(d.statut==="Sorti")c="s-sorti";
     else if(d.statut==="Réserve")c="s-res";
     else if(d.statut==="Indisponible")c="s-indispo";
-    return `<div class="veh">
-      <h3>${d.name||v.id}</h3>
-      <small>${d.attribution?`[${d.attribution}] `:""}${d.plaque||""}</small>
-      <div class="stat ${c}">${d.statut||"?"}</div>
-      <div style="font-size:14px;margin-top:6px">${(d.XO||"")} ${d.S?`/ ${d.S}`:""} ${d.PS?`/ ${d.PS}`:""}</div>
-    </div>`;
-  }).join("");
+    tb.insertAdjacentHTML("beforeend",`
+      <tr>
+        <td><b>${d.name||v.id}</b><br><span style="color:#9bb5d3;font-size:14px">${d.plaque||""}</span></td>
+        <td>${d.attribution||""}</td>
+        <td>${d.XO||""}</td>
+        <td>${d.S||""}</td>
+        <td>${d.PS||""}</td>
+        <td>${d.km||""}</td>
+        <td class="${c}">${d.statut||""}</td>
+        <td>${d.commentaire||""}</td>
+      </tr>
+    `);
+  });
 }
 
-/* Bannière fluide */
+/* Bannière continue */
 function renderBanner(){
   const n=state._notes||{};
-  let t="";
-  if(n.materiel) t+="⚠️ Matériel : "+n.materiel+"  ";
-  if(n.infos) t+="ℹ️ Infos : "+n.infos+"  ";
+  let txt="";
+  if(n.materiel) txt+="⚠️ Matériel : "+n.materiel+"  ";
+  if(n.infos) txt+="ℹ️ Infos : "+n.infos+"  ";
   (state._settings?.vehs||[]).forEach(v=>{
     const d=state[v.id];
     if(d?.statut==="Indisponible"){
-      t+=`🚑 ${d.name||v.id}${d.attribution?` [${d.attribution}]`:""} : ${d.commentaire||"Indispo"}  `;
+      txt+=`🚑 ${d.name||v.id}${d.attribution?` [${d.attribution}]`:""} : ${d.commentaire||"Indispo"}  `;
     }
   });
-  if(!t) t="Aucune information disponible actuellement.";
-  // doubler le texte pour continuité sans vide
-  document.getElementById("bannerText").innerHTML=(t+"  "+t);
+  if(!txt) txt="Aucune information disponible actuellement.";
+  document.getElementById("bannerText").innerHTML=(txt+"  "+txt);
 }
 
-/* Boucles */
+/* Boucle principale */
 refresh();
 setInterval(refresh,5000);
 </script>
