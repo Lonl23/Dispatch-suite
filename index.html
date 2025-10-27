@@ -5,22 +5,18 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Accueil – Dispatch</title>
 <style>
-  :root{--bg:#071022;--panel:#0f1724;--line:#213243;--txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6;--ok:#2e7d32}
+  :root{--bg:#071022;--panel:#0f1724;--line:#213243;--txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6}
   html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Segoe UI,Inter,Arial,sans-serif}
   .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-  .card{background:var(--panel);padding:22px;border-radius:14px;box-shadow:0 6px 30px rgba(0,0,0,.5);border:1px solid var(--line)}
-  .hidden{display:none}
+  .card{background:var(--panel);padding:22px;border-radius:14px;border:1px solid var(--line);box-shadow:0 6px 30px rgba(0,0,0,.5)}
   h1{margin:0 0 12px;font-size:22px}
   label{font-size:13px;color:var(--mut)}
   input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:#081427;color:#fff;margin-top:6px;margin-bottom:12px}
   button,.btn{display:inline-block;text-decoration:none;text-align:center;cursor:pointer;background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:700}
   .mut{color:var(--mut);font-size:13px}
-  .menu{display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:740px;width:100%}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
-  .panel h2{margin:0 0 10px;font-size:18px;color:#cfe1ff}
-  .grid-btn{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}
+  .menu{display:grid;grid-template-columns:1fr;gap:14px;min-width:260px}
+  .hidden{display:none}
   .topbar{position:fixed;top:0;left:0;right:0;background:#0b1426;border-bottom:1px solid var(--line);padding:8px 14px;display:flex;justify-content:space-between;align-items:center}
-  .topbar .right{display:flex;gap:8px;align-items:center}
   .logout{background:#b23b3b}
 </style>
 </head>
@@ -30,12 +26,10 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
+<!-- Barre du haut (affichée seulement après login) -->
 <div id="topbar" class="topbar hidden">
   <div><b>Dispatch</b> — connecté : <span id="who"></span></div>
-  <div class="right">
-    <a class="btn" href="tv-grid.html" target="_blank">Ouvrir une TV</a>
-    <button class="btn logout" onclick="logout()">Déconnexion</button>
-  </div>
+  <button class="btn logout" onclick="logout()">Déconnexion</button>
 </div>
 
 <div class="wrap">
@@ -43,37 +37,26 @@
   <div id="loginCard" class="card" style="width:360px">
     <h1>Connexion</h1>
     <label>Email</label>
-    <input id="email" type="email" value="centrale@acsrs.be" />
+    <input id="email" type="email" placeholder="centrale@acsrs.be" />
     <label>Mot de passe</label>
-    <input id="password" type="password" value="Password01$" />
+    <input id="password" type="password" placeholder="********" />
     <button id="btnLogin">Se connecter</button>
     <p id="msg" class="mut" style="margin-top:10px"></p>
   </div>
 
-  <!-- Menu des modes (après login) -->
-  <div id="menuCard" class="menu hidden">
-    <div class="panel">
-      <h2>🛠️ Mode Édition</h2>
-      <div class="grid-btn">
-        <a class="btn" href="dispatch.html">Tableau de garde</a>
-        <a class="btn" href="missions.html">Missions</a>
-        <a class="btn" href="parametres.html" target="_blank">Paramétrages (nouvel onglet)</a>
-      </div>
-      <p class="mut" style="margin-top:8px">Édition = écritures autorisées (Firebase rules). Paramétrages s'ouvre dans un nouvel onglet.</p>
-    </div>
-    <div class="panel">
-      <h2>📺 Mode Affichage</h2>
-      <div class="grid-btn">
-        <a class="btn" href="tv-grid.html" target="_blank">TV Véhicules</a>
-        <a class="btn" href="tv-missions.html" target="_blank">TV Missions</a>
-      </div>
-      <p class="mut" style="margin-top:8px">Affichage = lecture seule (possible de créer un compte “tv@” dédié).</p>
+  <!-- Menu après connexion : uniquement 3 choix -->
+  <div id="menuCard" class="card hidden">
+    <h1>Choisir un mode</h1>
+    <div class="menu">
+      <a class="btn" href="dispatch.html">🛠️ Dispatch (édition)</a>
+      <a class="btn" href="missions.html">📝 Missions (édition)</a>
+      <a class="btn" href="tv-grid.html" target="_blank">📺 TV (affichage)</a>
     </div>
   </div>
 </div>
 
 <script>
-/* 1) Config Firebase — remplace par la tienne */
+/* Remplace par TA config Firebase (depuis Paramètres du projet > Vos applications > Web) */
 const firebaseConfig = {
   apiKey: "AIzaSyCP6ZClAectP8OPneAeoYGYdRYO0CvnbnQ",
   authDomain: "racs-dispatch.firebaseapp.com",
@@ -95,10 +78,9 @@ const topbar    = document.getElementById('topbar');
 document.getElementById('btnLogin').onclick = async ()=>{
   msg.textContent = "Connexion…";
   try{
-    const res = await auth.signInWithEmailAndPassword(
-      document.getElementById('email').value.trim(),
-      document.getElementById('password').value
-    );
+    const email = document.getElementById('email').value.trim();
+    const pass  = document.getElementById('password').value;
+    const res = await auth.signInWithEmailAndPassword(email, pass);
     const idToken = await res.user.getIdToken(true);
     localStorage.setItem("dispatch_idToken", idToken);
     localStorage.setItem("dispatch_uid", res.user.uid);
@@ -128,7 +110,7 @@ function logout(){
   auth.signOut().finally(()=>location.reload());
 }
 
-/* 2) Si déjà connecté, montrer directement le menu (pas de redirection auto) */
+/* Si déjà connecté, afficher directement le menu (mais PAS de liens visibles avant login) */
 auth.onAuthStateChanged(async user=>{
   if(user){
     const t = await user.getIdToken();
