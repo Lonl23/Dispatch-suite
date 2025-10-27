@@ -8,8 +8,19 @@
   :root{
     --bg:#0a0f16; --panel:#121821; --line:#1f2c3e;
     --text:#f1f5fa; --muted:#9bb5d3; --accent:#3a8bf2;
-    --ok:#2e7d32; --info:#1976d2; --warn:#f4b400; --bad:#e74c3c;
-    --badge:#0f1624; --ticker-bg:#a00020; --ticker-fg:#fff;
+    /* Statuts véhicules */
+    --ok:#2e7d32;        /* Disponible */
+    --info:#1976d2;      /* Sorti */
+    --warn:#f4b400;      /* Réserve */
+    --bad:#e74c3c;       /* Indisponible */
+    /* Code couleur statuts missions (référentiel commun) */
+    --st-depart:#00c2ff;         /* Départ */
+    --st-surplace:#2ecc71;       /* Sur place */
+    --st-enroute:#ffb300;        /* En route hôpital */
+    --st-hopital:#8e44ad;        /* À l'hôpital */
+    --st-retour-dispo:#64dd17;   /* Retour disponible */
+    --st-retour-indispo:#e53935; /* Retour indisponible */
+    --ticker-bg:#a00020; --ticker-fg:#fff;
   }
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Segoe UI,Inter,system-ui,sans-serif;overflow:hidden}
 
@@ -24,33 +35,32 @@
   .role{background:#142035;border:1px solid #223146;border-radius:8px;padding:6px 10px;min-width:150px;text-align:center}
   .role span{display:block;color:var(--muted);font-size:12px}
 
-  /* Main split: left hall / right columns */
+  /* Main split */
   .main{display:grid;grid-template-columns:1fr 1fr;gap:12px;height:calc(100vh - 160px);padding:12px;box-sizing:border-box;overflow:hidden}
   .leftPane,.rightPane{background:#0f1624;border:1px solid #223146;border-radius:12px;padding:10px;overflow:auto}
 
-  /* Hall title + frame */
+  /* Hall */
   .section-title{margin:0 0 8px 0;color:#cfe1ff;font-size:18px;text-align:center}
-  .hall-frame{border:2px solid #33465f;border-radius:12px;padding:12px}
-  /* Extérieur box */
-  .ext-row{display:flex;justify-content:center}
-  .slot.ext{width:92%;}
+  .hall-frame{border:2px solid #33465f;border-radius:12px;padding:14px}
+  .ext-row{display:flex;justify-content:center;margin-bottom:18px}
+  .slot.ext{width:92%}
 
-  /* Two columns hall grid like the photo */
-  .hall-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:12px}
+  .hall-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:22px;row-gap:24px;margin-top:6px}
+  .stack{display:flex;flex-direction:column;gap:24px}
   .slot{
-    background:#121e31;border:2px solid #425672;border-radius:10px;padding:8px 10px;min-height:64px;
+    background:#121e31;border:2px solid #425672;border-radius:12px;
+    padding:10px 12px;min-height:120px;                 /* ↑ plus haut */
     display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center
   }
-  .slot .code{color:var(--muted);font-weight:700;letter-spacing:.5px;margin-bottom:6px}
-  .slot .veh{font-size:16px;font-weight:800}
-  .slot .sub{font-size:12px;color:#b8c9e0}
-  .slot.empty{opacity:.6}
-  .slot.ok{box-shadow:0 0 0 2px rgba(46,125,50,.35) inset}
-  .slot.info{box-shadow:0 0 0 2px rgba(25,118,210,.35) inset}
-  .slot.bad{box-shadow:0 0 0 2px rgba(231,76,60,.45) inset}
-  .slot.reserve{box-shadow:0 0 0 2px rgba(244,180,0,.45) inset}
+  .slot .code{color:var(--muted);font-weight:700;letter-spacing:.5px;margin-bottom:8px}
+  .slot .veh{font-size:18px;font-weight:800}
+  .slot .sub{font-size:12px;color:#b8c9e0;margin-top:4px}
+  .slot.ok{box-shadow:0 0 0 3px rgba(46,125,50,.35) inset}
+  .slot.info{box-shadow:0 0 0 3px rgba(25,118,210,.35) inset}
+  .slot.bad{box-shadow:0 0 0 3px rgba(231,76,60,.45) inset}
+  .slot.reserve{box-shadow:0 0 0 3px rgba(244,180,0,.45) inset}
 
-  /* Right status columns */
+  /* Right columns (no emplacement line) */
   .cols{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
   .col{background:#121b2a;border:1px solid #223146;border-radius:10px;display:flex;flex-direction:column;min-height:140px}
   .col h3{margin:0;padding:8px 6px;text-align:center;border-bottom:1px solid #223146;color:#cfe1ff}
@@ -63,23 +73,19 @@
   .vehCard .name{font-weight:800}
   .vehCard .line{font-size:12px;color:#9bb5d3}
 
-  /* Bottom banner (seamless) */
+  /* Banner */
   .banner{position:absolute;left:0;right:0;bottom:0;height:44px;background:var(--ticker-bg);color:var(--ticker-fg);display:flex;align-items:center;overflow:hidden;border-top:1px solid #7a0016}
   .track{display:flex;gap:64px;white-space:nowrap;will-change:transform}
   .scroll{animation:marq 45s linear infinite}
   @keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
   .chunk{display:flex;align-items:center;gap:10px}
   .tag{background:#7a0016;border:1px solid #ffb3c1;border-radius:6px;padding:2px 8px;font-weight:800}
-
-  /* Small helpers */
-  .mut{color:var(--muted)}
 </style>
 </head>
 <body>
 
 <script src="store-bridge.js"></script>
 
-<!-- Header -->
 <div class="header">
   <h1>Tableau de garde</h1>
   <div class="head-right">
@@ -88,10 +94,8 @@
   </div>
 </div>
 
-<!-- Roles -->
 <div id="roles" class="roles">Chargement des rôles…</div>
 
-<!-- Main split -->
 <div class="main">
   <!-- LEFT: HALL DES DÉPARTS -->
   <div class="leftPane">
@@ -100,32 +104,32 @@
       <div class="ext-row">
         <div class="slot ext" id="slot-EXT">
           <div class="code">Extérieur</div>
-          <div class="mut">—</div>
+          <div class="veh" style="opacity:.6">—</div>
         </div>
       </div>
 
       <div class="hall-grid">
         <!-- Colonne gauche : H6→H10 -->
         <div class="stack">
-          <div class="slot" id="slot-H6"><div class="code">H6</div><div class="mut">—</div></div>
-          <div class="slot" id="slot-H7"><div class="code">H7</div><div class="mut">—</div></div>
-          <div class="slot" id="slot-H8"><div class="code">H8</div><div class="mut">—</div></div>
-          <div class="slot" id="slot-H9"><div class="code">H9</div><div class="mut">—</div></div>
-          <div class="slot" id="slot-H10"><div class="code">H10</div><div class="mut">—</div></div>
+          <div class="slot" id="slot-H6"><div class="code">H6</div><div class="veh" style="opacity:.6">—</div></div>
+          <div class="slot" id="slot-H7"><div class="code">H7</div><div class="veh" style="opacity:.6">—</div></div>
+          <div class="slot" id="slot-H8"><div class="code">H8</div><div class="veh" style="opacity:.6">—</div></div>
+          <div class="slot" id="slot-H9"><div class="code">H9</div><div class="veh" style="opacity:.6">—</div></div>
+          <div class="slot" id="slot-H10"><div class="code">H10</div><div class="veh" style="opacity:.6">—</div></div>
         </div>
         <!-- Colonne droite : H5→H1 -->
         <div class="stack">
-          <div class="slot" id="slot-H5"><div class="code">H5</div><div class="mut">—</div></div>
-          <div class="slot" id="slot-H4"><div class="code">H4</div><div class="mut">—</div></div>
-          <div class="slot" id="slot-H3"><div class="code">H3</div><div class="mut">—</div></div>
-          <div class="slot" id="slot-H2"><div class="code">H2</div><div class="mut">—</div></div>
-          <div class="slot" id="slot-H1"><div class="code">H1</div><div class="mut">—</div></div>
+          <div class="slot" id="slot-H5"><div class="code">H5</div><div class="veh" style="opacity:.6">—</div></div>
+          <div class="slot" id="slot-H4"><div class="code">H4</div><div class="veh" style="opacity:.6">—</div></div>
+          <div class="slot" id="slot-H3"><div class="code">H3</div><div class="veh" style="opacity:.6">—</div></div>
+          <div class="slot" id="slot-H2"><div class="code">H2</div><div class="veh" style="opacity:.6">—</div></div>
+          <div class="slot" id="slot-H1"><div class="code">H1</div><div class="veh" style="opacity:.6">—</div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- RIGHT: STATUS COLUMNS -->
+  <!-- RIGHT: STATUTS (sans emplacements) -->
   <div class="rightPane">
     <div class="cols">
       <div class="col"><h3 class="info">Sortis</h3><div id="col-sortis" class="list"></div></div>
@@ -136,7 +140,7 @@
   </div>
 </div>
 
-<!-- Banner -->
+<!-- Bannière -->
 <div class="banner">
   <div class="track">
     <div id="band1" class="scroll"></div>
@@ -150,7 +154,6 @@ if(typeof readKey!=='function'){ alert("store-bridge.js manquant"); }
 const KEY="dispatch_parc_vehicules";
 let data={};
 
-/* lib */
 const $ = s => document.querySelector(s);
 const esc = s => String(s??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
@@ -159,7 +162,9 @@ function tick(){
   const d=new Date();
   const jours=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
   const mois=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
-  $('#datetime').textContent=`${jours[d.getDay()]} ${String(d.getDate()).padStart(2,'0')} ${mois[d.getMonth()]} ${d.getFullYear()} — ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
+  $('#datetime').textContent=
+    `${jours[d.getDay()]} ${String(d.getDate()).padStart(2,'0')} ${mois[d.getMonth()]} ${d.getFullYear()} — `+
+    d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
 }
 setInterval(tick,1000); tick();
 
@@ -170,7 +175,7 @@ async function meteo(){
     const j=await r.json(); const t=j.current?.temperature_2m; const c=j.current?.weather_code;
     const map={0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",61:"🌧️",63:"🌧️",65:"🌧️",71:"❄️",95:"⛈️"};
     $('#meteo').textContent=`${map[c]||"🌤️"} ${t}°C La Hulpe`;
-  }catch(e){/* noop */}
+  }catch{}
 }
 meteo(); setInterval(meteo, 10*60*1000);
 
@@ -190,22 +195,22 @@ function renderRoles(){
     .map(([k,l])=>`<div class="role"><span>${l}</span>${esc(r[k]||"-")}</div>`).join("");
 }
 
-/* hall des départs */
-const H_SLOTS=["H6","H7","H8","H9","H10","H5","H4","H3","H2","H1"];
-function clearHall(){
-  $("#slot-EXT").innerHTML = `<div class="code">Extérieur</div><div class="mut">—</div>`;
-  H_SLOTS.forEach(h=>{
-    const el=$(`#slot-${h}`);
-    if(el) el.innerHTML = `<div class="code">${h}</div><div class="mut">—</div>`;
-    el?.classList.remove("ok","info","bad","reserve","empty");
-  });
-}
+/* hall */
 function slotClassForStatus(s){
   if(s==="Disponible") return "ok";
-  if(s==="Sorti") return "info";
   if(s==="Indisponible") return "bad";
+  if(s==="Sorti") return "info";
   if(s==="Réserve") return "reserve";
   return "";
+}
+const H_SLOTS=["H6","H7","H8","H9","H10","H5","H4","H3","H2","H1"];
+function clearHall(){
+  $("#slot-EXT").innerHTML=`<div class="code">Extérieur</div><div class="veh" style="opacity:.6">—</div>`;
+  H_SLOTS.forEach(h=>{
+    const el=$(`#slot-${h}`);
+    if(el) el.innerHTML = `<div class="code">${h}</div><div class="veh" style="opacity:.6">—</div>`;
+    el?.classList.remove("ok","info","bad","reserve");
+  });
 }
 function renderHall(){
   clearHall();
@@ -213,30 +218,26 @@ function renderHall(){
   list.forEach(v=>{
     const d=data[v.id]||{};
     const emp=(v.emplacement||"").trim();
-    const target = emp.toUpperCase()==="EXTÉRIEUR" || emp.toUpperCase()==="EXTERIEUR" || emp.toUpperCase()==="EXTERIOR" || emp.toUpperCase()==="EXTERIEUR"
-      ? "#slot-EXT"
-      : `#slot-${emp}`;
+    const target = /ext/i.test(emp) ? "#slot-EXT" : `#slot-${emp}`;
     const box=$(target);
     if(!box) return;
     const cl=slotClassForStatus(d.statut||"");
-    box.classList.remove("ok","info","bad","reserve","empty");
+    box.classList.remove("ok","info","bad","reserve");
     if(cl) box.classList.add(cl);
     box.innerHTML = `
-      <div class="code">${emp===""?"—":(emp==="Extérieur"?"Extérieur":esc(emp))}</div>
+      <div class="code">${/ext/i.test(emp)?"Extérieur":esc(emp||"")}</div>
       <div class="veh">${esc(d.name||v.id)}</div>
       <div class="sub">${d.attribution?`[${esc(d.attribution)}] `:""}${esc(d.plaque||"")}</div>
     `;
   });
-  /* marque les emplacements vides en gris léger */
-  ["#slot-EXT",...H_SLOTS.map(h=>`#slot-${h}`)].forEach(sel=>{
-    const el=$(sel);
-    if(el && el.querySelector('.veh')===null){ el.classList.add('empty'); }
-  });
 }
 
-/* right columns */
+/* Colonnes à droite (pas d’emplacement) */
 function renderCols(){
-  ["sortis","dispo","reserve","indispo"].forEach(id=> $(`#col-${id}`).innerHTML="");
+  $("#col-sortis").innerHTML="";
+  $("#col-dispo").innerHTML="";
+  $("#col-reserve").innerHTML="";
+  $("#col-indispo").innerHTML="";
   const vehs=(data._settings?.vehs)||[];
   vehs.forEach(v=>{
     const d=data[v.id]||{};
@@ -250,13 +251,12 @@ function renderCols(){
       <div class="vehCard">
         <div class="name">${esc(d.name||v.id)}</div>
         <div class="line">${d.attribution?`[${esc(d.attribution)}] `:""}${esc(d.plaque||"")}</div>
-        <div class="line">${esc(v.emplacement||"—")}</div>
       </div>`;
     $(`#${colId}`).insertAdjacentHTML('beforeend',html);
   });
 }
 
-/* banner (seamless, no jump) */
+/* bannière */
 function buildBanner(){
   const notes=data._notes||{};
   const outs=[];
@@ -278,7 +278,7 @@ function buildBanner(){
   $('#band2').innerHTML=doubled;
 }
 
-/* refresh */
+/* refresh loop */
 async function refresh(){
   try{
     data = await readKey(KEY) || {};
@@ -286,16 +286,10 @@ async function refresh(){
     renderHall();
     renderCols();
     buildBanner();
-  }catch(e){
-    console.error(e);
-  }
+  }catch(e){ console.error(e); }
 }
 refresh(); setInterval(refresh, 5000);
-
-/* react to other tabs */
-window.addEventListener('storage', e=>{
-  if(e.key===KEY){ refresh(); }
-});
+window.addEventListener('storage', e=>{ if(e.key===KEY) refresh(); });
 </script>
 </body>
 </html>
