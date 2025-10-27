@@ -9,7 +9,9 @@
   html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
   .header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#121821;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
   .header h1{margin:0;font-size:22px;color:#cfe1ff}
-  .btn{background:#3a8bf2;border:0;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700;text-decoration:none;display:inline-block}
+  .btn{background:#3a8bf2;border:0;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
+  .btn.ghost{background:#0f1520;border:1px solid #2c3d52}
+  .btn.danger{background:#e74c3c}
   .container{max-width:1200px;margin:12px auto;padding:0 12px}
   .card{background:#121821;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
   .muted{color:var(--muted);font-size:12px}
@@ -25,10 +27,11 @@
   .chip{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:6px 10px}
   .status{display:inline-block;padding:4px 8px;border-radius:8px;font-weight:700;font-size:12px}
   .s-dispo{background:#2e7d32}.s-sorti{background:#3a8bf2}.s-res{background:#f4b400;color:#000}.s-indispo{background:#e74c3c}
-  /* Modale ré-attribution */
+  /* Modales */
   .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9000}
   .modal.show{display:flex}
-  .modal .box{background:#121821;border:1px solid #223044;border-radius:12px;padding:14px;max-width:640px;width:95%;max-height:85vh;overflow:auto}
+  .modal .box{background:#121821;border:1px solid #223044;border-radius:12px;padding:14px;max-width:800px;width:95%;max-height:85vh;overflow:auto}
+  #modalReassign{z-index:10000}
   body.modal-open{overflow:hidden}
   @media (max-width: 768px){
     .header h1{font-size:18px}
@@ -41,14 +44,14 @@
 </head>
 <body>
 
-<!-- Bridge Firebase REST (global). DOIT être un script normal, sans type="module" -->
-<script src="store-bridge.js"></script>
+<!-- Bridge Firebase (doit être présent dans le même dossier, avec l’URL de ta base) -->
+<script src="store-bridge.js" defer></script>
 
 <div class="header">
   <h1>Tableau de garde</h1>
-  <div>
-    <!-- Ouvre Paramétrages dans un nouvel onglet -->
-    <a href="parametres.html" target="_blank" class="btn">⚙️ Paramétrages</a>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <!-- TV retirés -->
+    <button class="btn" id="btnSettings">⚙️ Paramétrages</button>
   </div>
 </div>
 
@@ -91,7 +94,7 @@
   <!-- Tableau -->
   <div class="card">
     <h3 style="margin:0 0 8px">Véhicules</h3>
-    <p class="muted">Ajoute/modifie les véhicules dans <b>Paramétrages</b> (nouvel onglet).</p>
+    <p class="muted">Ajoute des véhicules via <b>Paramétrages</b>. Attribution & Plaque se modifient uniquement dans Paramétrages.</p>
     <div style="overflow:auto; max-height:60vh;">
       <table>
         <thead>
@@ -119,31 +122,67 @@
 
 </div>
 
-<!-- MODALE Ré-attribution LH -->
-<div id="modalReassign" class="modal">
+<!-- MODALE Paramétrages -->
+<div id="modalSettings" class="modal">
   <div class="box">
     <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 style="margin:0">Paramétrages</h3>
+      <button class="btn ghost" onclick="closeSettings()">✖</button>
+    </div>
+    <hr style="border:0;border-top:1px solid var(--line)">
+
+    <h4 style="margin:8px 0">Ajouter un véhicule</h4>
+    <div class="grid3">
+      <div><label>Identifiant (ex. AS 55)</label><input id="nv_id" placeholder="AS 55"></div>
+      <div><label>Nom affiché</label><input id="nv_name" placeholder="Ambulance 55"></div>
+      <div><label>Plaque</label><input id="nv_plate" placeholder="1-ABC-123"></div>
+      <div>
+        <label>Attribution</label>
+        <select id="nv_attr">
+          <option value=""></option>
+          <option>LH1</option><option>LH2</option><option>LH3</option><option>LH4</option>
+          <option>LH5</option><option>LH6</option><option>LH7</option><option>LH8</option>
+          <option>Prev</option><option>LOG</option>
+        </select>
+      </div>
+      <div style="align-self:end"><button class="btn" onclick="addVehicle()">➕ Ajouter</button></div>
+    </div>
+
+    <hr style="border:0;border-top:1px solid var(--line)">
+
+    <h4 style="margin:8px 0">Véhicules configurés (édition directe)</h4>
+    <div id="cfgGrid" class="grid3"></div>
+    <div style="text-align:right;margin-top:8px">
+      <button class="btn" onclick="saveSettings()">💾 Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODALE Ré-attribution LH -->
+<div id="modalReassign" class="modal">
+  <div class="box" style="max-width:640px">
+    <div style="display:flex;justify-content:space-between;align-items:center">
       <h3 style="margin:0">Ré-attribuer <span id="rea_attrib">LH?</span></h3>
-      <button class="btn" onclick="cancelReassign()">✖</button>
+      <button class="btn ghost" onclick="cancelReassign()">✖</button>
     </div>
     <p>Le véhicule <b id="rea_fromVeh">—</b> passe <b>Indisponible</b> avec l’attribution <b id="rea_attrib2">LH?</b>. Choisis un repreneur (LH uniques).</p>
     <input id="rea_search" placeholder="Rechercher un véhicule..." oninput="renderReassignCandidates()">
     <div id="rea_list" style="margin-top:8px;border:1px solid var(--line);border-radius:10px;max-height:50vh;overflow:auto"></div>
     <div style="text-align:right;margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn" onclick="liberateOnly()">Libérer sans ré-attribuer</button>
+      <button class="btn ghost" onclick="liberateOnly()">Libérer sans ré-attribuer</button>
       <button class="btn" onclick="confirmReassign()">Confirmer</button>
     </div>
   </div>
 </div>
 
 <script>
-/* Catcher d’erreurs pour diagnostiquer vite */
+/* Catcher d’erreurs pour éviter qu’une faute bloque toute la page */
 window.onerror = function (msg, src, line, col, err) {
   console.error("JS Error:", msg, "at", src, line+":"+col, err);
   alert("Erreur JS: " + msg);
 };
 
-/* Fallback si store-bridge.js manquant */
+/* ====== Fallback si store-bridge.js n'est pas chargé ====== */
 if (typeof readKey !== 'function' || typeof saveKey !== 'function') {
   console.warn("store-bridge.js introuvable -> fallback localStorage");
   window.readKey = async (k)=>{ try{return JSON.parse(localStorage.getItem(k)||"{}");}catch{return{}} };
@@ -151,16 +190,14 @@ if (typeof readKey !== 'function' || typeof saveKey !== 'function') {
 }
 
 const STORAGE_KEY = "dispatch_parc_vehicules";
-const BACKUP_KEY  = "dispatch_parc_vehicules_backup";
 const LH_SET = new Set(["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8"]);
 let data = {};
 let _rea = { fromVeh:null, attrib:"", selected:null, candidates:[] };
-let _pollTimer = null, _lastJSON = "";
 
 const $ = (id)=>document.getElementById(id);
 function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]);}
 
-/* Modales (ré-attribution) */
+/* ====== Modales : une seule ouverte + blocage scroll ====== */
 function showModal(id){
   const el = document.getElementById(id);
   if(!el) return;
@@ -183,12 +220,12 @@ document.addEventListener('click', (e)=>{
   }
 });
 
-/* Ensure */
+/* ====== Ensure ====== */
 function ensure(){
   if(!data || typeof data!=='object') data = {};
-  if(!data._settings) data._settings = { vehs: [] };
-  if(!data._roles)    data._roles    = {};
-  if(!data._notes)    data._notes    = { materiel:"", infos:"" };
+  if(!data._settings) data._settings = { vehs: [] }; // aucun véhicule par défaut
+  if(!data._roles) data._roles = {};
+  if(!data._notes) data._notes = { materiel:"", infos:"" };
   (data._settings.vehs||[]).forEach(v=>{
     if(!data[v.id]) data[v.id] = {
       XO:"",S:"",PS:"",attribution:v.attrib||"",plaque:v.plaque||"",
@@ -197,8 +234,8 @@ function ensure(){
   });
 }
 
-/* Render */
-function renderAll(){ renderRoles(); renderNotes(); renderTable(); renderStats(); renderOut(); }
+/* ====== Render ====== */
+function renderAll(){ renderRoles(); renderNotes(); renderTable(); renderStats(); renderOut(); buildSettingsGrid(); }
 
 function renderRoles(){
   document.querySelectorAll('[data-rolekey]').forEach(inp=>{
@@ -209,9 +246,9 @@ function renderRoles(){
 }
 function renderNotes(){
   $('note_materiel').value = data._notes.materiel||"";
-  $('note_infos').value    = data._notes.infos||"";
+  $('note_infos').value = data._notes.infos||"";
   $('note_materiel').oninput = async e=>{ data._notes.materiel=e.target.value; await save(); };
-  $('note_infos').oninput    = async e=>{ data._notes.infos=e.target.value; await save(); };
+  $('note_infos').oninput = async e=>{ data._notes.infos=e.target.value; await save(); };
 }
 
 function renderTable(){
@@ -247,7 +284,7 @@ function renderTable(){
       if(k==="km") el.value = el.value.replace(/[^\d]/g,'');
       data[id][k]=el.value;
 
-      // Auto-heure sortie si passe "Sorti" et vide
+      // Auto-heure de sortie quand on passe "Sorti" et que l'heure est vide
       if(k==="statut" && el.value==="Sorti" && !data[id].heure_sortie){
         const d=new Date(); const hh=String(d.getHours()).padStart(2,"0"), mm=String(d.getMinutes()).padStart(2,"0");
         data[id].heure_sortie = `${hh}:${mm}`;
@@ -285,11 +322,93 @@ function renderOut(){
   });
 }
 
-/* LH unicité + ré-attribution */
+/* ====== Paramétrages ====== */
+document.getElementById('btnSettings').addEventListener('click', ()=>{ openSettings(); });
+
+function openSettings(){ showModal('modalSettings'); buildSettingsGrid(); }
+function closeSettings(){ hideModal('modalSettings'); }
+
+/* Édition directe dans Paramétrages (autosave) */
+let _saveTimer=null;
+function autosaveSettings(){
+  clearTimeout(_saveTimer);
+  _saveTimer=setTimeout(async()=>{ enforceLHUnicity(); await save(); renderAll(); }, 400);
+}
+
+function buildSettingsGrid(){
+  const g=$('cfgGrid'); if(!g) return; g.innerHTML="";
+  (data._settings.vehs||[]).forEach(v=>{
+    const d=data[v.id];
+    const wrap=document.createElement('div'); wrap.className="card"; wrap.style.padding="10px";
+    wrap.innerHTML = `
+      <div class="muted" style="margin-bottom:6px"><b>${esc(v.id)}</b></div>
+      <label>Nom affiché</label><input data-id="${esc(v.id)}" data-f="name" value="${esc(d.name||v.id)}">
+      <label>Plaque</label><input data-id="${esc(v.id)}" data-f="plaque" value="${esc(d.plaque||"")}">
+      <label>Attribution</label>
+      <select data-id="${esc(v.id)}" data-f="attribution">
+        ${["","LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","Prev","LOG"].map(a=>`<option ${a===(d.attribution||"")?"selected":""}>${a}</option>`).join("")}
+      </select>
+      <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+        <button class="btn danger" onclick="removeVehicle('${esc(v.id)}')">🗑️ Supprimer</button>
+      </div>
+    `;
+    g.appendChild(wrap);
+  });
+
+  // Bind autosave
+  g.querySelectorAll('[data-id]').forEach(inp=>{
+    inp.oninput = ()=>{
+      const id=inp.dataset.id, f=inp.dataset.f, val=inp.value;
+      if(!data[id]) data[id]={};
+      data[id][f]=val;
+      const sv=(data._settings.vehs||[]).find(v=>v.id===id);
+      if(sv){ if(f==="name") sv.name=val; if(f==="plaque") sv.plaque=val; if(f==="attribution") sv.attrib=val; }
+      autosaveSettings();
+    };
+  });
+}
+
+async function saveSettings(){
+  enforceLHUnicity();
+  await save(); renderAll(); alert("Paramètres enregistrés.");
+}
+
+async function addVehicle(){
+  const id=$('nv_id').value.trim();
+  const name=$('nv_name').value.trim()||id;
+  const plate=$('nv_plate').value.trim();
+  const attr=$('nv_attr').value;
+  if(!id) return alert("Identifiant requis.");
+  if((data._settings.vehs||[]).find(v=>v.id===id)) return alert("Ce véhicule existe déjà.");
+  if(!data._settings.vehs) data._settings.vehs=[];
+  data._settings.vehs.push({id,name,plaque:plate,attrib:attr});
+  data[id]={XO:"",S:"",PS:"",attribution:attr,plaque:plate,km:"",heure_sortie:"",statut:"Disponible",commentaire:"",name};
+  enforceLHUnicity();
+  await save();
+  $('nv_id').value='';$('nv_name').value='';$('nv_plate').value='';$('nv_attr').value='';
+  buildSettingsGrid(); renderAll(); alert("Véhicule ajouté.");
+}
+
+async function removeVehicle(id){
+  if(!confirm(`Supprimer le véhicule ${id} ?`)) return;
+  data._settings.vehs = (data._settings.vehs||[]).filter(v=>v.id!==id);
+  delete data[id];
+  await save(); buildSettingsGrid(); renderAll();
+}
+
+/* ====== LH unicité + ré-attribution ====== */
+function enforceLHUnicity(){
+  const seen={};
+  (data._settings.vehs||[]).forEach(v=>{
+    const a=(data[v.id]?.attribution||"").toUpperCase();
+    if(LH_SET.has(a)){ if(seen[a]) data[v.id].attribution=""; else seen[a]=v.id; }
+    const sv=(data._settings.vehs||[]).find(x=>x.id===v.id); if(sv) sv.attrib=data[v.id].attribution||"";
+  });
+}
+
 function openReassignModal(fromVeh, attrib){
-  _rea={fromVeh, attrib, selected:null,
-        candidates:(data._settings.vehs||[]).map(v=>v.id)
-          .filter(id=>id!==fromVeh && (data[id]?.statut||"Disponible")!=="Indisponible")};
+  hideModal('modalSettings'); // garantir une seule modale
+  _rea={fromVeh, attrib, selected:null, candidates:(data._settings.vehs||[]).map(v=>v.id).filter(id=>id!==fromVeh && (data[id]?.statut||"Disponible")!=="Indisponible")};
   $('rea_fromVeh').textContent=fromVeh; $('rea_attrib').textContent=attrib; $('rea_attrib2').textContent=attrib;
   $('rea_search').value=""; renderReassignCandidates(); showModal('modalReassign');
 }
@@ -312,72 +431,48 @@ function renderReassignCandidates(){
 function cancelReassign(){ hideModal('modalReassign'); _rea={fromVeh:null,attrib:"",selected:null,candidates:[]}; }
 async function liberateOnly(){
   if(!_rea.fromVeh) return cancelReassign();
-  data[_rea.fromVeh].attribution=""; 
-  const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh); if(sv) sv.attrib="";
+  data[_rea.fromVeh].attribution=""; const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh); if(sv) sv.attrib="";
   await save(); renderAll(); cancelReassign(); alert("Attribution libérée.");
 }
 async function confirmReassign(){
   if(!_rea.selected) return alert("Sélectionne un véhicule repreneur.");
-  // Retire l’attribution des autres véhicules qui la portent
+
+  // Supprime l’attribution des autres
   (data._settings.vehs||[]).forEach(v=>{
     if((data[v.id]?.attribution||"").toUpperCase()===_rea.attrib.toUpperCase()){
-      data[v.id].attribution="";
+      data[v.id].attribution=""; 
       const sv=(data._settings.vehs||[]).find(x=>x.id===v.id);
       if(sv) sv.attrib="";
     }
   });
-  // Libère sur le véhicule indisponible
+
+  // Libère sur l’indispo
   if(data[_rea.fromVeh]){
     data[_rea.fromVeh].attribution="";
     const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh);
     if(sv) sv.attrib="";
   }
+
   // Assigne au repreneur
   if(!data[_rea.selected]) data[_rea.selected]={};
   data[_rea.selected].attribution=_rea.attrib;
   const sv2=(data._settings.vehs||[]).find(x=>x.id===_rea.selected);
   if(sv2) sv2.attrib=_rea.attrib;
 
-  await save();
-  renderAll();
+  await save(); 
+  renderAll(); 
   cancelReassign();
   alert(`${_rea.attrib} est maintenant attribué à ${_rea.selected}.`);
 }
 
-/* Sauvegarde + backup local périodique */
-async function save(){
-  await saveKey(STORAGE_KEY, data);
-  try { localStorage.setItem(BACKUP_KEY, JSON.stringify(data)); } catch {}
-}
-setInterval(()=>{ try { localStorage.setItem(BACKUP_KEY, JSON.stringify(data)); } catch {} }, 15000);
+/* ====== Persistance ====== */
+async function save(){ await saveKey(STORAGE_KEY, data); }
 
-/* Poll serveur pour sync avec Paramétrages */
-async function pollServer(){
-  const fresh = await readKey(STORAGE_KEY) || {};
-  const now = JSON.stringify(fresh);
-  if (now !== _lastJSON) {
-    _lastJSON = now;
-    data = fresh; ensure(); renderAll();
-  }
-}
-
-/* Boot + restauration si serveur vide */
-async function boot(){
-  let server = await readKey(STORAGE_KEY) || {};
-  const backup = (()=>{ try{return JSON.parse(localStorage.getItem(BACKUP_KEY)||"{}");}catch{return{}} })();
-  const isEmpty = (obj)=> !obj || (Object.keys(obj).length===0);
-  if (isEmpty(server) && !isEmpty(backup)) {
-    data = backup;
-    await saveKey(STORAGE_KEY, data); // pousse vers le serveur
-  } else {
-    data = server;
-  }
+/* ====== Boot ====== */
+(async()=>{
+  data = await readKey(STORAGE_KEY);
   ensure(); renderAll();
-  _lastJSON = JSON.stringify(data);
-  _pollTimer = setInterval(pollServer, 5000);
-}
-
-boot();
+})();
 </script>
 </body>
 </html>
