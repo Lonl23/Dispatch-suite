@@ -1,460 +1,302 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dispatch – Tableau de garde</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+
 <style>
-  :root{--bg:#0b0f14;--panel:#121821;--line:#223044;--text:#e8eef5;--muted:#93a7bf;--accent:#3a8bf2;--danger:#e74c3c;--ok:#2e7d32}
-  html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
-  .header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;background:#121821;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
-  .header h1{margin:0;font-size:22px;color:#cfe1ff}
-  .btn{background:#3a8bf2;border:0;color:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;font-weight:700}
-  .btn.ghost{background:#0f1520;border:1px solid #2c3d52}
-  .btn.danger{background:#e74c3c}
-  .container{max-width:1200px;margin:12px auto;padding:0 12px}
-  .card{background:#121821;border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
-  .muted{color:var(--muted);font-size:12px}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
-  input,select,textarea{width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid #2c3d52;background:#0f1520;color:#fff}
-  textarea{min-height:96px}
-  table{width:100%;border-collapse:collapse}
-  th,td{border:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
-  th{background:#182030;font-size:12px;letter-spacing:.4px;position:sticky;top:0}
-  .chips{display:flex;flex-wrap:wrap;gap:8px}
-  .chip{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:6px 10px}
-  .status{display:inline-block;padding:4px 8px;border-radius:8px;font-weight:700;font-size:12px}
-  .s-dispo{background:#2e7d32}.s-sorti{background:#3a8bf2}.s-res{background:#f4b400;color:#000}.s-indispo{background:#e74c3c}
-  /* Modales */
-  .modal{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:9000}
-  .modal.show{display:flex}
-  .modal .box{background:#121821;border:1px solid #223044;border-radius:12px;padding:14px;max-width:800px;width:95%;max-height:85vh;overflow:auto}
-  #modalReassign{z-index:10000}
-  body.modal-open{overflow:hidden}
-  @media (max-width: 768px){
-    .header h1{font-size:18px}
-    h3{font-size:18px}
-    .grid2,.grid3{grid-template-columns:1fr;gap:10px}
-    th,td{font-size:14px}
-    .modal .box{max-width:520px;width:96%}
-  }
+:root {
+  --bg:#071022;--panel:#0f1724;--line:#213243;
+  --txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6;--ok:#2e7d32;
+}
+body {
+  background:var(--bg);
+  color:var(--txt);
+  font-family:"Segoe UI",Arial,sans-serif;
+  margin:0;
+  padding:0;
+}
+h1 {
+  text-align:center;
+  margin:20px 0;
+  font-size:24px;
+  font-weight:600;
+  color:#cfe1ff;
+}
+section {
+  background:var(--panel);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:12px;
+  margin:12px auto;
+  width:90%;
+  max-width:1200px;
+}
+section h2 {
+  margin:0 0 10px;
+  font-size:18px;
+  color:#cfe1ff;
+  font-weight:600;
+}
+label {
+  color:var(--mut);
+  font-size:13px;
+  font-weight:500;
+}
+input,textarea,select {
+  background:#081427;
+  color:#fff;
+  border:1px solid var(--line);
+  border-radius:8px;
+  padding:6px 8px;
+  margin-bottom:8px;
+  width:100%;
+  font-size:14px;
+  box-sizing:border-box;
+}
+textarea {resize:none;}
+table {
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+  font-size:14px;
+  color:#fff;
+}
+th,td {
+  border:1px solid var(--line);
+  padding:8px;
+  text-align:center;
+  vertical-align:top;
+}
+th {
+  background:#13233b;
+  font-weight:600;
+  font-size:13px;
+  color:#dbe7ff;
+  letter-spacing:.03em;
+}
+.statusBox {
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:space-evenly;
+  gap:8px;
+  margin-top:14px;
+}
+.statusBox div {
+  flex:1;
+  min-width:150px;
+  text-align:center;
+  padding:8px;
+  border-radius:8px;
+  background:#102030;
+  border:1px solid #1f2c3e;
+  font-size:14px;
+  color:#fff;
+}
+@media(max-width:700px){
+  section {width:94%}
+  table {font-size:12px}
+  th,td {padding:6px}
+}
 </style>
 </head>
+
 <body>
+<h1>Tableau de garde</h1>
 
-<!-- Bridge Firebase (doit être présent dans le même dossier, avec l'URL de ta base) -->
-<script src="store-bridge.js" defer></script>
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
-<div class="header">
-  <h1>Tableau de garde</h1>
-  <div style="display:flex;gap:8px;flex-wrap:wrap">
-    <button class="btn ghost" onclick="window.open('tv-grid.html','_blank')">📺 TV Véhicules</button>
-    <button class="btn ghost" onclick="window.open('tv-missions.html','_blank')">🎥 TV Missions</button>
-    <button class="btn" onclick="openSettings()">⚙️ Paramétrages</button>
-  </div>
-</div>
-
-<div class="container">
-
-  <!-- Rôles -->
-  <div class="card">
-    <h3 style="margin:0 0 8px">Postes de commandement</h3>
-    <div class="grid3">
-      <div><label>Officier de semaine</label><input data-rolekey="officier_semaine"></div>
-      <div><label>Officier de garde</label><input data-rolekey="officier_garde"></div>
-      <div><label>Responsable des opérations</label><input data-rolekey="responsable_operations"></div>
-      <div><label>Chef de groupe</label><input data-rolekey="chef_groupe"></div>
-      <div><label>Chef de poste</label><input data-rolekey="chef_poste"></div>
-      <div><label>1er centraliste</label><input data-rolekey="centraliste_1"></div>
-      <div><label>2e centraliste</label><input data-rolekey="centraliste_2"></div>
-    </div>
-  </div>
-
-  <!-- Notes -->
-  <div class="card">
-    <h3 style="margin:0 0 8px">Notes globales</h3>
-    <div class="grid2">
-      <div><label>Matériel à récupérer</label><textarea id="note_materiel" placeholder="Ex: Oxymètre, attelles..."></textarea></div>
-      <div><label>Informations & remarques</label><textarea id="note_infos" placeholder="Ex: Route barrée rue X, travaux..."></textarea></div>
-    </div>
-    <p class="muted">Ces notes apparaîtront dans la bannière TV (OUT / Matériel / Infos).</p>
-  </div>
-
-  <!-- Stats -->
-  <div class="card">
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;text-align:center">
-      <div><div class="status s-dispo">Disponibles</div><div id="cDispo" style="font-size:20px;margin-top:6px">0</div></div>
-      <div><div class="status s-sorti">Sortis</div><div id="cSorti" style="font-size:20px;margin-top:6px">0</div></div>
-      <div><div class="status s-res">Réserve</div><div id="cReserve" style="font-size:20px;margin-top:6px">0</div></div>
-      <div><div class="status s-indispo">Indisponibles</div><div id="cIndispo" style="font-size:20px;margin-top:6px">0</div></div>
-    </div>
-  </div>
-
-  <!-- Tableau -->
-  <div class="card">
-    <h3 style="margin:0 0 8px">Véhicules</h3>
-    <p class="muted">Ajoute des véhicules via <b>Paramétrages</b>. Attribution & Plaque se modifient uniquement dans Paramétrages.</p>
-    <div style="overflow:auto; max-height:60vh;">
-      <table>
-        <thead>
-          <tr>
-            <th>Véhicule</th>
-            <th>Chauffeur</th>
-            <th>Soins</th>
-            <th>3ᵉ Homme</th>
-            <th>Km</th>
-            <th>Heure sortie</th>
-            <th>Statut</th>
-            <th>Commentaire</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- OUT -->
-  <div class="card">
-    <h3 style="margin:0 0 8px">Véhicules OUT</h3>
-    <div id="outList" class="chips"></div>
-  </div>
-
-</div>
-
-<!-- MODALE Paramétrages -->
-<div id="modalSettings" class="modal">
-  <div class="box">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3 style="margin:0">Paramétrages</h3>
-      <button class="btn ghost" onclick="closeSettings()">✖</button>
-    </div>
-    <hr style="border:0;border-top:1px solid var(--line)">
-
-    <h4 style="margin:8px 0">Ajouter un véhicule</h4>
-    <div class="grid3">
-      <div><label>Identifiant (ex. AS 55)</label><input id="nv_id" placeholder="AS 55"></div>
-      <div><label>Nom affiché</label><input id="nv_name" placeholder="Ambulance 55"></div>
-      <div><label>Plaque</label><input id="nv_plate" placeholder="1-ABC-123"></div>
-      <div>
-        <label>Attribution</label>
-        <select id="nv_attr">
-          <option value=""></option>
-          <option>LH1</option><option>LH2</option><option>LH3</option><option>LH4</option>
-          <option>LH5</option><option>LH6</option><option>LH7</option><option>LH8</option>
-          <option>Prev</option><option>LOG</option>
-        </select>
-      </div>
-      <div style="align-self:end"><button class="btn" onclick="addVehicle()">➕ Ajouter</button></div>
-    </div>
-
-    <hr style="border:0;border-top:1px solid var(--line)">
-
-    <h4 style="margin:8px 0">Véhicules configurés</h4>
-    <div id="cfgGrid" class="grid3"></div>
-    <div style="text-align:right;margin-top:8px">
-      <button class="btn" onclick="saveSettings()">💾 Enregistrer</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODALE Ré-attribution LH -->
-<div id="modalReassign" class="modal">
-  <div class="box" style="max-width:640px">
-    <div style="display:flex;justify-content:space-between;align-items:center">
-      <h3 style="margin:0">Ré-attribuer <span id="rea_attrib">LH?</span></h3>
-      <button class="btn ghost" onclick="cancelReassign()">✖</button>
-    </div>
-    <p>Le véhicule <b id="rea_fromVeh">—</b> passe <b>Indisponible</b> avec l’attribution <b id="rea_attrib2">LH?</b>. Choisis un repreneur (LH uniques).</p>
-    <input id="rea_search" placeholder="Rechercher un véhicule..." oninput="renderReassignCandidates()">
-    <div id="rea_list" style="margin-top:8px;border:1px solid var(--line);border-radius:10px;max-height:50vh;overflow:auto"></div>
-    <div style="text-align:right;margin-top:8px;display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn ghost" onclick="liberateOnly()">Libérer sans ré-attribuer</button>
-      <button class="btn" onclick="confirmReassign()">Confirmer</button>
-    </div>
-  </div>
-</div>
-
+<!-- 🔒 Sécurité minimale : vérifie le token -->
 <script>
-/* ====== Fallback si store-bridge.js n'est pas chargé ====== */
-if (typeof readKey !== 'function' || typeof saveKey !== 'function') {
-  console.warn("store-bridge.js introuvable -> fallback localStorage");
-  window.readKey = async (k)=>{ try{return JSON.parse(localStorage.getItem(k)||"{}");}catch{return{}} };
-  window.saveKey = async (k,o)=>{ localStorage.setItem(k, JSON.stringify(o||{})); };
-}
-
-const STORAGE_KEY = "dispatch_parc_vehicules";
-const LH_SET = new Set(["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8"]);
-let data = {};
-let _rea = { fromVeh:null, attrib:"", selected:null, candidates:[] };
-
-const $ = (id)=>document.getElementById(id);
-function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m]);}
-
-/* ====== Modales : une seule ouverte + blocage scroll ====== */
-function showModal(id){
-  const el = document.getElementById(id);
-  if(!el) return;
-  document.querySelectorAll('.modal.show').forEach(m=>m.classList.remove('show'));
-  el.classList.add('show');
-  document.body.classList.add('modal-open');
-}
-function hideModal(id){
-  const el = document.getElementById(id);
-  if(!el) return;
-  el.classList.remove('show');
-  if(document.querySelectorAll('.modal.show').length===0){
-    document.body.classList.remove('modal-open');
+(function ensureAuth(){
+  const token = localStorage.getItem("dispatch_idToken");
+  if(!token){
+    location.href = "index.html";
+    return;
   }
-}
-document.addEventListener('click', (e)=>{
-  const m = e.target.closest('.modal');
-  if(m && m.classList.contains('show') && !e.target.closest('.box')){
-    hideModal(m.id);
-  }
-});
-
-/* ====== Ensure ====== */
-function ensure(){
-  if(!data || typeof data!=='object') data = {};
-  if(!data._settings) data._settings = { vehs: [] }; // aucun véhicule par défaut
-  if(!data._roles) data._roles = {};
-  if(!data._notes) data._notes = { materiel:"", infos:"" };
-  (data._settings.vehs||[]).forEach(v=>{
-    if(!data[v.id]) data[v.id] = {
-      XO:"",S:"",PS:"",attribution:v.attrib||"",plaque:v.plaque||"",
-      km:"",heure_sortie:"",statut:"Disponible",commentaire:"",name:v.name||v.id
-    };
-  });
-}
-
-/* ====== Render ====== */
-function renderAll(){ renderRoles(); renderNotes(); renderTable(); renderStats(); renderOut(); buildSettingsGrid(); }
-
-function renderRoles(){
-  document.querySelectorAll('[data-rolekey]').forEach(inp=>{
-    const k=inp.dataset.rolekey;
-    inp.value = data._roles[k] || "";
-    inp.oninput = async e=>{ data._roles[k]=e.target.value; await save(); };
-  });
-}
-function renderNotes(){
-  $('note_materiel').value = data._notes.materiel||"";
-  $('note_infos').value = data._notes.infos||"";
-  $('note_materiel').oninput = async e=>{ data._notes.materiel=e.target.value; await save(); };
-  $('note_infos').oninput = async e=>{ data._notes.infos=e.target.value; await save(); };
-}
-
-function renderTable(){
-  const tb=$('tbody'); tb.innerHTML="";
-  (data._settings.vehs||[]).forEach(v=>{
-    const d=data[v.id];
-    tb.insertAdjacentHTML('beforeend',`
-      <tr>
-        <td><b>${esc(d.name||v.id)}</b><br><span class="muted">${d.attribution?`Attrib: ${esc(d.attribution)} — `:""}${d.plaque?`Plaque: ${esc(d.plaque)}`:""}</span></td>
-        <td><input data-v="${esc(v.id)}" data-k="XO" value="${esc(d.XO||"")}" placeholder="Chauffeur"></td>
-        <td><input data-v="${esc(v.id)}" data-k="S" value="${esc(d.S||"")}" placeholder="Soins"></td>
-        <td><input data-v="${esc(v.id)}" data-k="PS" value="${esc(d.PS||"")}" placeholder="3ᵉ homme"></td>
-        <td><input data-v="${esc(v.id)}" data-k="km" value="${esc(d.km||"")}" placeholder="km (num.)"></td>
-        <td><input data-v="${esc(v.id)}" data-k="heure_sortie" value="${esc(d.heure_sortie||"")}" placeholder="HH:MM"></td>
-        <td>
-          <select data-v="${esc(v.id)}" data-k="statut">
-            <option ${d.statut==="Disponible"?"selected":""}>Disponible</option>
-            <option ${d.statut==="Sorti"?"selected":""}>Sorti</option>
-            <option ${d.statut==="Réserve"?"selected":""}>Réserve</option>
-            <option ${d.statut==="Indisponible"?"selected":""}>Indisponible</option>
-          </select>
-        </td>
-        <td><input data-v="${esc(v.id)}" data-k="commentaire" value="${esc(d.commentaire||"")}" placeholder="Remarque…"></td>
-      </tr>
-    `);
-  });
-
-  document.querySelectorAll('input[data-v],select[data-v]').forEach(el=>{
-    el.oninput = async ()=>{
-      const id=el.dataset.v, k=el.dataset.k;
-      const oldStat=data[id]?.statut;
-
-      // Contrainte douce : km numérique
-      if(k==="km") el.value = el.value.replace(/[^\d]/g,'');
-
-      data[id][k]=el.value;
-
-      // Auto-heure de sortie quand on passe "Sorti" et que l'heure est vide
-      if(k==="statut" && el.value==="Sorti" && !data[id].heure_sortie){
-        const d=new Date(); const hh=String(d.getHours()).padStart(2,"0"), mm=String(d.getMinutes()).padStart(2,"0");
-        data[id].heure_sortie = `${hh}:${mm}`;
-      }
-
-      await save(); renderStats(); renderOut();
-
-      // Ré-attribution si Indisponible et portait une LH
-      if(k==="statut" && el.value==="Indisponible" && oldStat!=="Indisponible"){
-        const a=(data[id]?.attribution||"").toUpperCase();
-        if(LH_SET.has(a)) openReassignModal(id,a);
-      }
-    };
-  });
-}
-
-function renderStats(){
-  const list=(data._settings.vehs||[]).map(v=>data[v.id]);
-  $('cDispo').textContent = list.filter(v=>v.statut==="Disponible").length;
-  $('cSorti').textContent = list.filter(v=>v.statut==="Sorti").length;
-  $('cReserve').textContent = list.filter(v=>v.statut==="Réserve").length;
-  $('cIndispo').textContent = list.filter(v=>v.statut==="Indisponible").length;
-}
-
-function renderOut(){
-  const box=$('outList'); box.innerHTML="";
-  (data._settings.vehs||[]).forEach(v=>{
-    const d=data[v.id];
-    if(d.statut==="Indisponible"){
-      const div=document.createElement('div');
-      div.className="chip";
-      div.innerHTML = `<b>${esc(d.name||v.id)}</b> ${d.attribution?`<span style="color:#ffec99">[${esc(d.attribution)}]</span>`:""} ${d.commentaire?`— ${esc(d.commentaire)}`:""}`;
-      box.appendChild(div);
-    }
-  });
-}
-
-/* ====== Paramétrages ====== */
-function openSettings(){ showModal('modalSettings'); buildSettingsGrid(); }
-function closeSettings(){ hideModal('modalSettings'); }
-
-function buildSettingsGrid(){
-  const g=$('cfgGrid'); if(!g) return; g.innerHTML="";
-  (data._settings.vehs||[]).forEach(v=>{
-    const d=data[v.id];
-    const wrap=document.createElement('div'); wrap.className="card"; wrap.style.padding="10px";
-    wrap.innerHTML = `
-      <div class="muted" style="margin-bottom:6px"><b>${esc(v.id)}</b></div>
-      <label>Nom affiché</label><input data-id="${esc(v.id)}" data-f="name" value="${esc(d.name||v.id)}">
-      <label>Plaque</label><input data-id="${esc(v.id)}" data-f="plaque" value="${esc(d.plaque||"")}">
-      <label>Attribution</label>
-      <select data-id="${esc(v.id)}" data-f="attribution">
-        ${["","LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","Prev","LOG"].map(a=>`<option ${a===(d.attribution||"")?"selected":""}>${a}</option>`).join("")}
-      </select>
-      <div style="text-align:right;margin-top:6px"><button class="btn danger" onclick="removeVehicle('${esc(v.id)}')">🗑️ Supprimer</button></div>
-    `;
-    g.appendChild(wrap);
-  });
-}
-
-async function saveSettings(){
-  document.querySelectorAll('#cfgGrid [data-id]').forEach(inp=>{
-    const id=inp.dataset.id, f=inp.dataset.f, val=inp.value;
-    if(!data[id]) data[id]={};
-    data[id][f]=val;
-    const sv=(data._settings.vehs||[]).find(v=>v.id===id);
-    if(sv){ if(f==="name") sv.name=val; if(f==="plaque") sv.plaque=val; if(f==="attribution") sv.attrib=val; }
-  });
-  enforceLHUnicity();
-  await save(); renderAll(); alert("Paramètres enregistrés.");
-}
-
-async function addVehicle(){
-  const id=$('nv_id').value.trim();
-  const name=$('nv_name').value.trim()||id;
-  const plate=$('nv_plate').value.trim();
-  const attr=$('nv_attr').value;
-  if(!id) return alert("Identifiant requis.");
-  if((data._settings.vehs||[]).find(v=>v.id===id)) return alert("Ce véhicule existe déjà.");
-  if(!data._settings.vehs) data._settings.vehs=[];
-  data._settings.vehs.push({id,name,plaque:plate,attrib:attr});
-  data[id]={XO:"",S:"",PS:"",attribution:attr,plaque:plate,km:"",heure_sortie:"",statut:"Disponible",commentaire:"",name};
-  enforceLHUnicity();
-  await save();
-  $('nv_id').value='';$('nv_name').value='';$('nv_plate').value='';$('nv_attr').value='';
-  buildSettingsGrid(); renderAll(); alert("Véhicule ajouté.");
-}
-
-async function removeVehicle(id){
-  if(!confirm(`Supprimer le véhicule ${id} ?`)) return;
-  data._settings.vehs = (data._settings.vehs||[]).filter(v=>v.id!==id);
-  delete data[id];
-  await save(); buildSettingsGrid(); renderAll();
-}
-
-/* ====== LH unicité + ré-attribution ====== */
-function enforceLHUnicity(){
-  const seen={};
-  (data._settings.vehs||[]).forEach(v=>{
-    const a=(data[v.id]?.attribution||"").toUpperCase();
-    if(LH_SET.has(a)){ if(seen[a]) data[v.id].attribution=""; else seen[a]=v.id; }
-    const sv=(data._settings.vehs||[]).find(x=>x.id===v.id); if(sv) sv.attrib=data[v.id].attribution||"";
-  });
-}
-
-function openReassignModal(fromVeh, attrib){
-  hideModal('modalSettings'); // s'assurer qu'une seule modale est ouverte
-  _rea={fromVeh, attrib, selected:null, candidates:(data._settings.vehs||[]).map(v=>v.id).filter(id=>id!==fromVeh && (data[id]?.statut||"Disponible")!=="Indisponible")};
-  $('rea_fromVeh').textContent=fromVeh; $('rea_attrib').textContent=attrib; $('rea_attrib2').textContent=attrib;
-  $('rea_search').value=""; renderReassignCandidates(); showModal('modalReassign');
-}
-function renderReassignCandidates(){
-  const box=$('rea_list'); box.innerHTML="";
-  const q=($('rea_search').value||"").toLowerCase();
-  const items=_rea.candidates.map(id=>{
-    const d=data[id]||{}; const other = LH_SET.has((d.attribution||"").toUpperCase()) && (d.attribution||"").toUpperCase()!==_rea.attrib;
-    return {id,name:d.name||id,stat:d.statut||"Disponible",attrib:d.attribution||"",disabled:other};
-  }).filter(x=>(x.id+" "+x.name+" "+x.stat+" "+x.attrib).toLowerCase().includes(q));
-  if(!items.length){ box.innerHTML=`<div class="muted" style="padding:10px">Aucun candidat…</div>`; return; }
-  items.forEach(x=>{
-    const row=document.createElement('label'); row.style.display="block"; row.style.padding="8px"; row.style.borderBottom="1px solid var(--line)";
-    row.style.cursor=x.disabled?'not-allowed':'pointer'; row.style.opacity=x.disabled?.6:1;
-    row.innerHTML = `<input type="radio" name="rea_choice" value="${esc(x.id)}" ${x.disabled?'disabled':''} onchange="_rea.selected=this.value" style="margin-right:8px">
-                     <b>${esc(x.name)}</b> <span class="muted">(${esc(x.id)}) — Statut: ${esc(x.stat)} — Attrib: ${esc(x.attrib||"—")}${x.disabled?` (porte déjà ${esc(x.attrib)})`:''}</span>`;
-    box.appendChild(row);
-  });
-}
-function cancelReassign(){ hideModal('modalReassign'); _rea={fromVeh:null,attrib:"",selected:null,candidates:[]}; }
-async function liberateOnly(){
-  if(!_rea.fromVeh) return cancelReassign();
-  data[_rea.fromVeh].attribution=""; const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh); if(sv) sv.attrib="";
-  await save(); renderAll(); cancelReassign(); alert("Attribution libérée.");
-}
-async function confirmReassign(){
-  if(!_rea.selected) return alert("Sélectionne un véhicule repreneur.");
-
-  // Supprime l’attribution de tous ceux qui la portent
-  (data._settings.vehs||[]).forEach(v=>{
-    if((data[v.id]?.attribution||"").toUpperCase()===_rea.attrib.toUpperCase()){
-      data[v.id].attribution=""; 
-      const sv=(data._settings.vehs||[]).find(x=>x.id===v.id);
-      if(sv) sv.attrib="";
-    }
-  });
-
-  // Libère sur le véhicule indispo
-  if(data[_rea.fromVeh]){
-    data[_rea.fromVeh].attribution="";
-    const sv=(data._settings.vehs||[]).find(x=>x.id===_rea.fromVeh);
-    if(sv) sv.attrib="";
-  }
-
-  // Assigne au repreneur
-  if(!data[_rea.selected]) data[_rea.selected]={};
-  data[_rea.selected].attribution=_rea.attrib;
-  const sv2=(data._settings.vehs||[]).find(x=>x.id===_rea.selected);
-  if(sv2) sv2.attrib=_rea.attrib;
-
-  await save(); 
-  renderAll(); 
-  cancelReassign();
-  alert(`${_rea.attrib} est maintenant attribué à ${_rea.selected}.`);
-}
-
-
-/* ====== Persistance ====== */
-async function save(){ await saveKey(STORAGE_KEY, data); }
-
-/* ====== Boot ====== */
-(async()=>{
-  data = await readKey(STORAGE_KEY);
-  ensure(); renderAll();
 })();
 </script>
+
+<!-- Rôles de commandement -->
+<section id="commandement">
+  <h2>Postes de commandement</h2>
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;">
+    <div><label>Officier de semaine</label><input id="off_sem" /></div>
+    <div><label>Officier de garde</label><input id="off_gar" /></div>
+    <div><label>Chef de groupe</label><input id="chef_grp" /></div>
+    <div><label>Chef de poste</label><input id="chef_poste" /></div>
+    <div><label>Responsable des opérations</label><input id="resp_op" /></div>
+    <div><label>1er centraliste</label><input id="cent1" /></div>
+    <div><label>2e centraliste</label><input id="cent2" /></div>
+  </div>
+</section>
+
+<!-- Notes -->
+<section id="notes">
+  <h2>Notes globales</h2>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div>
+      <label>🧰 Matériel à récupérer</label>
+      <textarea id="mat_recup" rows="4" placeholder="Ex: Oxygène, attelles..."></textarea>
+    </div>
+    <div>
+      <label>ℹ️ Informations & remarques</label>
+      <textarea id="infos" rows="4" placeholder="Ex: Route barrée, travaux..."></textarea>
+    </div>
+  </div>
+</section>
+
+<!-- Véhicules -->
+<section id="vehicules">
+  <h2>Véhicules</h2>
+  <p style="color:#9fb3d0;font-size:13px;margin-top:0;margin-bottom:8px;">
+    Les véhicules (nom, attribution, plaque) se gèrent dans Paramétrages.
+  </p>
+
+  <table id="tableVeh">
+    <thead>
+      <tr>
+        <th>Véhicule</th>
+        <th>Attribution</th>
+        <th>Chauffeur</th>
+        <th>Soins</th>
+        <th>3ᵉ Homme</th>
+        <th>Statut</th>
+        <th>Commentaire</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <div class="statusBox">
+    <div id="nbDispo">Disponibles : 0</div>
+    <div id="nbSortis">Sortis : 0</div>
+    <div id="nbRes">Réserve : 0</div>
+    <div id="nbIndispo">Indisponibles : 0</div>
+  </div>
+</section>
+
+<script>
+// ===========================
+// 1. CONFIG FIREBASE
+// ===========================
+const firebaseConfig = {
+  apiKey: "AIzaSyCP6ZClAectP8OPneAeOYGYdRYO0CvnbnQ",
+  authDomain: "racs-dispatch.firebaseapp.com",
+  databaseURL: "https://racs-dispatch-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "racs-dispatch",
+  storageBucket: "racs-dispatch.firebasestorage.app",
+  messagingSenderId: "589135271261",
+  appId: "1:589135271261:web:d080a5da49a061929b84b4"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// ===========================
+// 2. Références dans la base
+// ===========================
+const refCmd   = db.ref("dispatch_commandement");
+const refNotes = db.ref("dispatch_notes");
+const refVeh   = db.ref("dispatch_parc_vehicules");
+
+// ===========================
+// 3. Charger les données
+// ===========================
+refCmd.on("value", snap=>{
+  const v = snap.val() || {};
+  off_sem.value     = v.off_sem     || "";
+  off_gar.value     = v.off_gar     || "";
+  chef_grp.value    = v.chef_grp    || "";
+  chef_poste.value  = v.chef_poste  || "";
+  resp_op.value     = v.resp_op     || "";
+  cent1.value       = v.cent1       || "";
+  cent2.value       = v.cent2       || "";
+});
+
+refNotes.on("value", snap=>{
+  const v = snap.val() || {};
+  mat_recup.value = v.mat_recup || "";
+  infos.value     = v.infos     || "";
+});
+
+refVeh.on("value", snap=>{
+  const tbody = document.querySelector("#tableVeh tbody");
+  tbody.innerHTML = "";
+
+  const all = snap.val() || {};
+  let dispo=0, sorti=0, res=0, indispo=0;
+
+  Object.entries(all).forEach(([vehId, info])=>{
+    const d = info || {};
+    if(d.statut === "Disponible")    dispo++;
+    else if(d.statut === "Sorti")    sorti++;
+    else if(d.statut === "Réserve")  res++;
+    else                              indispo++;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${vehId}${d.plaque ? `<br><span style="color:#9fb3d0;font-size:12px">${d.plaque}</span>` : ""}</td>
+      <td><input value="${d.attribution||""}" data-key="${vehId}" data-field="attribution" /></td>
+      <td><input value="${d.chauffeur||""}" data-key="${vehId}" data-field="chauffeur" /></td>
+      <td><input value="${d.soigneur||""}" data-key="${vehId}" data-field="soigneur" /></td>
+      <td><input value="${d.h3||""}" data-key="${vehId}" data-field="h3" /></td>
+      <td>
+        <select data-key="${vehId}" data-field="statut">
+          <option ${d.statut==="Disponible"?"selected":""}>Disponible</option>
+          <option ${d.statut==="Sorti"?"selected":""}>Sorti</option>
+          <option ${d.statut==="Réserve"?"selected":""}>Réserve</option>
+          <option ${d.statut==="Indisponible"?"selected":""}>Indisponible</option>
+        </select>
+      </td>
+      <td><input value="${d.commentaire||""}" data-key="${vehId}" data-field="commentaire" /></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  nbDispo.textContent    = "Disponibles : "    + dispo;
+  nbSortis.textContent   = "Sortis : "         + sorti;
+  nbRes.textContent      = "Réserve : "        + res;
+  nbIndispo.textContent  = "Indisponibles : "  + indispo;
+});
+
+// ===========================
+// 4. Sauvegarde automatique
+// ===========================
+document.querySelectorAll("#commandement input").forEach(inp=>{
+  inp.addEventListener("change", ()=>{
+    refCmd.update({
+      off_sem:     off_sem.value,
+      off_gar:     off_gar.value,
+      chef_grp:    chef_grp.value,
+      chef_poste:  chef_poste.value,
+      resp_op:     resp_op.value,
+      cent1:       cent1.value,
+      cent2:       cent2.value
+    });
+  });
+});
+
+document.querySelectorAll("#notes textarea").forEach(area=>{
+  area.addEventListener("change", ()=>{
+    refNotes.update({
+      mat_recup: mat_recup.value,
+      infos:     infos.value
+    });
+  });
+});
+
+document.addEventListener("change", e=>{
+  if(!e.target.dataset || !e.target.dataset.key) return;
+  const vehId = e.target.dataset.key;
+  const field = e.target.dataset.field;
+  const val   = e.target.value;
+  refVeh.child(vehId).update({ [field]: val });
+});
+</script>
+
 </body>
 </html>
