@@ -1,290 +1,159 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TV — Missions en cours</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Tableau des missions</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root{
-    --bg:#0b0f14; --panel:#121821; --line:#223044;
-    --text:#e8eef5; --muted:#9fb2c9; --accent:#3a8bf2;
-    --ok:#2ecc71; --warn:#f1c40f; --danger:#e74c3c; --info:#00c2ff;
-    --badge:#0f1520;
-    --ticker-bg:#b00020; --ticker-fg:#ffffff;
+    --bg:#0a0f16;--panel:#121821;--line:#1f2c3e;
+    --text:#f1f5fa;
+    --muted:#9bb5d3;
+    --depart:#f0c000;--surplace:#ff9800;--route:#2196f3;
+    --hopital:#9c27b0;--retour:#2e7d32;
   }
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;}
-  .wrap{display:flex;flex-direction:column;height:100vh;overflow:hidden}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Segoe UI,Inter,system-ui,sans-serif;overflow:hidden;}
+  .layout{display:grid;grid-template-columns:1fr 2fr;height:100vh}
+  .missions{background:#0f1624;border-right:2px solid #223146;overflow-y:auto;padding:10px;}
+  .map{position:relative}
+  #map{height:100%;width:100%}
 
-  .header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;background:#0d131c;border-bottom:1px solid var(--line)}
-  .title{font-size:28px;font-weight:800;letter-spacing:.5px}
-  .meta{display:flex;gap:16px;align-items:center;color:var(--muted);font-size:16px}
-  .pill{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:6px 12px;color:#cfe1ff}
-
-  .content{flex:1;overflow:auto;padding:16px}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
-  @media (max-width:1400px){ .grid{grid-template-columns:repeat(2,1fr);} }
-  @media (max-width:1000px){ .grid{grid-template-columns:1fr;} }
-
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:12px;min-height:240px}
-  .card-header{display:flex;justify-content:space-between;align-items:flex-start}
-  .veh{font-size:28px;font-weight:900}
-  .attr{margin-left:8px;font-size:14px;border:1px solid #2c3d52;padding:2px 8px;border-radius:999px;background:var(--badge)}
-  .type{font-size:14px;color:#ffea99;border:1px solid #5a4b16;background:#221b06;padding:2px 8px;border-radius:8px}
-  .info-row{display:flex;gap:14px;flex-wrap:wrap;color:#dbe7f5}
-  .label{color:var(--muted);margin-right:6px}
-
-  .badges{display:flex;gap:8px;flex-wrap:wrap}
-  .badge{background:var(--badge);border:1px solid #2c3d52;border-radius:999px;padding:4px 10px;font-size:14px}
-  .badge.pompiers{border-color:#ff6b6b;color:#ffb3b3}
-  .badge.police{border-color:#61dafb;color:#bfefff}
-  .badge.smur{border-color:#9b59b6;color:#e3c6f1}
-
-  .timeline{display:flex;align-items:flex-start;gap:12px;margin-top:4px}
-  .step{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center}
-  .dot{width:14px;height:14px;border-radius:50%;background:#2c3d52;border:2px solid #2c3d52;box-shadow:0 0 0 2px #182030}
-  .dot.active{background:var(--accent);border-color:var(--accent)}
-  .line{height:2px;background:#2c3d52;flex:1;margin:6px 6px 0 6px}
-  .st-label{margin-top:6px;font-size:12px;color:var(--muted)}
-  .st-time{margin-top:2px;font-size:12px;color:#cfe1ff}
-
-  .flags{display:flex;gap:8px;flex-wrap:wrap}
-  .flag{font-size:12px;padding:4px 8px;border-radius:8px;border:1px solid}
-  .flag.devie{color:#fff7d6;border-color:#d1a300;background:#3a2a00}
-  .flag.indispo{color:#ffd5d5;border-color:#ff6b6b;background:#3a0f12}
-  .flag.annule{color:#e0e0e0;border-color:#888;background:#1e1e1e}
-  .flag.retour{color:#c6ffd3;border-color:#2ecc71;background:#0a2a17}
-
-  .ticker{height:48px;background:var(--ticker-bg);color:var(--ticker-fg);display:flex;align-items:center;overflow:hidden;border-top:1px solid #7a0016}
-  .marquee{white-space:nowrap;display:flex;gap:64px}
-  .marquee .chunk{display:flex;align-items:center;gap:12px}
-  .marquee .tag{background:#7a0016;border:1px solid #ffccd5;padding:2px 8px;border-radius:6px;font-weight:700}
-  .marquee .sep{opacity:.8}
-  .scroll{
-    display:flex;gap:64px;will-change:transform;
-    animation: scroll 40s linear infinite;
-  }
-  .scroll:hover{animation-play-state:paused}
-  @keyframes scroll {
-    from { transform: translateX(0); }
-    to   { transform: translateX(-50%); }
-  }
-
-  .empty{opacity:.6;text-align:center;padding:40px;border:1px dashed #2c3d52;border-radius:12px}
+  .mission{border:1px solid #223146;border-radius:8px;padding:8px;margin-bottom:8px;background:#121e31;display:flex;flex-direction:column;gap:4px;}
+  .mission .header{display:flex;justify-content:space-between;align-items:center;}
+  .mission .num{font-size:20px;font-weight:800;color:#cfe1ff;}
+  .mission .type{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+  .mission .statut{font-size:13px;font-weight:700;}
+  .mission .loc{font-size:14px;color:#b8c9e0;}
+  .mission .equip{font-size:13px;color:#9bb5d3;}
+  .mission .time{font-size:12px;color:#8394aa;}
+  .mission.depart{border-left:4px solid var(--depart);}
+  .mission.surplace{border-left:4px solid var(--surplace);}
+  .mission.route{border-left:4px solid var(--route);}
+  .mission.hopital{border-left:4px solid var(--hopital);}
+  .mission.retour{border-left:4px solid var(--retour);}
 </style>
 </head>
 <body>
-
-<!-- Guard : exige d’être connecté via index.html -->
-<script>
-(function(){
-  if(!localStorage.getItem("dispatch_idToken")){
-    location.href="index.html";
-  }
-})();
-</script>
-
 <script src="store-bridge.js"></script>
 
-<div class="wrap">
-  <div class="header">
-    <div class="title">Missions en cours</div>
-    <div class="meta">
-      <div class="pill" id="clock">--:--</div>
-      <div class="pill"><span id="count">0</span> mission(s)</div>
-    </div>
-  </div>
-
-  <div class="content">
-    <div id="grid" class="grid"></div>
-  </div>
-
-  <div class="ticker">
-    <div class="marquee">
-      <div id="band1" class="scroll"></div>
-      <div id="band2" class="scroll" aria-hidden="true"></div>
-    </div>
-  </div>
+<div class="layout">
+  <div class="missions" id="missionList">Chargement des missions…</div>
+  <div class="map"><div id="map"></div></div>
 </div>
 
 <script>
-/* Clés */
-const MISSIONS_KEY = "dispatch_missions";
-const DISPATCH_KEY = "dispatch_parc_vehicules";
+if(typeof readKey!=='function'){ alert("store-bridge.js manquant"); }
 
-/* État */
-let missions = {};
-let dispatchData = {};
-let pollTimer = null;
+const KEY="missions_actives";
+let map,baseMarker,markers={};
+const basePos=[50.7311,4.4819]; // Avenue René Soyer 3, 1310 La Hulpe
 
-/* Helpers */
-const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-function get(obj, path, def=""){ try { return path.split('.').reduce((o,k)=>o?.[k], obj) ?? def; } catch { return def; } }
-
-/* Horloge */
-function renderClock(){
-  const d=new Date(), z=n=>String(n).padStart(2,'0');
-  document.getElementById('clock').textContent = `${z(d.getHours())}:${z(d.getMinutes())} — ${z(d.getDate())}/${z(d.getMonth()+1)}/${d.getFullYear()}`;
+// Initialisation carte
+function initMap(){
+  map=L.map('map',{zoomControl:false}).setView(basePos,12);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+    maxZoom:18,attribution:'© OpenStreetMap'
+  }).addTo(map);
+  baseMarker=L.marker(basePos,{title:"Base – La Hulpe"}).addTo(map);
 }
 
-/* Fetch Firebase (lecture seule) + sync localStorage */
-async function fetchAll(){
-  try{
-    const [m, disp] = await Promise.all([
-      readKey(MISSIONS_KEY),          // { id: { ... } }
-      readKey(DISPATCH_KEY)           // dispatch_parc_vehicules
-    ]);
-    // Sauvegarde en localStorage pour synchro inter-onglets et fallback
-    localStorage.setItem(MISSIONS_KEY, JSON.stringify(m || {}));
-    localStorage.setItem(DISPATCH_KEY, JSON.stringify(disp || {}));
-    missions = m || {};
-    dispatchData = disp || {};
-  }catch(e){
-    console.warn("Lecture Firebase échouée, fallback localStorage", e);
-    try{ missions = JSON.parse(localStorage.getItem(MISSIONS_KEY) || "{}"); }catch{ missions = {}; }
-    try{ dispatchData = JSON.parse(localStorage.getItem(DISPATCH_KEY) || "{}"); }catch{ dispatchData = {}; }
+// Traduction statut -> classe couleur
+function statutClass(s){
+  switch(s){
+    case "Départ": return "depart";
+    case "Sur place": return "surplace";
+    case "En route vers l'hôpital": return "route";
+    case "À l'hôpital": return "hopital";
+    case "Retour disponible":
+    case "Retour indisponible": return "retour";
+    default: return "";
   }
 }
 
-/* Rendu des missions en cours */
-const FLOW = ["Départ","Sur place","En charge","Arrivé hôpital","Retour dispo","Rentré base"];
-function renderMissions(){
-  const grid = document.getElementById('grid');
-  const active = Object.values(missions || {}).filter(m=>!m.done);
+// Attribution des numéros fixes
+let nextNum=1;
+let numMap={}; // missionID -> numéro
 
-  active.sort((a,b)=>{
-    const ad = a.statuts?.["Départ"]||"", bd = b.statuts?.["Départ"]||"";
-    if (ad && bd) return ad<bd?1:-1;
-    return (b.id||"")<(a.id||"")? -1 : 1;
-  });
-
-  document.getElementById('count').textContent = active.length;
-
-  if (!active.length){
-    grid.innerHTML = `<div class="empty">Aucune mission en cours</div>`;
-    return;
-  }
-
-  grid.innerHTML = "";
-  active.forEach(m=>{
-    const renf = m.renforts || {};
-    const is112 = (m.type === "112");
-    const flags = [];
-    if (m.statuts?.["Dévié"]) flags.push(`<span class="flag devie">Dévié</span>`);
-    if (m.statuts?.["Mise indispo"]) flags.push(`<span class="flag indispo">Mise indispo</span>`);
-    if (m.statuts?.["Annulé par CU112"]) flags.push(`<span class="flag annule">Annulé CU112</span>`);
-    if (m.statuts?.["Retour au poste"]) flags.push(`<span class="flag retour">Retour au poste</span>`);
-
-    const stepsHtml = FLOW.map((label, idx)=>{
-      const active = Boolean(m.statuts && m.statuts[label]);
-      const time = esc(m.statuts?.[label] || "");
-      const node = `
-        <div class="step">
-          <div class="dot ${active?'active':''}"></div>
-          <div class="st-label">${esc(label)}</div>
-          <div class="st-time">${time}</div>
-        </div>`;
-      return idx< FLOW.length-1 ? node + `<div class="line"></div>` : node;
-    }).join("");
-
-    const addrParts = [m?.adresse?.rue, m?.adresse?.num, m?.adresse?.cp, m?.adresse?.ville].filter(Boolean).map(esc);
-    const addr = addrParts.join(", ");
-
-    const card = document.createElement('div');
-    card.className = "card";
-    card.innerHTML = `
-      <div class="card-header">
-        <div>
-          <span class="veh">${esc(m.veh||"—")}</span>
-          ${m.attr ? `<span class="attr">${esc(m.attr)}</span>` : ""}
-        </div>
-        <div class="badges">
-          ${m.type ? `<span class="badge">${esc(m.type)}</span>` : ""}
-          ${renf.pompiers?`<span class="badge pompiers">Pompiers</span>`:""}
-          ${renf.police?`<span class="badge police">Police</span>`:""}
-          ${renf.smur?`<span class="badge smur">SMUR</span>`:""}
-        </div>
-      </div>
-
-      ${is112 ? `
-      <div class="info-row">
-        <div><span class="label">CU112:</span> ${esc(m.centrale||"—")}</div>
-        <div><span class="label">N°:</span> ${esc(m.num112||"—")}</div>
-        <div><span class="label">Départ:</span> ${esc(m.depart112||"—")}</div>
-      </div>` : ""}
-
-      <div class="info-row"><span class="label">Motif:</span> ${esc(m.motif||"—")}</div>
-      ${addr ? `<div class="info-row"><span class="label">Adresse:</span> ${addr}</div>` : ""}
-
-      ${flags.length? `<div class="flags">${flags.join("")}</div>`: ""}
-
-      <div class="timeline">${stepsHtml}</div>
-    `;
-    grid.appendChild(card);
-  });
-}
-
-/* Bannière (reprend exactement ta logique) */
-function buildTicker(){
-  const notes = get(dispatchData, "_notes", {materiel:"", infos:""});
-  const vehOrder = get(dispatchData, "_settings.vehs", []).map(v=>v.id);
-  const outs = [];
-  vehOrder.forEach(id=>{
-    const d = dispatchData[id];
-    if (d?.statut === "Indisponible"){
-      let label = (d?.name || id);
-      if (d?.attribution) label += ` [${d.attribution}]`;
-      if (d?.commentaire) label += ` — ${d.commentaire}`;
-      outs.push(label);
+function assignNumbers(missions){
+  const used=new Set(Object.values(numMap));
+  missions.forEach(m=>{
+    if(!numMap[m.id]){
+      // cherche un numéro libre le plus petit
+      let n=1;while(used.has(n))n++;
+      numMap[m.id]=n;used.add(n);
     }
   });
-
-  const chunks = [];
-  if (outs.length){
-    chunks.push(`<span class="tag">VÉHICULE OUT</span><span>${esc(outs.join("  •  "))}</span>`);
+  // supprime les numéros des missions clôturées
+  const ids=new Set(missions.map(m=>m.id));
+  for(const id in numMap){
+    if(!ids.has(id)) delete numMap[id];
   }
-  if ((notes.materiel||"").trim()){
-    chunks.push(`<span class="tag">MATÉRIEL</span><span>${esc(notes.materiel.replace(/\s+/g,' ').trim())}</span>`);
-  }
-  if ((notes.infos||"").trim()){
-    chunks.push(`<span class="tag">INFOS</span><span>${esc(notes.infos.replace(/\s+/g,' ').trim())}</span>`);
-  }
-
-  const content = chunks.length ? chunks.map(c=>`<span class="chunk">${c}</span>`).join('<span class="sep">|</span>') : `<span class="chunk"><span>Aucune information</span></span>`;
-  const band1 = document.getElementById('band1');
-  const band2 = document.getElementById('band2');
-  band1.innerHTML = content + content;
-  band2.innerHTML = band1.innerHTML;
 }
 
-/* Rendu général */
-function renderAll(){
-  renderClock();
-  renderMissions();
-  buildTicker();
+function renderMissions(data){
+  const list = Object.entries(data).filter(([id,m])=>!id.startsWith("_"))
+                .map(([id,m])=>({...m,id}));
+  assignNumbers(list);
+  // tri : plus récente en haut
+  list.sort((a,b)=> (b.timestamp||0) - (a.timestamp||0));
+
+  const container=document.getElementById("missionList");
+  if(list.length===0){ container.textContent="Aucune mission en cours."; return; }
+
+  container.innerHTML=list.map(m=>{
+    const c=statutClass(m.statut);
+    const loc=m.localite ? `${m.code_postal||''} ${m.localite}`.trim() : "—";
+    const equip=m.equipage||m.vehicule||"";
+    const h=new Date(m.timestamp||Date.now()).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="mission ${c}">
+      <div class="header">
+        <div class="num">#${numMap[m.id]}</div>
+        <div class="type">${m.type||"Mission"}</div>
+      </div>
+      <div class="statut">${m.statut||"—"}</div>
+      <div class="loc">${loc}</div>
+      ${equip?`<div class="equip">${equip}</div>`:""}
+      <div class="time">${h}</div>
+    </div>`;
+  }).join("");
+
+  updateMap(list);
 }
 
-/* Boot + polling */
-async function boot(){
-  await fetchAll();
-  renderAll();
-  setInterval(renderClock, 1000);
-  pollTimer = setInterval(async ()=>{
-    await fetchAll();
-    renderAll();
-  }, 5000);
+function updateMap(list){
+  // supprime anciens marqueurs
+  Object.values(markers).forEach(m=>map.removeLayer(m));
+  markers={};
+  list.forEach(m=>{
+    if(!m.lat||!m.lon) return;
+    const color = (()=>{
+      switch(m.statut){
+        case "Départ": return "gold";
+        case "Sur place": return "orange";
+        case "En route vers l'hôpital": return "deepskyblue";
+        case "À l'hôpital": return "violet";
+        case "Retour disponible":
+        case "Retour indisponible": return "limegreen";
+        default: return "red";
+      }
+    })();
+    const icon=L.divIcon({className:"",html:`<div style="background:${color};border:2px solid #fff;border-radius:50%;width:14px;height:14px"></div>`});
+    markers[m.id]=L.marker([m.lat,m.lon],{icon,title:`#${numMap[m.id]} ${m.type||''}`}).addTo(map);
+  });
 }
 
-/* Sync inter-onglets (si une autre page écrit en localStorage) */
-window.addEventListener('storage', (e)=>{
-  if (e.key === MISSIONS_KEY || e.key === DISPATCH_KEY){
-    try{ missions = JSON.parse(localStorage.getItem(MISSIONS_KEY) || "{}"); }catch{ missions = {}; }
-    try{ dispatchData = JSON.parse(localStorage.getItem(DISPATCH_KEY) || "{}"); }catch{ dispatchData = {}; }
-    renderAll();
-  }
-});
+async function refresh(){
+  try{
+    const data = await readKey(KEY)||{};
+    renderMissions(data);
+  }catch(e){ console.error(e); }
+}
 
-/* Go */
-boot();
+initMap();
+refresh();
+setInterval(refresh,5000);
 </script>
 </body>
 </html>
