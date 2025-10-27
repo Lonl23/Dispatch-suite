@@ -22,18 +22,18 @@
 </head>
 <body>
 
-<!-- Firebase (compat pour simplicité) -->
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 
-<!-- Barre du haut (affichée seulement après login) -->
+<!-- Barre du haut -->
 <div id="topbar" class="topbar hidden">
   <div><b>Dispatch</b> — connecté : <span id="who"></span></div>
   <button class="btn logout" onclick="logout()">Déconnexion</button>
 </div>
 
 <div class="wrap">
-  <!-- Carte de connexion -->
+  <!-- Formulaire de connexion -->
   <div id="loginCard" class="card" style="width:360px">
     <h1>Connexion</h1>
     <label>Email</label>
@@ -44,7 +44,7 @@
     <p id="msg" class="mut" style="margin-top:10px"></p>
   </div>
 
-  <!-- Menu après connexion : uniquement 3 choix -->
+  <!-- Menu après connexion -->
   <div id="menuCard" class="card hidden">
     <h1>Choisir un mode</h1>
     <div class="menu">
@@ -56,9 +56,9 @@
 </div>
 
 <script>
-/* Remplace par TA config Firebase (depuis Paramètres du projet > Vos applications > Web) */
+// ----- CONFIG FIREBASE -----
 const firebaseConfig = {
-  apiKey: "AIzaSyCP6ZClAectP8OPneAeoYGYdRYO0CvnbnQ",
+  apiKey: "AIzaSyCP6ZClAectP8OPneAeOYGYdRYO0CvnbnQ",
   authDomain: "racs-dispatch.firebaseapp.com",
   databaseURL: "https://racs-dispatch-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "racs-dispatch",
@@ -69,14 +69,16 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 
+// Références DOM
 const loginCard = document.getElementById('loginCard');
 const menuCard  = document.getElementById('menuCard');
 const msg       = document.getElementById('msg');
 const whoSpan   = document.getElementById('who');
 const topbar    = document.getElementById('topbar');
 
+// Connexion
 document.getElementById('btnLogin').onclick = async ()=>{
-  msg.textContent = "Connexion…";
+  msg.textContent = "Connexion...";
   try{
     const email = document.getElementById('email').value.trim();
     const pass  = document.getElementById('password').value;
@@ -84,6 +86,8 @@ document.getElementById('btnLogin').onclick = async ()=>{
     const idToken = await res.user.getIdToken(true);
     localStorage.setItem("dispatch_idToken", idToken);
     localStorage.setItem("dispatch_uid", res.user.uid);
+    // 🔹 Ligne ajoutée : marqueur indiquant que l'accès vient bien d'index
+    localStorage.setItem("dispatch_logged_via_index", "true");
     showMenu(res.user);
   }catch(e){
     console.error(e);
@@ -91,6 +95,7 @@ document.getElementById('btnLogin').onclick = async ()=>{
   }
 };
 
+// Fonctions d'affichage
 function showMenu(user){
   whoSpan.textContent = user.email || user.uid;
   topbar.classList.remove('hidden');
@@ -107,15 +112,17 @@ function showLogin(){
 function logout(){
   localStorage.removeItem("dispatch_idToken");
   localStorage.removeItem("dispatch_uid");
+  localStorage.removeItem("dispatch_logged_via_index");
   auth.signOut().finally(()=>location.reload());
 }
 
-/* Si déjà connecté, afficher directement le menu (mais PAS de liens visibles avant login) */
+// Auto-détection de session
 auth.onAuthStateChanged(async user=>{
   if(user){
     const t = await user.getIdToken();
     localStorage.setItem("dispatch_idToken", t);
     localStorage.setItem("dispatch_uid", user.uid);
+    localStorage.setItem("dispatch_logged_via_index", "true"); // 🔹 encore ici en sauvegarde
     showMenu(user);
   }else{
     showLogin();
