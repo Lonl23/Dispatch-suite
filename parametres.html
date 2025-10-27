@@ -1,164 +1,299 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Paramétrages – Véhicules</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Paramétrages — Parc véhicules</title>
 <style>
-  :root{--bg:#071022;--panel:#0f1724;--line:#213243;--txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6}
-  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Segoe UI,Inter,Arial,sans-serif}
-  h1{margin:16px auto;text-align:center;color:#cfe1ff}
-  .wrap{max-width:1100px;margin:0 auto;padding:12px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
-  label{font-size:13px;color:var(--mut)}
-  input,select{width:100%;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:#081427;color:#fff}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{border:1px solid var(--line);padding:6px;text-align:center}
-  th{background:#13233b}
-  .row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  :root{ --bg:#0b0f14; --panel:#121821; --line:#223044; --txt:#e8eef5; --mut:#93a7bf; --accent:#3a8bf2; }
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,Segoe UI,Arial,sans-serif}
+  header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#0d131c;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:20px;color:#cfe1ff}
+  header .right{display:flex;gap:8px}
+  .btn{background:var(--accent);border:0;color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:600}
+  .btn.ghost{background:#0f1520;border:1px solid #2c3d52}
+  .wrap{padding:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  table{width:100%;border-collapse:collapse}
+  th,td{border:1px solid var(--line);padding:8px;text-align:left}
+  th{background:#182030}
   .mut{color:var(--mut);font-size:12px}
-  .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
-  .danger{background:#b23b3b}
-  .warn{color:#ffcc66;margin:6px 0}
+  .tag{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #2c3d52;font-size:12px}
+  .actions{display:flex;gap:8px}
+  dialog{border:1px solid #2c3d52;border-radius:12px;background:#0f1520;color:#fff;padding:16px;max-width:520px}
+  dialog::backdrop{background:rgba(0,0,0,.5)}
+  label{font-size:12px;color:#9fb2c9;display:block;margin-top:10px}
+  input,select{width:100%;padding:8px;border-radius:8px;border:1px solid #2c3d52;background:#0b1626;color:#fff;box-sizing:border-box}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:800px){ .row{grid-template-columns:1fr} }
 </style>
 </head>
 <body>
 
-<!-- Guard simple -->
+<!-- Auth (désactive si non utilisé) -->
 <script>
-(function ensureAuth(){
-  if(!localStorage.getItem("dispatch_idToken")) location.href="index.html";
-})();
+  // if(!localStorage.getItem("dispatch_idToken")) location.href = "index.html";
 </script>
 
 <script src="store-bridge.js"></script>
 
-<h1>Paramétrages – Véhicules</h1>
-<div class="wrap">
-  <p class="warn" id="roleWarn" style="display:none">⚠️ Vous n’êtes pas connecté en tant que <b>centrale@acsrs.be</b> (lecture seule). Les modifications peuvent être refusées par la base.</p>
-
-  <div class="card">
-    <h3 style="margin:0 0 8px">Ajouter / Modifier un véhicule</h3>
-    <div class="row">
-      <div><label>ID (unique) – ex: AS 55</label><input id="v_id" placeholder="AS 55"></div>
-      <div><label>Nom affiché</label><input id="v_name" placeholder="Ambulance 55"></div>
-      <div><label>Attribution (LH1…LH8, Prev, LOG, TMS, OFF)</label><input id="v_attrib" placeholder="LH1"></div>
-      <div><label>Plaque</label><input id="v_plaque" placeholder="1-ABC-123"></div>
-    </div>
-    <div style="margin-top:8px">
-      <button class="btn" onclick="saveVeh()">Enregistrer</button>
-      <button class="btn danger" onclick="delVeh()">Supprimer</button>
-      <span class="mut">Sélectionne dans la liste pour pré-remplir / éditer.</span>
-    </div>
+<header>
+  <h1>Paramétrages — Parc véhicules</h1>
+  <div class="right">
+    <button class="btn ghost" onclick="window.open('dispatch.html','_blank')">↩️ Dispatch</button>
+    <button class="btn ghost" onclick="window.open('tv-grid.html','_blank')">📺 TV Grid</button>
+    <button class="btn" id="btnAdd">➕ Nouveau véhicule</button>
   </div>
+</header>
 
+<div class="wrap">
   <div class="card">
-    <h3 style="margin:0 0 8px">Véhicules enregistrés</h3>
-    <table>
+    <div class="mut" id="status">Chargement…</div>
+    <table style="margin-top:10px">
       <thead>
         <tr>
-          <th>ID</th><th>Nom</th><th>Attribution</th><th>Plaque</th>
+          <th>Véhicule</th>
+          <th>Plaque</th>
+          <th>Attribution</th>
+          <th>Emplacement</th>
+          <th>Actions</th>
         </tr>
       </thead>
-      <tbody id="list"></tbody>
+      <tbody id="tbody"></tbody>
     </table>
   </div>
 </div>
 
+<!-- Modal add/edit -->
+<dialog id="vehDialog">
+  <form id="vehForm" method="dialog">
+    <h3 id="dlgTitle" style="margin:0 0 8px 0">Nouveau véhicule</h3>
+    <div class="row">
+      <div>
+        <label>Nom / ID du véhicule (ex: AS 55)</label>
+        <input id="f_id" placeholder="AS 55" required>
+      </div>
+      <div>
+        <label>Plaque</label>
+        <input id="f_plaque" placeholder="1-ABC-123">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Attribution</label>
+        <select id="f_attr">
+          <option value="">—</option>
+          <option>LH1</option><option>LH2</option><option>LH3</option><option>LH4</option>
+          <option>LH5</option><option>LH6</option><option>LH7</option><option>LH8</option>
+          <option>TMS</option><option>PREV</option><option>OFF</option>
+        </select>
+      </div>
+      <div>
+        <label>Emplacement</label>
+        <select id="f_place"></select>
+      </div>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
+      <button class="btn ghost" type="button" onclick="vehDialog.close()">Annuler</button>
+      <button class="btn" type="submit">Enregistrer</button>
+    </div>
+    <input type="hidden" id="f_mode" value="add">
+    <input type="hidden" id="f_origId" value="">
+    <input type="hidden" id="f_origEmp" value="">
+  </form>
+</dialog>
+
 <script>
-const STORAGE_KEY="dispatch_parc_vehicules";
-let data={};
-const isCentral=(localStorage.getItem("dispatch_email")||"").toLowerCase()==="centrale@acsrs.be";
-if(!isCentral) document.getElementById('roleWarn').style.display='block';
+/* ======== Constantes ======== */
+const DISPATCH_KEY = "dispatch_parc_vehicules";
 
-const $=id=>document.getElementById(id);
+/* ======== État ======== */
+let state = {};          // document complet
+let vehs  = [];          // state._settings.vehs : [{id, plaque, attribution, emplacement}]
+const $ = sel => document.querySelector(sel);
 
-function ensure(){
-  if(!data || typeof data!=='object') data={};
-  if(!data._settings) data._settings={vehs:[]};
-  if(!data._roles) data._roles={
-    officier_semaine:"",officier_garde:"",responsable_operations:"",
-    chef_groupe:"",chef_poste:"",centraliste_1:"",centraliste_2:""
-  };
-  if(!data._notes) data._notes={materiel:"",infos:""};
+/* ======== Helpers ======== */
+function ensureSettings(){
+  state._settings = state._settings || {};
+  state._settings.vehs = state._settings.vehs || [];
+  vehs = state._settings.vehs;
+}
+function setStatus(msg){ $('#status').textContent = msg; }
+function emplacementOptions(){
+  const opts = [];
+  for(let i=1;i<=10;i++) opts.push(`H${i}`);
+  for(let i=1;i<=6;i++) opts.push(`G${i}`);
+  opts.push('Extérieur');
+  return opts;
+}
+function fillEmplacementSelect(selectEl, value){
+  selectEl.innerHTML = `<option value="">—</option>` + emplacementOptions().map(v=>`<option ${v===value?'selected':''}>${v}</option>`).join("");
+}
+function escapeHTML(s){ return String(s??"").replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+function findVehById(id){ return vehs.find(x=>x.id===id) || null; }
+function findVehByEmplacement(emp, exceptId=null){
+  if(!emp) return null;
+  const e = emp.trim();
+  return vehs.find(v => (v.emplacement||"").trim()===e && v.id!==exceptId) || null;
 }
 
-function renderList(){
-  const tb=$('list'); tb.innerHTML="";
-  (data._settings.vehs||[]).forEach(v=>{
-    tb.insertAdjacentHTML('beforeend',`
-      <tr data-id="${v.id}" style="cursor:pointer">
-        <td>${v.id}</td>
-        <td>${v.name||""}</td>
-        <td>${v.attrib||""}</td>
-        <td>${v.plaque||""}</td>
-      </tr>
-    `);
-  });
-  tb.querySelectorAll('tr').forEach(tr=>{
-    tr.onclick=()=>{
-      const id=tr.dataset.id;
-      const v=(data._settings.vehs||[]).find(x=>x.id===id)||{};
-      $('v_id').value=id;
-      $('v_name').value=v.name||"";
-      $('v_attrib').value=v.attrib||"";
-      $('v_plaque').value=v.plaque||"";
-    };
-  });
-}
-
-async function saveVeh(){
-  const id=$('v_id').value.trim();
-  if(!id){ alert("ID requis"); return; }
-  const name=$('v_name').value.trim();
-  const attrib=$('v_attrib').value.trim();
-  const plaque=$('v_plaque').value.trim();
-
-  // liste
-  const idx=(data._settings.vehs||[]).findIndex(x=>x.id===id);
-  const item={id,name,attrib,plaque};
-  if(idx>=0) data._settings.vehs[idx]=item; else data._settings.vehs.push(item);
-
-  // fiche véhicule
-  data[id]=data[id]||{XO:"",S:"",PS:"",km:"",statut:"Disponible",commentaire:""};
-  data[id].name=name; data[id].attribution=attrib; data[id].plaque=plaque;
-
+/* ======== Chargement ======== */
+async function loadAll(){
+  if(typeof readKey!=='function'){ alert("store-bridge.js manquant ou incomplet."); return; }
   try{
-    await saveKey(STORAGE_KEY,data);
-    renderList();
-    alert("Enregistré ✅");
+    state = await readKey(DISPATCH_KEY) || {};
+    ensureSettings();
+    renderTable();
+    setStatus(`Chargé — ${vehs.length} véhicule(s)`);
   }catch(e){
-    console.warn("Save refused",e);
-    alert("Échec de l’enregistrement (compte non autorisé ?)");
+    console.error(e);
+    setStatus("Erreur de lecture.");
   }
 }
 
-async function delVeh(){
-  const id=$('v_id').value.trim();
-  if(!id) return;
+/* ======== Rendu ======== */
+function renderTable(){
+  const tb = $('#tbody'); tb.innerHTML = "";
+  vehs.forEach(v=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><span class="tag">${escapeHTML(v.id)}</span></td>
+      <td>${escapeHTML(v.plaque||"")}</td>
+      <td>${escapeHTML(v.attribution||"")}</td>
+      <td>${escapeHTML(v.emplacement||"")}</td>
+      <td class="actions">
+        <button class="btn ghost" onclick="onEdit('${encodeURIComponent(v.id)}')">Éditer</button>
+        <button class="btn ghost" onclick="onRemove('${encodeURIComponent(v.id)}')">Supprimer</button>
+      </td>
+    `;
+    tb.appendChild(tr);
+  });
+}
+
+/* ======== Actions ======== */
+function onAdd(){
+  $('#dlgTitle').textContent = "Nouveau véhicule";
+  $('#f_mode').value = "add";
+  $('#f_origId').value = "";
+  $('#f_origEmp').value = "";
+  $('#f_id').value = "";
+  $('#f_plaque').value = "";
+  $('#f_attr').value = "";
+  fillEmplacementSelect($('#f_place'), "");
+  vehDialog.showModal();
+}
+
+function onEdit(encId){
+  const id = decodeURIComponent(encId);
+  const v = findVehById(id); if(!v) return;
+  $('#dlgTitle').textContent = "Éditer le véhicule";
+  $('#f_mode').value = "edit";
+  $('#f_origId').value = v.id;
+  $('#f_origEmp').value = v.emplacement || "";
+  $('#f_id').value = v.id;
+  $('#f_plaque').value = v.plaque||"";
+  $('#f_attr').value = v.attribution||"";
+  fillEmplacementSelect($('#f_place'), v.emplacement||"");
+  vehDialog.showModal();
+}
+
+async function onRemove(encId){
+  const id = decodeURIComponent(encId);
   if(!confirm(`Supprimer ${id} ?`)) return;
+  const idx = vehs.findIndex(x=>x.id===id);
+  if(idx>=0) vehs.splice(idx,1);
+  await saveAll();
+  renderTable();
+}
 
-  data._settings.vehs=(data._settings.vehs||[]).filter(x=>x.id!==id);
-  delete data[id];
+/* ======== Soumission (avec unicité & échange) ======== */
+$('#vehForm').addEventListener('submit', async (e)=>{
+  e.preventDefault();
+  const mode = $('#f_mode').value;
+  const origId = $('#f_origId').value;
+  const origEmp = $('#f_origEmp').value || "";
+  const obj = {
+    id: $('#f_id').value.trim(),
+    plaque: $('#f_plaque').value.trim(),
+    attribution: $('#f_attr').value || "",
+    emplacement: $('#f_place').value || ""
+  };
+  if(!obj.id){ alert("Nom / ID requis"); return; }
 
+  // Unicité de l'ID
+  if(mode==="add" && vehs.some(v=>v.id===obj.id)){
+    alert("Un véhicule avec ce nom existe déjà."); return;
+  }
+  if(mode==="edit" && obj.id!==origId && vehs.some(v=>v.id===obj.id)){
+    alert("Un véhicule avec ce nom existe déjà."); return;
+  }
+
+  // Unicité de l'emplacement + logique d'échange
+  const conflict = findVehByEmplacement(obj.emplacement, mode==="edit" ? origId : null);
+  if(conflict && obj.emplacement){
+    if(mode==="edit"){
+      const wantSwap = confirm(`L'emplacement ${obj.emplacement} est déjà attribué à ${conflict.id}.\n\nSouhaitez-vous ÉCHANGER les emplacements entre ${origId} et ${conflict.id} ?`);
+      if(!wantSwap) return; // abandon
+      // Échange : conflict prend l'ancien emplacement de ce véhicule
+      const conflictIdx = vehs.findIndex(v=>v.id===conflict.id);
+      if(conflictIdx>=0) vehs[conflictIdx].emplacement = origEmp || "";
+      // Le véhicule édité prendra obj.emplacement (voir plus bas)
+    }else{ // add
+      const takeOver = confirm(`L'emplacement ${obj.emplacement} est déjà attribué à ${conflict.id}.\n\nSouhaitez-vous le retirer de ${conflict.id} et l'attribuer à ce nouveau véhicule ?`);
+      if(!takeOver) return;
+      // Nouveau véhicule prend l'emplacement ; l'autre est libéré
+      const conflictIdx = vehs.findIndex(v=>v.id===conflict.id);
+      if(conflictIdx>=0) vehs[conflictIdx].emplacement = "";
+    }
+  }
+
+  if(mode==="add"){
+    vehs.push(obj);
+  }else{
+    const i = vehs.findIndex(v=>v.id===origId);
+    if(i<0){ alert("Véhicule introuvable."); return; }
+    // si renommage, migrer l’état courant (state[vehId])
+    if(state[origId] && obj.id!==origId){
+      state[obj.id] = state[origId];
+      delete state[origId];
+    }
+    vehs[i] = obj;
+  }
+
+  await saveAll();
+  vehDialog.close();
+  renderTable();
+});
+
+/* ======== Sauvegarde ======== */
+async function saveAll(){
+  ensureSettings();
+  state._settings.vehs = vehs;
+  setStatus("Sauvegarde…");
   try{
-    await saveKey(STORAGE_KEY,data);
-    $('v_id').value=$('v_name').value=$('v_attrib').value=$('v_plaque').value="";
-    renderList();
-    alert("Supprimé ✅");
+    if(typeof writeKey==='function'){
+      await writeKey(DISPATCH_KEY, state);
+    }else if(typeof patchKey==='function'){
+      await patchKey(DISPATCH_KEY, state);
+    }else{
+      localStorage.setItem(DISPATCH_KEY, JSON.stringify(state));
+    }
+    setStatus("Sauvegardé ✔︎");
   }catch(e){
-    console.warn("Delete refused",e);
-    alert("Échec de la suppression (compte non autorisé ?)");
+    console.error(e);
+    setStatus("Erreur de sauvegarde.");
   }
 }
 
-async function boot(){
-  if(typeof readKey!=='function'){ alert("store-bridge.js manquant"); return; }
-  data=await readKey(STORAGE_KEY)||{};
-  ensure();
-  renderList();
-}
-boot();
+/* ======== Sync & Boot ======== */
+document.getElementById('btnAdd').addEventListener('click', onAdd);
+window.addEventListener('storage', (e)=>{
+  if(e.key===DISPATCH_KEY){
+    try{ state = JSON.parse(e.newValue||"{}"); ensureSettings(); renderTable(); setStatus(`Synchro — ${vehs.length} véhicule(s)`); }catch{}
+  }
+});
+loadAll();
 </script>
 </body>
 </html>
