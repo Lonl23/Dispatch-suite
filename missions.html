@@ -9,7 +9,7 @@
   html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,Segoe UI,Arial,sans-serif}
   header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#0d131c;border-bottom:1px solid var(--line)}
   header h1{margin:0;font-size:20px;color:#cfe1ff}
-  .wrap{display:grid;grid-template-columns:420px 1fr;gap:12px;padding:12px;min-height:calc(100vh - 58px)}
+  .wrap{display:grid;grid-template-columns:440px 1fr;gap:12px;padding:12px;min-height:calc(100vh - 58px)}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
   h2{margin:0 0 10px;color:#cfe1ff;font-size:18px}
   label{font-size:13px;color:var(--mut)}
@@ -21,10 +21,13 @@
   .mut{color:var(--mut);font-size:12px}
   .btn{background:#2f7bf6;border:0;color:#fff;border-radius:8px;padding:10px 12px;cursor:pointer}
   .btn:disabled{opacity:.6;cursor:not-allowed}
-  .renforts table{width:100%;border-collapse:collapse}
-  .renforts th,.renforts td{border:1px solid var(--line);padding:6px;text-align:left;font-size:14px;vertical-align:top}
   .list{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
   .mission{background:#0f1724;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .line{height:2px;background:#2c3d52;margin:8px 0}
+  .tag{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:2px 8px;font-size:12px;color:#cfe1ff}
+  .act{background:#2f7bf6;color:#fff;border:0;border-radius:8px;padding:6px 10px;cursor:pointer}
+  .act[disabled]{opacity:.5;cursor:not-allowed}
+  .ok{background:#2ecc71}
   .bad{color:#ffb3b3}
 </style>
 </head>
@@ -45,9 +48,10 @@
 </header>
 
 <div class="wrap">
-  <!-- Colonne gauche : création/édition -->
+  <!-- Colonne gauche : création -->
   <div class="card">
     <h2>Créer une mission</h2>
+
     <div class="row row2">
       <div>
         <label>Type</label>
@@ -90,18 +94,21 @@
         <label><input type="radio" name="pecType" value="dom" checked> Domicile</label>
         <label><input type="radio" name="pecType" value="str"> Hôpital / MR(S)</label>
       </div>
+
+      <!-- PEC Domicile -->
       <div id="pec_dom" class="row row2">
         <div><label>Rue</label><input id="pec_rue"></div>
         <div><label>N°</label><input id="pec_num"></div>
-        <div><label>CP</label><input id="pec_cp" list="cpOptions"></div>
-        <div><label>Localité</label><input id="pec_ville" list="villeOptions"></div>
+        <div><label>CP</label><input id="pec_cp" list="cpOptions" autocomplete="off"></div>
+        <div><label>Localité</label><input id="pec_ville" list="villeOptions" autocomplete="off"></div>
       </div>
 
+      <!-- PEC Structure -->
       <div id="pec_str" style="display:none">
         <div class="row">
           <div>
             <label>Recherche structure</label>
-            <input id="pec_hop_search" list="pecHopList" placeholder="CHU / Clinique ...">
+            <input id="pec_hop_search" list="pecHopList" placeholder="CHU / Clinique ..." autocomplete="off">
             <datalist id="pecHopList"></datalist>
             <small class="mut">Recherche Internet (OSM). Tape au moins 3 caractères.</small>
           </div>
@@ -121,18 +128,21 @@
         <label><input type="radio" name="destType" value="dom" checked> Domicile</label>
         <label><input type="radio" name="destType" value="str"> Hôpital / MR(S)</label>
       </div>
+
+      <!-- Destination Domicile -->
       <div id="dest_dom" class="row row2">
         <div><label>Rue</label><input id="dest_rue"></div>
         <div><label>N°</label><input id="dest_num"></div>
-        <div><label>CP</label><input id="dest_cp" list="cpOptions"></div>
-        <div><label>Localité</label><input id="dest_ville" list="villeOptions"></div>
+        <div><label>CP</label><input id="dest_cp" list="cpOptions" autocomplete="off"></div>
+        <div><label>Localité</label><input id="dest_ville" list="villeOptions" autocomplete="off"></div>
       </div>
 
+      <!-- Destination Structure -->
       <div id="dest_str" style="display:none">
         <div class="row">
           <div>
             <label>Recherche structure</label>
-            <input id="dest_hop_search" list="destHopList" placeholder="Saint-Luc / Erasme ...">
+            <input id="dest_hop_search" list="destHopList" placeholder="Saint-Luc / Erasme ..." autocomplete="off">
             <datalist id="destHopList"></datalist>
             <small class="mut">Recherche Internet (OSM). Tape au moins 3 caractères.</small>
           </div>
@@ -153,15 +163,15 @@
       </div>
     </div>
 
-    <div class="card renforts" style="margin-top:10px;background:#0f1724">
+    <div class="card" style="margin-top:10px;background:#0f1724">
       <h2 style="font-size:16px">Renforts</h2>
-      <table>
+      <table style="width:100%;border-collapse:collapse">
         <thead>
           <tr>
-            <th>Service</th>
-            <th>Commentaire</th>
-            <th>Statut d’appel</th>
-            <th>Sur place</th>
+            <th style="border:1px solid var(--line);padding:6px;text-align:left">Service</th>
+            <th style="border:1px solid var(--line);padding:6px;text-align:left">Commentaire</th>
+            <th style="border:1px solid var(--line);padding:6px;text-align:left">Statut d’appel</th>
+            <th style="border:1px solid var(--line);padding:6px;text-align:left">Sur place</th>
           </tr>
         </thead>
         <tbody id="renforts_tbody"></tbody>
@@ -181,279 +191,509 @@
   </div>
 </div>
 
-<!-- Datalists CP/Ville (ODWB index si tu l’utilises déjà) -->
+<!-- Datalists CP/Ville pour l’index ODWB -->
 <datalist id="cpOptions"></datalist>
 <datalist id="villeOptions"></datalist>
 
 <script>
-/* ---------- Constantes ---------- */
+/* =========================
+   CONFIG + CONSTANTES
+   ========================= */
 const MISSIONS_KEY = "dispatch_missions";
 const SERVICES = ["Pompiers","RACS","SMUR","Ambu 112","Police"];
 const APPEL_STATI = ["","Appelé","Confirmé","Refusé","En route","Non dispo"];
 const SUR_PLACE_STATI = ["","Inconnu","Oui","Non"];
 
-/* ---------- État local ---------- */
+const FLOW_112 = [
+  "Appel",
+  "Départ",
+  "Sur place",
+  "En charge vers l'hôpital",
+  "Arrivé à l'hôpital destination",
+  "Retour disponible",
+  "Retour indisponible",
+  "Retour au poste"
+];
+
+const FLOW_TMS_BASE = [
+  "Départ poste",
+  "Sur place PEC",
+  "Départ vers destination",
+  "Sur place destination"
+];
+const FLOW_TMS_NO_RETOUR = [
+  "Retour dispo au poste",
+  "Retour indisponible"
+];
+const FLOW_TMS_AVEC_RETOUR = [
+  "Départ retour",
+  "Sur place retour",
+  "Retour vers le poste",
+  "Retour dispo au poste",
+  "Retour indisponible"
+];
+
 let MISSIONS = {};
 let saving = false;
 
-/* ---------- Utils ---------- */
+/* =========================
+   UTILS
+   ========================= */
 const $ = id => document.getElementById(id);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const nowISO = ()=> {
-  const d=new Date(), z2=n=>String(n).padStart(2,'0');
-  return `${d.getFullYear()}-${z2(d.getMonth()+1)}-${z2(d.getDate())} ${z2(d.getHours())}:${z2(d.getMinutes())}:${z2(d.getSeconds())}`;
-};
+const nowISO = ()=>{const d=new Date(),z=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())} ${z(d.getHours())}:${z(d.getMinutes())}:${z(d.getSeconds())}`};
+function parseDT(s){ return s ? new Date(s.replace(' ','T')) : null; }
+function minutesBetween(a,b){ const A=parseDT(a),B=parseDT(b); if(!A||!B)return null; return Math.round((B-A)/60000); }
 
-/* ---------- Rendu Renforts (form) ---------- */
+/* =========================
+   RENFORTS (form)
+   ========================= */
 function renderRenfortsForm(){
   const tb = $('renforts_tbody'); tb.innerHTML="";
   SERVICES.forEach(s=>{
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td><b>${s}</b></td>
-      <td><textarea data-r="${s}" data-k="comment" placeholder="Commentaire..."></textarea></td>
-      <td>
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="border:1px solid var(--line);padding:6px"><b>${s}</b></td>
+      <td style="border:1px solid var(--line);padding:6px"><textarea data-r="${s}" data-k="comment" placeholder="Commentaire..."></textarea></td>
+      <td style="border:1px solid var(--line);padding:6px">
         <select data-r="${s}" data-k="appel">
           ${APPEL_STATI.map(v=>`<option value="${v}">${v||"-"}</option>`).join("")}
         </select>
       </td>
-      <td>
+      <td style="border:1px solid var(--line);padding:6px">
         <select data-r="${s}" data-k="sur_place">
           ${SUR_PLACE_STATI.map(v=>`<option value="${v}">${v||"-"}</option>`).join("")}
         </select>
       </td>
     `;
-    tb.appendChild(row);
+    tb.appendChild(tr);
   });
 }
 
-/* ---------- Recherche hôpital (OSM Nominatim) | attachable ---------- */
-function attachHospitalSearch(searchId, listId, outNameId, outAddrId, outCPId, outVilleId){
-  const NOM_URL = "https://nominatim.openstreetmap.org/search";
-  const input = $(searchId), dlist = $(listId);
-  const outName = $(outNameId), outAddr = $(outAddrId);
-  const outCP = outCPId? $(outCPId): null;
-  const outVille = outVilleId? $(outVilleId): null;
+/* =========================
+   STATUTS / RÈGLES
+   ========================= */
+const REQUIRE_ON_STATUS = {
+  "En charge vers l'hôpital": ["hopital_dest"]
+};
 
-  const mem = new Map();
-  function formatDisplay(r){
-    const name = r.display_name?.split(",")[0] || r.name || "Structure";
-    const a = r.address || {};
-    const rue = [a.road,a.house_number].filter(Boolean).join(" ");
-    const cp  = a.postcode || "";
-    const city= a.city || a.town || a.village || a.municipality || "";
-    const line = [rue,cp,city].filter(Boolean).join(", ");
-    return { name, line, cp, city };
+function canClose112(m){
+  const s=m.statuts||{};
+  if(s["Retour disponible"]) return true;
+  if(s["Retour indisponible"] && s["Retour au poste"]) return true;
+  return false;
+}
+function canCloseTMS(m){
+  const s=m.statuts||{};
+  if(m.retour_prevus===true){
+    if(s["Retour dispo au poste"] || s["Retour indisponible"]) return true;
+    return false;
+  }else{
+    if(s["Retour dispo au poste"] || s["Retour indisponible"]) return true;
+    return false;
   }
-  const doSearch = async ()=>{
-    const q = input.value.trim();
-    if(q.length<3){ dlist.innerHTML=""; return; }
-    if(mem.has(q.toLowerCase())){ render(mem.get(q.toLowerCase())); return; }
-    const url = `${NOM_URL}?format=jsonv2&addressdetails=1&countrycodes=be&limit=20&q=${encodeURIComponent(q+" hospital clinic clinique hopital centre hospitalier CHU UZ")}`;
-    try{
-      const res = await fetch(url, { cache:"no-store" });
-      const arr = await res.json();
-      const items = arr.map(r=>{
-        const f = formatDisplay(r);
-        return { k:String(r.place_id), name:f.name, line:f.line, cp:f.cp, city:f.city };
-      });
-      mem.set(q.toLowerCase(), items);
-      render(items);
-    }catch(e){ dlist.innerHTML=""; }
-  };
-  const render = (items)=>{
-    dlist.innerHTML = items.map(it=>`<option value="${esc(it.name)} — ${esc(it.line)}" data-k="${esc(it.k)}"></option>`).join("");
-  };
-  const onChoose = ()=>{
-    const val = input.value.trim().toLowerCase();
-    let choice=null;
-    for(const items of mem.values()){
-      const found = items.find(it => (`${it.name} — ${it.line}`).toLowerCase()===val || it.name.toLowerCase()===val);
-      if(found){ choice=found; break; }
+}
+function computeDurations(m){
+  m.metrics=m.metrics||{};
+  const s=m.statuts||{};
+  if(m.type==="112"){
+    const t=minutesBetween(s["En charge vers l'hôpital"], s["Arrivé à l'hôpital destination"]);
+    if(t!=null) m.metrics.min_charge_to_hosp=t;
+  }else{
+    const t1=minutesBetween(s["Départ vers destination"], s["Sur place destination"]);
+    if(t1!=null) m.metrics.min_aller=t1;
+    if(m.retour_prevus===true){
+      const t2=minutesBetween(s["Départ retour"], s["Retour vers le poste"]);
+      if(t2!=null) m.metrics.min_retour=t2;
     }
-    if(!choice){ outName.value = input.value; outAddr.value=""; return; }
-    outName.value = choice.name;
-    outAddr.value = choice.line || "";
-    if(outCP && choice.cp) outCP.value = choice.cp;
-    if(outVille && choice.city) outVille.value = choice.city;
-  };
-
-  input.addEventListener('input', ()=>{ clearTimeout(input._t); input._t=setTimeout(doSearch,300); });
-  input.addEventListener('change', onChoose);
-  input.addEventListener('blur', onChoose);
-}
-
-/* ---------- Toggle PEC/Dest DOM/STR ---------- */
-function bindToggles(){
-  document.querySelectorAll('input[name="pecType"]').forEach(r=>{
-    r.onchange = ()=>{
-      $('pec_dom').style.display = (r.value==='dom')?'grid':'none';
-      $('pec_str').style.display = (r.value==='str')?'block':'none';
-    };
-  });
-  document.querySelectorAll('input[name="destType"]').forEach(r=>{
-    r.onchange = ()=>{
-      $('dest_dom').style.display = (r.value==='dom')?'grid':'none';
-      $('dest_str').style.display = (r.value==='str')?'block':'none';
-    };
-  });
-}
-
-/* ---------- Création mission ---------- */
-async function createMissionFromForm(){
-  if(saving) return;
-  const type = $('m_type').value;
-  const veh  = $('m_veh').value.trim();
-  if(!veh){ alert("Véhicule requis"); return; }
-  const m = {
-    id: `M${Date.now()}`,
-    type,
-    veh,
-    attr: $('m_attr').value.trim() || "",
-    statuts: {},
-    metrics: {},
-    comment: $('m_comment').value.trim() || "",
-    renforts: {},
-
-    // TMS spécifique
-    retour_prevus: (type==='TMS' ? ($('m_retour_prevus').value==='true') : undefined),
-
-    // PEC
-    pec: (()=>{
-      const kind = document.querySelector('input[name="pecType"]:checked')?.value || 'dom';
-      if(type!=='TMS'){ return null; }
-      if(kind==='dom'){
-        return { type:'dom', rue:$('pec_rue').value.trim(), num:$('pec_num').value.trim(), cp:$('pec_cp').value.trim(), ville:$('pec_ville').value.trim() };
-      }else{
-        return { type:'str', name:$('pec_hop_name').value.trim(), addr:$('pec_hop_addr').value.trim(), cp:$('pec_cp2').value.trim(), ville:$('pec_ville2').value.trim() };
-      }
-    })(),
-
-    // Destination
-    destination: (()=>{
-      const kind = document.querySelector('input[name="destType"]:checked')?.value || 'dom';
-      if(kind==='dom'){
-        return { type:'dom', rue:$('dest_rue').value.trim(), num:$('dest_num').value.trim(), cp:$('dest_cp').value.trim(), ville:$('dest_ville').value.trim() };
-      }else{
-        return { type:'str', name:$('dest_hop_name').value.trim(), addr:$('dest_hop_addr').value.trim(), cp:$('dest_cp2').value.trim(), ville:$('dest_ville2').value.trim() };
-      }
-    })()
-  };
-
-  if(type==='112'){
-    m.centrale = $('m_centrale').value.trim();
-    m.num112   = $('m_num112').value.trim();
-    m.statuts["Appel"] = nowISO(); // création
   }
-
-  // Renforts
-  SERVICES.forEach(s=>{
-    const comment = (document.querySelector(`textarea[data-r="${s}"][data-k="comment"]`)?.value||"").trim();
-    const appel   = (document.querySelector(`select[data-r="${s}"][data-k="appel"]`)?.value||"").trim();
-    const surp    = (document.querySelector(`select[data-r="${s}"][data-k="sur_place"]`)?.value||"").trim();
-    if(comment || appel || surp){
-      m.renforts[s] = { comment, appel_status:appel, sur_place:surp };
+}
+function nextStatusCandidates(m){
+  const s=m.statuts||{}, has=l=>!!s[l];
+  if(m.type==="112"){
+    if(!has("Appel")) return ["Appel"];
+    if(!has("Départ")) return ["Départ"];
+    if(!has("Sur place")) return ["Sur place"];
+    if(!has("En charge vers l'hôpital")) return ["En charge vers l'hôpital"];
+    if(!has("Arrivé à l'hôpital destination")) return ["Arrivé à l'hôpital destination"];
+    if(!has("Retour disponible") && !has("Retour indisponible")) return ["Retour disponible","Retour indisponible"];
+    if(has("Retour indisponible") && !has("Retour au poste")) return ["Retour au poste"];
+    return [];
+  }
+  if(!has("Départ poste")) return ["Départ poste"];
+  if(!has("Sur place PEC")) return ["Sur place PEC"];
+  if(!has("Départ vers destination")) return ["Départ vers destination"];
+  if(!has("Sur place destination")) return ["Sur place destination"];
+  if(m.retour_prevus===true){
+    if(!has("Départ retour")) return ["Départ retour"];
+    if(!has("Sur place retour")) return ["Sur place retour"];
+    if(!has("Retour vers le poste")) return ["Retour vers le poste"];
+    if(!has("Retour dispo au poste") && !has("Retour indisponible")) return ["Retour dispo au poste","Retour indisponible"];
+    return [];
+  }else{
+    if(!has("Retour dispo au poste") && !has("Retour indisponible")) return ["Retour dispo au poste","Retour indisponible"];
+    return [];
+  }
+}
+function requireFieldsForStatus(m, nextLabel){
+  const req=REQUIRE_ON_STATUS[nextLabel];
+  if(!req) return {ok:true};
+  if(req.includes("hopital_dest")){
+    // vérifier destination côté mission si type structure
+    const d = m.destination || {};
+    if(d.type==="str"){
+      if(!(d.name && (d.addr||d.cp||d.ville))) return {ok:false,reason:"Hôpital destination requis (nom + adresse/CP/ville)"};
+    }else{
+      // si pas “str”, on force la saisie par prompt au besoin
+      const name = prompt("Hôpital destination ?");
+      if(!name) return {ok:false,reason:"Hôpital requis"};
+      m.destination = m.destination || {};
+      m.destination.type = "str";
+      m.destination.name = name;
+      m.destination.addr = m.destination.addr || "";
     }
-  });
-
-  try{
-    saving = true; $('saveState').textContent="Sauvegarde…";
-    await patchKey(`${MISSIONS_KEY}/${m.id}`, m);
-    $('saveState').textContent="Sauvegardé ✔︎";
-    MISSIONS[m.id]=m;
-    renderList();
-  }catch(e){
-    $('saveState').innerHTML=`<span class="bad">Erreur de sauvegarde</span>`;
-    console.error(e);
-  }finally{ saving=false; setTimeout(()=>$('saveState').textContent="Connecté", 1500); }
+  }
+  return {ok:true};
 }
 
-/* ---------- Liste missions actives (aperçu) ---------- */
+/* =========================
+   PERSISTENCE Firebase
+   ========================= */
+async function loadMissions(){ return await readKey(MISSIONS_KEY) || {}; }
+async function saveMission(m){
+  const id = m.id || (m.id=`M${Date.now()}`);
+  await patchKey(`${MISSIONS_KEY}/${id}`, m);
+}
+
+/* =========================
+   ACTIONS (UI)
+   ========================= */
+async function applyStatus(m, label){
+  const check = requireFieldsForStatus(m, label);
+  if(!check.ok){ alert(check.reason||"Champs requis"); return false; }
+  m.statuts=m.statuts||{};
+  if(!m.statuts[label]) m.statuts[label]=nowISO();
+  computeDurations(m);
+  await saveMission(m);
+  return true;
+}
+
+/* =========================
+   RENDU LISTE
+   ========================= */
 function renderList(){
-  const cont = $('list'); cont.innerHTML = "";
+  const cont = $('list'); cont.innerHTML="";
   const arr = Object.values(MISSIONS).filter(x=>!x.done);
-  // tri par date de création/id
-  arr.sort((a,b)=> (b.id||"").localeCompare(a.id||""));
-
+  arr.sort((a,b)=>{
+    const ta=Math.max(...Object.values(a.statuts||{}).map(d=>+parseDT(d)||0),0);
+    const tb=Math.max(...Object.values(b.statuts||{}).map(d=>+parseDT(d)||0),0);
+    return tb-ta;
+  });
   arr.forEach(m=>{
-    const div = document.createElement('div');
-    div.className="mission";
-    const renfBadges = Object.entries(m.renforts||{}).map(([k,v])=>{
-      const a = v.appel_status?`<span class="mut">• ${esc(v.appel_status)}</span>`:"";
-      const s = v.sur_place?`<span class="mut">• SP:${esc(v.sur_place)}</span>`:"";
-      const c = v.comment?`<div class="mut">${esc(v.comment)}</div>`:"";
-      return `<div><b>${esc(k)}</b> ${a} ${s}${c}</div>`;
-    }).join("");
+    const div=document.createElement('div'); div.className="mission";
+    const s=m.statuts||{};
+    const nexts=nextStatusCandidates(m);
+    const canClose = (m.type==="112")?canClose112(m):canCloseTMS(m);
 
     const destText = m.destination
       ? (m.destination.type==='str'
-          ? `[STR] ${esc(m.destination.name||"")} — ${esc(m.destination.addr||"")} ${esc(m.destination.cp||"")} ${esc(m.destination.ville||"")}`
-          : `[DOM] ${esc(m.destination.rue||"")} ${esc(m.destination.num||"")} ${esc(m.destination.cp||"")} ${esc(m.destination.ville||"")}`)
+         ? `[STR] ${esc(m.destination.name||"")} — ${esc(m.destination.addr||"")} ${esc(m.destination.cp||"")} ${esc(m.destination.ville||"")}`
+         : `[DOM] ${esc(m.destination.rue||"")} ${esc(m.destination.num||"")} ${esc(m.destination.cp||"")} ${esc(m.destination.ville||"")}`)
       : "-";
-
     const pecText = (m.type==='TMS' && m.pec)
       ? (m.pec.type==='str'
-          ? `[STR] ${esc(m.pec.name||"")} — ${esc(m.pec.addr||"")} ${esc(m.pec.cp||"")} ${esc(m.pec.ville||"")}`
-          : `[DOM] ${esc(m.pec.rue||"")} ${esc(m.pec.num||"")} ${esc(m.pec.cp||"")} ${esc(m.pec.ville||"")}`)
+         ? `[STR] ${esc(m.pec.name||"")} — ${esc(m.pec.addr||"")} ${esc(m.pec.cp||"")} ${esc(m.pec.ville||"")}`
+         : `[DOM] ${esc(m.pec.rue||"")} ${esc(m.pec.num||"")} ${esc(m.pec.cp||"")} ${esc(m.pec.ville||"")}`)
       : "-";
+
+    const renf = Object.entries(m.renforts||{}).map(([k,v])=>{
+      const a=v.appel_status?` • ${esc(v.appel_status)}`:"";
+      const sp=v.sur_place?` • SP:${esc(v.sur_place)}`:"";
+      const c=v.comment?`<div class="mut">${esc(v.comment)}</div>`:"";
+      return `<div><span class="tag">${esc(k)}</span>${a}${sp}${c}</div>`;
+    }).join("");
+
+    const dur = (()=>{
+      if(m.type==="112" && m.metrics?.min_charge_to_hosp!=null) return `Temps en charge → hôpital : <b>${m.metrics.min_charge_to_hosp} min</b>`;
+      const parts=[];
+      if(m.metrics?.min_aller!=null) parts.push(`Aller : <b>${m.metrics.min_aller} min</b>`);
+      if(m.retour_prevus===true && m.metrics?.min_retour!=null) parts.push(`Retour : <b>${m.metrics.min_retour} min</b>`);
+      return parts.join(" — ");
+    })();
 
     div.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:start">
         <div>
           <div><b>${esc(m.veh||"-")}</b> ${m.attr?`<span class="mut">[${esc(m.attr)}]</span>`:""} — ${esc(m.type)}</div>
-          ${m.type==='TMS' ? `<div class="mut" style="margin-top:2px">PEC: ${pecText}</div>`:""}
+          ${m.type==='TMS'?`<div class="mut" style="margin-top:2px">PEC: ${pecText}</div>`:""}
           <div class="mut" style="margin-top:2px">Destination: ${destText}</div>
           ${m.comment?`<div class="mut" style="margin-top:6px">💬 ${esc(m.comment)}</div>`:""}
+          ${renf?`<div style="margin-top:8px">${renf}</div>`:""}
+          ${dur?`<div style="margin-top:6px;color:#cfe1ff">${dur}</div>`:""}
         </div>
         <div style="text-align:right">
           ${m.type==='112'
-            ? `<div class="mut">CU112: ${esc(m.centrale||"-")} • N° ${esc(m.num112||"-")}</div>`
-            : (m.retour_prevus===true ? `<div class="mut">Retour patient: Oui</div>`:`<div class="mut">Retour patient: Non</div>`)}
+             ? `<div class="mut">CU112: ${esc(m.centrale||"-")} • N° ${esc(m.num112||"-")}</div>`
+             : `<div class="mut">Retour patient: ${m.retour_prevus===true?"Oui":"Non"}</div>`}
         </div>
       </div>
-      ${renfBadges?`<div style="margin-top:8px">${renfBadges}</div>`:""}
+      <div class="line"></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${nexts.map(lbl=>`<button class="act" data-id="${m.id}" data-lbl="${lbl}">${lbl}</button>`).join("")}
+        <button class="act ok" data-close="${m.id}" ${canClose?"":"disabled"}>Clôturer</button>
+      </div>
     `;
-    cont.appendChild(div);
+
+    div.querySelectorAll('button.act[data-id]').forEach(b=>{
+      b.onclick=async()=>{
+        const id=b.dataset.id, lbl=b.dataset.lbl;
+        const mm=MISSIONS[id]; if(!mm) return;
+        await applyStatus(mm,lbl);
+        MISSIONS[id]=mm; renderList();
+      };
+    });
+    div.querySelector('button[data-close]')?.addEventListener('click', async ()=>{
+      if(!( (m.type==="112"&&canClose112(m)) || (m.type!=="112"&&canCloseTMS(m)) )) return;
+      m.done=true; m.closed_at=nowISO();
+      await saveMission(m);
+      delete MISSIONS[m.id]; renderList();
+    });
+
+    $('list').appendChild(div);
   });
-
-  if(!arr.length) cont.innerHTML = `<div class="mut">Aucune mission en cours</div>`;
+  if(!arr.length) $('list').innerHTML = `<div class="mut">Aucune mission en cours</div>`;
 }
 
-/* ---------- Chargement + polling ---------- */
-async function loadAll(){
-  try{
-    MISSIONS = await readKey(MISSIONS_KEY) || {};
-  }catch(e){
-    console.warn("Lecture missions KO", e);
-    MISSIONS = {};
-  }
-  renderList();
-}
-
-/* ---------- Bind UI ---------- */
-$('m_type').onchange = ()=>{
-  const t = $('m_type').value;
+/* =========================
+   CRÉATION MISSION
+   ========================= */
+$('m_type').onchange=()=>{
+  const t=$('m_type').value;
   $('blk_112').style.display = (t==='112')?'grid':'none';
   $('blk_retour_prevus').style.display = (t==='TMS')?'block':'none';
 };
 
-$('btnCreate').onclick = createMissionFromForm;
+function readRenfortsFromForm(){
+  const out={};
+  SERVICES.forEach(s=>{
+    const c=(document.querySelector(`textarea[data-r="${s}"][data-k="comment"]`)?.value||"").trim();
+    const a=(document.querySelector(`select[data-r="${s}"][data-k="appel"]`)?.value||"").trim();
+    const sp=(document.querySelector(`select[data-r="${s}"][data-k="sur_place"]`)?.value||"").trim();
+    if(c||a||sp) out[s] = { comment:c, appel_status:a, sur_place:sp };
+  });
+  return out;
+}
 
-/* Toggles PEC/Dest */
-bindToggles();
+$('btnCreate').onclick = async ()=>{
+  if(saving) return;
+  const type=$('m_type').value;
+  const veh=$('m_veh').value.trim();
+  if(!veh){ alert("Véhicule requis"); return; }
 
-/* Renforts form */
-renderRenfortsForm();
+  const m={
+    id:`M${Date.now()}`,
+    type, veh, attr: $('m_attr').value.trim()||"",
+    comment: $('m_comment').value.trim()||"",
+    statuts:{}, metrics:{},
+    renforts: readRenfortsFromForm()
+  };
 
-/* Hôpital search attach (PEC & DEST) */
+  if(type==='TMS'){
+    m.retour_prevus = ($('m_retour_prevus').value==='true');
+    const pecType = document.querySelector('input[name="pecType"]:checked')?.value || 'dom';
+    m.pec = (pecType==='dom')
+      ? {type:'dom',rue:$('pec_rue').value.trim(),num:$('pec_num').value.trim(),cp:$('pec_cp').value.trim(),ville:$('pec_ville').value.trim()}
+      : {type:'str',name:$('pec_hop_name').value.trim(),addr:$('pec_hop_addr').value.trim(),cp:$('pec_cp2').value.trim(),ville:$('pec_ville2').value.trim()};
+  }
+
+  const destType = document.querySelector('input[name="destType"]:checked')?.value || 'dom';
+  m.destination = (destType==='dom')
+    ? {type:'dom',rue:$('dest_rue').value.trim(),num:$('dest_num').value.trim(),cp:$('dest_cp').value.trim(),ville:$('dest_ville').value.trim()}
+    : {type:'str',name:$('dest_hop_name').value.trim(),addr:$('dest_hop_addr').value.trim(),cp:$('dest_cp2').value.trim(),ville:$('dest_ville2').value.trim()};
+
+  if(type==='112'){
+    m.centrale=$('m_centrale').value.trim();
+    m.num112=$('m_num112').value.trim();
+    m.statuts["Appel"]=nowISO();
+  }
+
+  try{
+    saving=true; $('saveState').textContent="Sauvegarde…";
+    await patchKey(`${MISSIONS_KEY}/${m.id}`, m);
+    $('saveState').textContent="Sauvegardé ✔︎";
+    MISSIONS[m.id]=m; renderList();
+  }catch(e){
+    $('saveState').innerHTML=`<span class="bad">Erreur de sauvegarde</span>`;
+    console.error(e);
+  }finally{
+    saving=false; setTimeout(()=>$('saveState').textContent="Connecté",1200);
+  }
+};
+
+/* =========================
+   HÔPITAUX (Nominatim)
+   ========================= */
+function attachHospitalSearch(searchId, listId, outNameId, outAddrId, outCPId, outVilleId){
+  const NOM_URL="https://nominatim.openstreetmap.org/search";
+  const input=$(searchId), dlist=$(listId);
+  const outName=$(outNameId), outAddr=$(outAddrId);
+  const outCP=outCPId?$(outCPId):null, outVille=outVilleId?$(outVilleId):null;
+  const mem=new Map();
+
+  function fmt(r){
+    const name=r.display_name?.split(",")[0]||r.name||"Structure";
+    const a=r.address||{};
+    const rue=[a.road,a.house_number].filter(Boolean).join(" ");
+    const cp=a.postcode||"";
+    const city=a.city||a.town||a.village||a.municipality||"";
+    const line=[rue,cp,city].filter(Boolean).join(", ");
+    return {name,line,cp,city};
+  }
+
+  const doSearch=async()=>{
+    const q=input.value.trim();
+    if(q.length<3){ dlist.innerHTML=""; return; }
+    const key=q.toLowerCase();
+    if(mem.has(key)){ render(mem.get(key)); return; }
+    const url=`${NOM_URL}?format=jsonv2&addressdetails=1&countrycodes=be&limit=20&q=${encodeURIComponent(q+" hospital clinic clinique hopital centre hospitalier CHU UZ")}`;
+    try{
+      const res=await fetch(url,{cache:"no-store"});
+      const arr=await res.json();
+      const items=arr.map(r=>{const f=fmt(r);return {k:String(r.place_id),name:f.name,line:f.line,cp:f.cp,city:f.city};});
+      mem.set(key,items); render(items);
+    }catch{ dlist.innerHTML=""; }
+  };
+  const render=(items)=>{ dlist.innerHTML=items.map(it=>`<option value="${esc(it.name)} — ${esc(it.line)}"></option>`).join(""); };
+  const choose=()=>{
+    const val=input.value.trim().toLowerCase();
+    let choice=null;
+    for(const arr of mem.values()){
+      const f=arr.find(it=>(`${it.name} — ${it.line}`).toLowerCase()===val || it.name.toLowerCase()===val);
+      if(f){ choice=f; break; }
+    }
+    outName.value = choice?choice.name:input.value;
+    outAddr.value = choice?(choice.line||""):"";
+    if(choice){ if(outCP&&choice.cp) outCP.value=choice.cp; if(outVille&&choice.city) outVille.value=choice.city; }
+  };
+
+  input.addEventListener('input', ()=>{ clearTimeout(input._t); input._t=setTimeout(doSearch,300); });
+  input.addEventListener('change', choose);
+  input.addEventListener('blur', choose);
+}
 attachHospitalSearch('pec_hop_search','pecHopList','pec_hop_name','pec_hop_addr','pec_cp2','pec_ville2');
 attachHospitalSearch('dest_hop_search','destHopList','dest_hop_name','dest_hop_addr','dest_cp2','dest_ville2');
 
-/* Boot */
-(async function(){
-  await loadAll();
-  setInterval(loadAll, 5000);
+/* =========================
+   TOGGLES PEC / DEST
+   ========================= */
+function bindToggles(){
+  document.querySelectorAll('input[name="pecType"]').forEach(r=>{
+    r.onchange=()=>{ $('pec_dom').style.display=(r.value==='dom')?'grid':'none'; $('pec_str').style.display=(r.value==='str')?'block':'none'; };
+  });
+  document.querySelectorAll('input[name="destType"]').forEach(r=>{
+    r.onchange=()=>{ $('dest_dom').style.display=(r.value==='dom')?'grid':'none'; $('dest_str').style.display=(r.value==='str')?'block':'none'; };
+  });
+}
+bindToggles();
+
+/* =========================
+   INDEX CODES POSTAUX (ODWB 2761)
+   ========================= */
+(function postalIndex(){
+  const ODWB_URL="https://www.odwb.be/api/explore/v2.1/catalog/datasets/code-postaux-belge/records";
+  const KEY="odwb_postal_index_v1"; const TTL=30; // jours
+  const listCP=$('cpOptions'), listVille=$('villeOptions');
+  const inputCPs=[$('pec_cp'),$('dest_cp')].filter(Boolean);
+  const inputVilles=[$('pec_ville'),$('dest_ville')].filter(Boolean);
+
+  const strip=s=>String(s||"").normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+  const debounce=(fn,ms=200)=>{let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);}};
+
+  let IDX=null;
+
+  async function fetchAll(){
+    const page=200; let off=0; const all=[];
+    for(;;){
+      const url=`${ODWB_URL}?limit=${page}&offset=${off}`;
+      const res=await fetch(url,{cache:"no-store"}); if(!res.ok) break;
+      const js=await res.json(); const rows=Array.isArray(js?.results)?js.results:[];
+      if(!rows.length) break; all.push(...rows);
+      if(rows.length<page) break; off+=page; if(off>5000) break;
+    }
+    return all;
+  }
+  function pickCP(r){return r.code_postal ?? r.postcode ?? r.cp ?? r.code ?? null;}
+  function pickCity(r){return r.localite ?? r["localité"] ?? r.city ?? r.commune ?? r.ville ?? null;}
+  function build(records){
+    const items=[]; const seen=new Set();
+    for(const r of records){
+      const cp=pickCP(r), city=pickCity(r); if(!cp||!city) continue;
+      const CP=String(cp).trim(); const CITY=String(city).trim(); const k=CP+"|"+CITY.toLowerCase();
+      if(seen.has(k)) continue; seen.add(k); items.push({cp:CP,city:CITY});
+    }
+    const byCP={}, byCityNorm={};
+    items.forEach(it=>{
+      const n=strip(it.city);
+      (byCP[it.cp] ||= []).includes(it.city) || byCP[it.cp].push(it.city);
+      (byCityNorm[n] ||= []).includes(it.cp) || byCityNorm[n].push(it.cp);
+    });
+    const allCPs=Object.keys(byCP).sort();
+    const allCities=Object.keys(byCityNorm).sort();
+    return {byCP,byCityNorm,allCPs,allCities,count:items.length};
+  }
+  async function load(){
+    try{
+      const raw=localStorage.getItem(KEY);
+      if(raw){
+        const obj=JSON.parse(raw); const age=(Date.now()-(obj.savedAt||0))/(1000*60*60*24);
+        if(obj.index && obj.index.count>=2700 && age<=TTL){ IDX=obj.index; return; }
+      }
+    }catch{}
+    const rec=await fetchAll(); IDX=build(rec);
+    try{ localStorage.setItem(KEY, JSON.stringify({savedAt:Date.now(), index:IDX})); }catch{}
+  }
+  function suggestCP(term){
+    const q=strip(term); if(!q) return [];
+    const out=[]; for(const cp of IDX.allCPs){ if(cp.startsWith(q)){ for(const city of IDX.byCP[cp]){ out.push({cp,city}); if(out.length>=30) return out; } } }
+    return out;
+  }
+  function suggestCity(term){
+    const q=strip(term); if(!q) return [];
+    const out=[];
+    if(IDX.byCityNorm[q]){ for(const cp of IDX.byCityNorm[q]){ out.push({cp,city:term.trim()}); if(out.length>=30) return out; } }
+    for(const key of IDX.allCities){ if(key.startsWith(q)){ const nice=key.split(' ').map(w=>w? (w[0].toUpperCase()+w.slice(1)) : w).join(' ');
+      for(const cp of IDX.byCityNorm[key]){ out.push({cp,city:nice}); if(out.length>=30) return out; } } }
+    if(out.length<10){ for(const key of IDX.allCities){ if(key.includes(q)){ const nice=key.split(' ').map(w=>w? (w[0].toUpperCase()+w.slice(1)) : w).join(' ');
+      for(const cp of IDX.byCityNorm[key]){ out.push({cp,city:nice}); if(out.length>=30) return out; } } } }
+    return out;
+  }
+  function bind(){
+    const fillCP=(input)=> debounce(()=>{ const items=suggestCP(input.value); listCP.innerHTML=items.map(i=>`<option value="${i.cp} — ${i.city}"></option>`).join(""); },150);
+    const fillVille=(input)=> debounce(()=>{ const items=suggestCity(input.value); listVille.innerHTML=items.map(i=>`<option value="${i.city} — ${i.cp}"></option>`).join(""); },150);
+    inputCPs.forEach(inp=>{
+      inp.addEventListener('input', fillCP(inp));
+      inp.addEventListener('change', ()=>{ const m=inp.value.match(/^(\d{4})\s*[—\-,]?\s*(.*)$/); if(m){ inp.value=m[1]; const other=inp.id==='pec_cp'?$('pec_ville'):$('dest_ville'); if(other && m[2]) other.value=m[2]; }});
+      inp.addEventListener('blur', ()=>{ const m=inp.value.match(/^(\d{4})\s*[—\-,]?\s*(.*)$/); if(m){ inp.value=m[1]; const other=inp.id==='pec_cp'?$('pec_ville'):$('dest_ville'); if(other && m[2]) other.value=m[2]; }});
+    });
+    inputVilles.forEach(inp=>{
+      inp.addEventListener('input', fillVille(inp));
+      inp.addEventListener('change', ()=>{ const m=inp.value.match(/^(.+?)\s*[—\-,]?\s*(\d{4})$/); if(m){ inp.value=m[1].trim(); const other=inp.id==='pec_ville'?$('pec_cp'):$('dest_cp'); if(other) other.value=m[2]; }});
+      inp.addEventListener('blur', ()=>{ const m=inp.value.match(/^(.+?)\s*[—\-,]?\s*(\d{4})$/); if(m){ inp.value=m[1].trim(); const other=inp.id==='pec_ville'?$('pec_cp'):$('dest_cp'); if(other) other.value=m[2]; }});
+    });
+    // amorces
+    listCP.innerHTML=""; listVille.innerHTML="";
+  }
+  (async()=>{ await load(); bind(); })();
 })();
+
+/* =========================
+   LOAD + POLL
+   ========================= */
+async function loadAll(){
+  try{ MISSIONS = await loadMissions(); }catch{ MISSIONS={}; }
+  renderList();
+}
+(async()=>{ await loadAll(); setInterval(loadAll, 5000); })();
 </script>
 
 </body>
