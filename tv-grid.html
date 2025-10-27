@@ -5,31 +5,83 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Tableau de garde – TV</title>
 <style>
-  :root{
-    --bg:#0a0f16;--panel:#121821;--line:#1f2c3e;--text:#f1f5fa;
-    --accent:#3a8bf2;--ok:#2e7d32;--warn:#f4b400;--bad:#e74c3c;
+  :root {
+    --bg:#0a0f16; --panel:#121821; --line:#1f2c3e;
+    --text:#f1f5fa; --accent:#3a8bf2; --ok:#2e7d32;
+    --warn:#f4b400; --bad:#e74c3c;
   }
-  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
-    font-family:Segoe UI,Inter,sans-serif;height:100vh;overflow:hidden}
-  .header{display:flex;justify-content:space-between;align-items:center;
-    background:#111b2b;padding:8px 20px;border-bottom:2px solid var(--line)}
-  .header h1{font-size:28px;color:#cfe1ff;margin:0}
-  .header .right{display:flex;align-items:center;gap:20px;font-size:18px}
-  .meteo{font-size:18px;font-weight:600}
-  .roles{background:#121b2a;padding:8px 20px;text-align:center;font-size:16px;display:flex;flex-wrap:wrap;justify-content:center;gap:16px}
-  .roles div{padding:4px 8px;border:1px solid var(--line);border-radius:8px;background:#1a2335;min-width:150px}
-  .roles span{display:block;color:#9bb5d3;font-size:13px}
-  table{width:100%;border-collapse:collapse;font-size:18px;margin-top:10px}
-  th,td{border:1px solid var(--line);padding:6px 10px;text-align:center}
-  th{background:#182030;font-weight:600;letter-spacing:.5px}
-  .s-dispo{background:var(--ok)}
-  .s-sorti{background:var(--accent)}
-  .s-res{background:var(--warn);color:#000}
-  .s-indispo{background:var(--bad)}
-  .banner{position:absolute;bottom:0;left:0;width:100%;background:#a00;color:#fff;
-    overflow:hidden;white-space:nowrap;font-size:22px;font-weight:600;padding:6px 0;}
-  .banner span{display:inline-block;padding-right:60px;animation:scroll 40s linear infinite;}
-  @keyframes scroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+  html, body {
+    margin:0; padding:0;
+    background:var(--bg); color:var(--text);
+    font-family:Segoe UI, Inter, sans-serif;
+    height:100vh; overflow:hidden;
+  }
+  .header {
+    display:flex; justify-content:space-between; align-items:center;
+    background:#111b2b; padding:10px 20px;
+    border-bottom:2px solid var(--line);
+  }
+  .header h1 {
+    font-size:28px; color:#cfe1ff; margin:0;
+  }
+  .header .right {
+    display:flex; align-items:center; gap:20px; font-size:18px;
+  }
+  .meteo { font-size:18px; font-weight:600; }
+
+  .roles {
+    background:#121b2a; padding:8px 20px;
+    text-align:center; font-size:16px;
+    display:flex; flex-wrap:wrap; justify-content:center; gap:16px;
+  }
+  .roles div {
+    padding:4px 8px; border:1px solid var(--line);
+    border-radius:8px; background:#1a2335; min-width:150px;
+  }
+  .roles span {
+    display:block; color:#9bb5d3; font-size:13px;
+  }
+
+  .grid {
+    display:grid;
+    grid-template-columns:repeat(4,1fr);
+    gap:10px; padding:10px 20px;
+    height:calc(100vh - 210px);
+    overflow:auto;
+  }
+  .col {
+    background:#121b2a; border-radius:8px;
+    padding:8px; display:flex; flex-direction:column;
+  }
+  .col h2 {
+    text-align:center; font-size:20px;
+    border-bottom:2px solid var(--line);
+    margin:0 0 8px 0; color:#cfe1ff;
+  }
+  .veh {
+    background:#1a2436; border:1px solid var(--line);
+    border-radius:10px; padding:8px; margin-bottom:8px;
+    text-align:center;
+  }
+  .veh h3 { margin:4px 0; font-size:18px; }
+  .veh small { color:#9bb5d3; font-size:14px; }
+  .veh .crew { font-size:14px; margin-top:4px; }
+
+  .banner {
+    position:absolute; bottom:0; left:0; width:100%;
+    background:#a00; color:#fff; overflow:hidden;
+    white-space:nowrap; font-size:22px; font-weight:600;
+    padding:6px 0;
+  }
+  .banner span {
+    display:inline-block;
+    padding-right:60px;
+    animation:scroll 40s linear infinite;
+  }
+  @keyframes scroll {
+    0% { transform:translateX(0); }
+    100% { transform:translateX(-50%); }
+  }
 </style>
 </head>
 <body>
@@ -46,22 +98,11 @@
 
 <div id="roles" class="roles">Chargement des rôles...</div>
 
-<div style="padding:0 20px;overflow:auto;height:calc(100vh - 210px);">
-  <table id="vehTable">
-    <thead>
-      <tr>
-        <th>Véhicule</th>
-        <th>Attribution</th>
-        <th>Chauffeur</th>
-        <th>Soins</th>
-        <th>3ᵉ Homme</th>
-        <th>Kilométrage</th>
-        <th>Statut</th>
-        <th>Commentaire</th>
-      </tr>
-    </thead>
-    <tbody id="vehBody"></tbody>
-  </table>
+<div class="grid">
+  <div class="col"><h2>Sortis</h2><div id="sortis"></div></div>
+  <div class="col"><h2>Disponibles</h2><div id="dispo"></div></div>
+  <div class="col"><h2>Réserve</h2><div id="reserve"></div></div>
+  <div class="col"><h2>Indisponibles</h2><div id="indispo"></div></div>
 </div>
 
 <div class="banner"><span id="bannerText">Chargement des informations...</span></div>
@@ -82,7 +123,7 @@ const roleMap={
   centraliste_2:"2e centraliste"
 };
 
-/* Heure + Date */
+/* Date + Heure */
 function updateDate(){
   const d=new Date();
   const jours=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
@@ -105,12 +146,12 @@ async function loadMeteo(){
 }
 loadMeteo();setInterval(loadMeteo,600000);
 
-/* Rafraîchissement global */
+/* Chargement principal */
 async function refresh(){
   const d=await readKey(STORAGE_KEY)||{};
   state=d;
   renderRoles();
-  renderTable();
+  renderColumns();
   renderBanner();
 }
 
@@ -122,34 +163,30 @@ function renderRoles(){
     .map(([k,label])=>`<div><span>${label}</span>${r[k]||"-"}</div>`).join("");
 }
 
-/* Tableau véhicules */
-function renderTable(){
-  const tb=document.getElementById("vehBody");
-  tb.innerHTML="";
+/* Organisation des colonnes */
+function renderColumns(){
+  ["sortis","dispo","reserve","indispo"].forEach(id=>document.getElementById(id).innerHTML="");
   const vehs=(state._settings?.vehs)||[];
   vehs.forEach(v=>{
     const d=state[v.id]||{};
-    let c="";
-    if(d.statut==="Disponible")c="s-dispo";
-    else if(d.statut==="Sorti")c="s-sorti";
-    else if(d.statut==="Réserve")c="s-res";
-    else if(d.statut==="Indisponible")c="s-indispo";
-    tb.insertAdjacentHTML("beforeend",`
-      <tr>
-        <td><b>${d.name||v.id}</b><br><span style="color:#9bb5d3;font-size:14px">${d.plaque||""}</span></td>
-        <td>${d.attribution||""}</td>
-        <td>${d.XO||""}</td>
-        <td>${d.S||""}</td>
-        <td>${d.PS||""}</td>
-        <td>${d.km||""}</td>
-        <td class="${c}">${d.statut||""}</td>
-        <td>${d.commentaire||""}</td>
-      </tr>
-    `);
+    let container;
+    if(d.statut==="Sorti") container="sortis";
+    else if(d.statut==="Disponible") container="dispo";
+    else if(d.statut==="Réserve") container="reserve";
+    else if(d.statut==="Indisponible") container="indispo";
+    if(!container) return;
+    const html=`
+      <div class="veh">
+        <h3>${d.name||v.id}</h3>
+        <small>${d.attribution?`[${d.attribution}] `:""}${d.plaque||""}</small>
+        <div class="crew">${d.XO||""} ${d.S?"/ "+d.S:""} ${d.PS?"/ "+d.PS:""}</div>
+        <div style="font-size:14px;margin-top:4px;color:#9bb5d3;">${d.km?`${d.km} km`:""}</div>
+      </div>`;
+    document.getElementById(container).insertAdjacentHTML("beforeend",html);
   });
 }
 
-/* Bannière continue */
+/* Bannière fluide */
 function renderBanner(){
   const n=state._notes||{};
   let txt="";
@@ -165,7 +202,7 @@ function renderBanner(){
   document.getElementById("bannerText").innerHTML=(txt+"  "+txt);
 }
 
-/* Boucle principale */
+/* Boucle auto */
 refresh();
 setInterval(refresh,5000);
 </script>
