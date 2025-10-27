@@ -8,74 +8,69 @@
   :root{
     --bg:#0a0f16; --panel:#121821; --line:#1f2c3e;
     --text:#f1f5fa; --muted:#9bb5d3; --accent:#3a8bf2;
-    /* Statuts véhicules */
-    --ok:#2e7d32;        /* Disponible */
-    --info:#1976d2;      /* Sorti */
-    --warn:#f4b400;      /* Réserve */
-    --bad:#e74c3c;       /* Indisponible */
-    /* Code couleur statuts missions (référentiel commun) */
-    --st-depart:#00c2ff;         /* Départ */
-    --st-surplace:#2ecc71;       /* Sur place */
-    --st-enroute:#ffb300;        /* En route hôpital */
-    --st-hopital:#8e44ad;        /* À l'hôpital */
-    --st-retour-dispo:#64dd17;   /* Retour disponible */
-    --st-retour-indispo:#e53935; /* Retour indisponible */
+    /* Couleurs hall (Seulement Disponible/Indisponible) */
+    --ok:#2e7d32;     /* Disponible */
+    --bad:#e74c3c;    /* Indisponible */
     --ticker-bg:#a00020; --ticker-fg:#fff;
   }
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Segoe UI,Inter,system-ui,sans-serif;overflow:hidden}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+    font-family:Segoe UI,Inter,system-ui,sans-serif;overflow:hidden}
 
-  /* Header */
-  .header{display:flex;justify-content:space-between;align-items:center;padding:10px 18px;background:#0d1523;border-bottom:2px solid var(--line)}
-  .header h1{margin:0;font-size:26px;color:#cfe1ff}
-  .head-right{display:flex;gap:16px;align-items:center}
-  .pill{background:#0f1624;border:1px solid #223146;border-radius:999px;padding:6px 10px;font-weight:600}
+  /* Header compact */
+  .header{display:flex;justify-content:space-between;align-items:center;
+    padding:8px 16px;background:#0d1523;border-bottom:2px solid var(--line)}
+  .header h1{margin:0;font-size:24px;color:#cfe1ff}
+  .head-right{display:flex;gap:12px;align-items:center}
+  .pill{background:#0f1624;border:1px solid #223146;border-radius:999px;
+    padding:4px 10px;font-weight:600;font-size:14px}
 
-  /* Roles strip */
-  .roles{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;padding:8px 16px;background:#101a2a;border-bottom:1px solid var(--line)}
-  .role{background:#142035;border:1px solid #223146;border-radius:8px;padding:6px 10px;min-width:150px;text-align:center}
-  .role span{display:block;color:var(--muted);font-size:12px}
+  /* Roles bandeau compact */
+  .roles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
+    padding:6px 10px;background:#101a2a;border-bottom:1px solid var(--line)}
+  .role{background:#142035;border:1px solid #223146;border-radius:8px;
+    padding:4px 8px;min-width:140px;text-align:center;font-size:14px}
+  .role span{display:block;color:var(--muted);font-size:11px}
 
-  /* Main split */
-  .main{display:grid;grid-template-columns:1fr 1fr;gap:12px;height:calc(100vh - 160px);padding:12px;box-sizing:border-box;overflow:hidden}
-  .leftPane,.rightPane{background:#0f1624;border:1px solid #223146;border-radius:12px;padding:10px;overflow:auto}
+  /* Split principal */
+  .main{display:grid;grid-template-columns:1fr 1fr;gap:10px;
+    height:calc(100vh - 140px);padding:10px;box-sizing:border-box;overflow:hidden}
+  .leftPane,.rightPane{background:#0f1624;border:1px solid #223146;border-radius:12px;
+    padding:8px;overflow:auto}
 
-  /* Hall */
-  .section-title{margin:0 0 8px 0;color:#cfe1ff;font-size:18px;text-align:center}
-  .hall-frame{border:2px solid #33465f;border-radius:12px;padding:14px}
-  .ext-row{display:flex;justify-content:center;margin-bottom:18px}
+  /* Hall plus compact */
+  .section-title{margin:0 0 6px 0;color:#cfe1ff;font-size:16px;text-align:center}
+  .hall-frame{border:2px solid #33465f;border-radius:10px;padding:10px}
+  .ext-row{display:flex;justify-content:center;margin-bottom:12px}
   .slot.ext{width:92%}
 
-  .hall-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:22px;row-gap:24px;margin-top:6px}
-  .stack{display:flex;flex-direction:column;gap:24px}
+  .hall-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;row-gap:14px}
+  .stack{display:flex;flex-direction:column;gap:14px}
+
   .slot{
-    background:#121e31;border:2px solid #425672;border-radius:12px;
-    padding:10px 12px;min-height:120px;                 /* ↑ plus haut */
+    background:#121e31;border:2px solid #425672;border-radius:10px;
+    padding:8px 10px;min-height:88px; /* ↓ plus petit pour 1080p */
     display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center
   }
-  .slot .code{color:var(--muted);font-weight:700;letter-spacing:.5px;margin-bottom:8px}
-  .slot .veh{font-size:18px;font-weight:800}
-  .slot .sub{font-size:12px;color:#b8c9e0;margin-top:4px}
+  .slot .code{color:var(--muted);font-weight:700;letter-spacing:.5px;margin-bottom:6px;font-size:13px}
+  .slot .veh{font-size:16px;font-weight:800}
+  .slot .sub{font-size:12px;color:#b8c9e0;margin-top:2px}
+  /* Couleurs hall (uniquement Dispo/Indispo) */
   .slot.ok{box-shadow:0 0 0 3px rgba(46,125,50,.35) inset}
-  .slot.info{box-shadow:0 0 0 3px rgba(25,118,210,.35) inset}
   .slot.bad{box-shadow:0 0 0 3px rgba(231,76,60,.45) inset}
-  .slot.reserve{box-shadow:0 0 0 3px rgba(244,180,0,.45) inset}
 
-  /* Right columns (no emplacement line) */
-  .cols{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
-  .col{background:#121b2a;border:1px solid #223146;border-radius:10px;display:flex;flex-direction:column;min-height:140px}
-  .col h3{margin:0;padding:8px 6px;text-align:center;border-bottom:1px solid #223146;color:#cfe1ff}
-  .col h3.ok{background:rgba(46,125,50,.15)}
-  .col h3.info{background:rgba(25,118,210,.15)}
-  .col h3.reserve{background:rgba(244,180,0,.15)}
-  .col h3.bad{background:rgba(231,76,60,.15)}
-  .list{padding:8px;display:flex;flex-direction:column;gap:8px}
-  .vehCard{background:#1a2436;border:1px solid #2b3a51;border-radius:10px;padding:8px;text-align:center}
+  /* Colonnes (pas d’emplacement) */
+  .cols{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .col{background:#121b2a;border:1px solid #223146;border-radius:10px;display:flex;flex-direction:column;min-height:120px}
+  .col h3{margin:0;padding:6px;text-align:center;border-bottom:1px solid #223146;color:#cfe1ff;font-size:15px}
+  .list{padding:6px;display:flex;flex-direction:column;gap:6px}
+  .vehCard{background:#1a2436;border:1px solid #2b3a51;border-radius:8px;padding:6px;text-align:center}
   .vehCard .name{font-weight:800}
   .vehCard .line{font-size:12px;color:#9bb5d3}
 
-  /* Banner */
-  .banner{position:absolute;left:0;right:0;bottom:0;height:44px;background:var(--ticker-bg);color:var(--ticker-fg);display:flex;align-items:center;overflow:hidden;border-top:1px solid #7a0016}
-  .track{display:flex;gap:64px;white-space:nowrap;will-change:transform}
+  /* Bannière */
+  .banner{position:absolute;left:0;right:0;bottom:0;height:40px;background:var(--ticker-bg);
+    color:var(--ticker-fg);display:flex;align-items:center;overflow:hidden;border-top:1px solid #7a0016}
+  .track{display:flex;gap:48px;white-space:nowrap;will-change:transform}
   .scroll{animation:marq 45s linear infinite}
   @keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
   .chunk{display:flex;align-items:center;gap:10px}
@@ -97,7 +92,7 @@
 <div id="roles" class="roles">Chargement des rôles…</div>
 
 <div class="main">
-  <!-- LEFT: HALL DES DÉPARTS -->
+  <!-- GAUCHE : HALL DES DÉPARTS -->
   <div class="leftPane">
     <h2 class="section-title">Hall des départs</h2>
     <div class="hall-frame">
@@ -129,13 +124,13 @@
     </div>
   </div>
 
-  <!-- RIGHT: STATUTS (sans emplacements) -->
+  <!-- DROITE : COLONNES STATUTS (pas d’emplacements affichés) -->
   <div class="rightPane">
     <div class="cols">
-      <div class="col"><h3 class="info">Sortis</h3><div id="col-sortis" class="list"></div></div>
-      <div class="col"><h3 class="ok">Disponibles</h3><div id="col-dispo" class="list"></div></div>
-      <div class="col"><h3 class="reserve">Réserve</h3><div id="col-reserve" class="list"></div></div>
-      <div class="col"><h3 class="bad">Indisponibles</h3><div id="col-indispo" class="list"></div></div>
+      <div class="col"><h3>Sortis</h3><div id="col-sortis" class="list"></div></div>
+      <div class="col"><h3>Disponibles</h3><div id="col-dispo" class="list"></div></div>
+      <div class="col"><h3>Réserve</h3><div id="col-reserve" class="list"></div></div>
+      <div class="col"><h3>Indisponibles</h3><div id="col-indispo" class="list"></div></div>
     </div>
   </div>
 </div>
@@ -168,7 +163,7 @@ function tick(){
 }
 setInterval(tick,1000); tick();
 
-/* meteo La Hulpe */
+/* météo La Hulpe */
 async function meteo(){
   try{
     const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=50.73&longitude=4.48&current=temperature_2m,weather_code&timezone=Europe/Brussels",{cache:"no-store"});
@@ -179,7 +174,7 @@ async function meteo(){
 }
 meteo(); setInterval(meteo, 10*60*1000);
 
-/* roles */
+/* rôles */
 const roleLabels={
   officier_semaine:"Officier de semaine",
   officier_garde:"Officier de garde",
@@ -195,13 +190,11 @@ function renderRoles(){
     .map(([k,l])=>`<div class="role"><span>${l}</span>${esc(r[k]||"-")}</div>`).join("");
 }
 
-/* hall */
+/* Hall — couleurs uniquement Dispo/Indispo */
 function slotClassForStatus(s){
   if(s==="Disponible") return "ok";
   if(s==="Indisponible") return "bad";
-  if(s==="Sorti") return "info";
-  if(s==="Réserve") return "reserve";
-  return "";
+  return ""; // Sorti & Réserve : pas de code couleur
 }
 const H_SLOTS=["H6","H7","H8","H9","H10","H5","H4","H3","H2","H1"];
 function clearHall(){
@@ -209,7 +202,7 @@ function clearHall(){
   H_SLOTS.forEach(h=>{
     const el=$(`#slot-${h}`);
     if(el) el.innerHTML = `<div class="code">${h}</div><div class="veh" style="opacity:.6">—</div>`;
-    el?.classList.remove("ok","info","bad","reserve");
+    el?.classList.remove("ok","bad");
   });
 }
 function renderHall(){
@@ -222,7 +215,7 @@ function renderHall(){
     const box=$(target);
     if(!box) return;
     const cl=slotClassForStatus(d.statut||"");
-    box.classList.remove("ok","info","bad","reserve");
+    box.classList.remove("ok","bad");
     if(cl) box.classList.add(cl);
     box.innerHTML = `
       <div class="code">${/ext/i.test(emp)?"Extérieur":esc(emp||"")}</div>
@@ -232,7 +225,7 @@ function renderHall(){
   });
 }
 
-/* Colonnes à droite (pas d’emplacement) */
+/* Colonnes à droite (sans emplacements) */
 function renderCols(){
   $("#col-sortis").innerHTML="";
   $("#col-dispo").innerHTML="";
@@ -256,7 +249,7 @@ function renderCols(){
   });
 }
 
-/* bannière */
+/* Bannière fluide */
 function buildBanner(){
   const notes=data._notes||{};
   const outs=[];
@@ -274,11 +267,11 @@ function buildBanner(){
   if((notes.infos||"").trim())    chunks.push(`<span class="tag">INFOS</span><span>${esc(notes.infos.replace(/\s+/g,' ').trim())}</span>`);
   const content = chunks.length ? chunks.map(c=>`<span class="chunk">${c}</span>`).join('<span class="chunk">|</span>') : `<span class="chunk">Aucune information</span>`;
   const doubled = content + content;
-  $('#band1').innerHTML=doubled;
-  $('#band2').innerHTML=doubled;
+  document.getElementById('band1').innerHTML=doubled;
+  document.getElementById('band2').innerHTML=doubled;
 }
 
-/* refresh loop */
+/* Refresh */
 async function refresh(){
   try{
     data = await readKey(KEY) || {};
