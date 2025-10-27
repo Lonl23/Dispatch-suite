@@ -3,544 +3,458 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Missions en cours</title>
+<title>Missions — Édition</title>
 <style>
-:root{
-  --bg:#0b0f14;--panel:#121821;--line:#223044;
-  --text:#e8eef5;--muted:#93a7bf;--accent:#3a8bf2;--danger:#e74c3c;--ok:#27ae60;
-}
-html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;}
-h1{margin:16px;font-size:24px}
-.toolbar{display:flex;gap:8px;margin:0 16px}
-button{background:var(--accent);border:0;border-radius:8px;padding:8px 14px;color:#fff;cursor:pointer;font-weight:600}
-button.secondary{background:#607d8b}
-button.ghost{background:#0f1520;border:1px solid #2c3d52}
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:16px;padding:16px}
-label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
-input,select,textarea{width:100%;padding:6px;border-radius:6px;border:1px solid #2c3d52;background:#0f1520;color:#fff;box-sizing:border-box}
-table{width:100%;border-collapse:collapse;margin-top:10px}
-th,td{border:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
-th{background:#182030}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
-fieldset{border:1px solid #2c3d52;border-radius:8px;margin-top:10px;padding:10px}
-legend{color:var(--accent)}
-.status-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
-.status-btns button{flex:1;min-width:140px;background:#0f1520;border:1px solid #2c3d52}
-.status-btns button.active{background:var(--accent)}
-.badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #2c3d52;font-size:12px}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media (max-width:900px){ .row{grid-template-columns:1fr} }
-.small{font-size:12px;color:#cfe1ff}
-.renforts{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}
-.renforts label{margin:0;font-size:13px;color:#e8eef5;display:flex;gap:6px;align-items:center}
-.thin{font-weight:400;opacity:.9}
+  :root{ --bg:#0b0f14; --panel:#121821; --line:#223044; --txt:#e8eef5; --mut:#9fb2c9; --acc:#3a8bf2; }
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,Segoe UI,Arial,sans-serif}
+  header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#0d131c;border-bottom:1px solid var(--line)}
+  header h1{margin:0;font-size:20px;color:#cfe1ff}
+  .wrap{display:grid;grid-template-columns:420px 1fr;gap:12px;padding:12px;min-height:calc(100vh - 58px)}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
+  h2{margin:0 0 10px;color:#cfe1ff;font-size:18px}
+  label{font-size:13px;color:var(--mut)}
+  input,select,textarea{width:100%;box-sizing:border-box;padding:8px;border-radius:8px;border:1px solid var(--line);background:#0b1626;color:#fff}
+  textarea{min-height:80px;resize:vertical}
+  .row{display:grid;gap:10px}
+  .row2{grid-template-columns:1fr 1fr}
+  .row3{grid-template-columns:1fr 1fr 1fr}
+  .mut{color:var(--mut);font-size:12px}
+  .btn{background:#2f7bf6;border:0;color:#fff;border-radius:8px;padding:10px 12px;cursor:pointer}
+  .btn:disabled{opacity:.6;cursor:not-allowed}
+  .renforts table{width:100%;border-collapse:collapse}
+  .renforts th,.renforts td{border:1px solid var(--line);padding:6px;text-align:left;font-size:14px;vertical-align:top}
+  .list{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .mission{background:#0f1724;border:1px solid var(--line);border-radius:12px;padding:12px}
+  .bad{color:#ffb3b3}
 </style>
 </head>
 <body>
-<h1>Gestion des missions</h1>
 
-<div class="toolbar">
-  <button class="ghost" onclick="window.open('dispatch.html','_blank')">↩️ Retour dispatch</button>
-  <button class="ghost" onclick="window.open('missions-passees.html','_blank')">📚 Missions passées</button>
-</div>
-
-<div class="panel">
-  <h2>Nouvelle mission</h2>
-  <div class="grid">
-    <div><label>Véhicule</label><select id="mVeh"></select></div>
-    <div><label>Attribution</label><input id="mAttr" readonly></div>
-    <div>
-      <label>Type</label>
-      <select id="mType">
-        <option value="">—</option><option>TMS</option><option>112</option><option>Prévention</option><option>Logistique</option>
-      </select>
-    </div>
-    <div id="zone112" style="display:none">
-      <label>Centrale 112</label>
-      <select id="mCentrale">
-        <option value="">—</option><option>Mons</option><option>Namur</option><option>Arlon</option><option>Liège</option><option>Leuven</option><option>Bruxelles</option><option>Autres</option>
-      </select>
-      <label>Numéro mission (4 derniers)</label>
-      <input id="mNum112" maxlength="4" placeholder="xxxx">
-      <label>Départ</label>
-      <select id="mDepart"><option>Normal</option><option>Médical</option></select>
-    </div>
-  </div>
-
-  <label>Motif du transport</label>
-  <input id="mMotif" placeholder="Ex: Malaise, dialyse, transfert…">
-
-  <fieldset>
-    <legend>Adresse</legend>
-    <div class="grid">
-      <div><label>Rue</label><input id="mRue"></div>
-      <div><label>Numéro / Boîte</label><input id="mNum"></div>
-      <div><label>Code postal</label><input id="mCP" maxlength="4"></div>
-      <div><label>Localité</label><input id="mLocalite" placeholder="Auto si CP connu"></div>
-    </div>
-  </fieldset>
-
-  <div class="renforts">
-    <span class="thin">Renforts :</span>
-    <label><input type="checkbox" id="rfPompiers"> Pompiers</label>
-    <label><input type="checkbox" id="rfPolice"> Police</label>
-    <label><input type="checkbox" id="rfSmur"> SMUR</label>
-  </div>
-
-  <div class="small" id="kmHint" style="margin-top:6px;opacity:.9"></div>
-
-  <div style="text-align:right;margin-top:10px">
-    <button onclick="startMission()">Démarrer la mission</button>
-  </div>
-</div>
-
-<div class="panel">
-  <h2>Missions en cours</h2>
-  <div id="activeMissions"></div>
-</div>
-
-<div class="panel">
-  <div class="row" style="align-items:center">
-    <h2 style="margin:0">Missions du jour</h2>
-    <div style="text-align:right">
-      <button class="secondary" onclick="deleteSelectedDone()">🗑 Supprimer la sélection (Admin)</button>
-    </div>
-  </div>
-  <table id="tableDone">
-    <thead>
-      <tr>
-        <th style="width:32px"></th>
-        <th>Véhicule</th><th>Attribution</th><th>Type</th><th>Motif</th>
-        <th>Renforts</th><th>Δ km</th><th>Heures par statut</th>
-      </tr>
-    </thead>
-    <tbody></tbody>
-  </table>
-</div>
-
-<!-- Référentiel CP -> Ville (colle ici le JSON complet si tu l’as) -->
-<script type="application/json" id="postalData">
-{
-  "1000":"Bruxelles","1310":"La Hulpe","1300":"Wavre","1330":"Rixensart","1340":"Ottignies",
-  "1050":"Ixelles","1180":"Uccle","4020":"Liège","4000":"Liège","5000":"Namur","7000":"Mons"
-}
+<!-- Auth guard -->
+<script>
+(function(){
+  if(!localStorage.getItem("dispatch_idToken")) location.href="index.html";
+})();
 </script>
+
+<script src="store-bridge.js"></script>
+
+<header>
+  <h1>Missions — Édition</h1>
+  <div id="saveState" class="mut">Connecté</div>
+</header>
+
+<div class="wrap">
+  <!-- Colonne gauche : création/édition -->
+  <div class="card">
+    <h2>Créer une mission</h2>
+    <div class="row row2">
+      <div>
+        <label>Type</label>
+        <select id="m_type">
+          <option value="112">112</option>
+          <option value="TMS">TMS</option>
+        </select>
+      </div>
+      <div>
+        <label>Véhicule</label>
+        <input id="m_veh" placeholder="AS 55">
+      </div>
+      <div>
+        <label>Attribution</label>
+        <input id="m_attr" placeholder="LH1 / TMS / PREV / OFF">
+      </div>
+      <div id="blk_retour_prevus" style="display:none">
+        <label>Retour avec patient prévu (TMS)</label>
+        <select id="m_retour_prevus">
+          <option value="false">Non</option>
+          <option value="true">Oui</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="blk_112" class="row row2" style="margin-top:10px">
+      <div>
+        <label>CU112</label>
+        <input id="m_centrale" placeholder="Liège / Namur ...">
+      </div>
+      <div>
+        <label>Numéro 112 (4 derniers)</label>
+        <input id="m_num112" inputmode="numeric" maxlength="4" placeholder="1234">
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:10px;background:#0f1724">
+      <h2 style="font-size:16px">Lieu de PEC (TMS)</h2>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+        <label><input type="radio" name="pecType" value="dom" checked> Domicile</label>
+        <label><input type="radio" name="pecType" value="str"> Hôpital / MR(S)</label>
+      </div>
+      <div id="pec_dom" class="row row2">
+        <div><label>Rue</label><input id="pec_rue"></div>
+        <div><label>N°</label><input id="pec_num"></div>
+        <div><label>CP</label><input id="pec_cp" list="cpOptions"></div>
+        <div><label>Localité</label><input id="pec_ville" list="villeOptions"></div>
+      </div>
+
+      <div id="pec_str" style="display:none">
+        <div class="row">
+          <div>
+            <label>Recherche structure</label>
+            <input id="pec_hop_search" list="pecHopList" placeholder="CHU / Clinique ...">
+            <datalist id="pecHopList"></datalist>
+            <small class="mut">Recherche Internet (OSM). Tape au moins 3 caractères.</small>
+          </div>
+        </div>
+        <div class="row row2" style="margin-top:6px">
+          <div><label>Nom</label><input id="pec_hop_name" readonly></div>
+          <div><label>Adresse</label><input id="pec_hop_addr" readonly></div>
+          <div><label>CP</label><input id="pec_cp2"></div>
+          <div><label>Localité</label><input id="pec_ville2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:10px;background:#0f1724">
+      <h2 style="font-size:16px">Destination (112 & TMS)</h2>
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">
+        <label><input type="radio" name="destType" value="dom" checked> Domicile</label>
+        <label><input type="radio" name="destType" value="str"> Hôpital / MR(S)</label>
+      </div>
+      <div id="dest_dom" class="row row2">
+        <div><label>Rue</label><input id="dest_rue"></div>
+        <div><label>N°</label><input id="dest_num"></div>
+        <div><label>CP</label><input id="dest_cp" list="cpOptions"></div>
+        <div><label>Localité</label><input id="dest_ville" list="villeOptions"></div>
+      </div>
+
+      <div id="dest_str" style="display:none">
+        <div class="row">
+          <div>
+            <label>Recherche structure</label>
+            <input id="dest_hop_search" list="destHopList" placeholder="Saint-Luc / Erasme ...">
+            <datalist id="destHopList"></datalist>
+            <small class="mut">Recherche Internet (OSM). Tape au moins 3 caractères.</small>
+          </div>
+        </div>
+        <div class="row row2" style="margin-top:6px">
+          <div><label>Nom</label><input id="dest_hop_name" readonly></div>
+          <div><label>Adresse</label><input id="dest_hop_addr" readonly></div>
+          <div><label>CP</label><input id="dest_cp2"></div>
+          <div><label>Localité</label><input id="dest_ville2"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" style="margin-top:10px">
+      <div>
+        <label>Commentaire mission</label>
+        <textarea id="m_comment" placeholder="Infos complémentaires..."></textarea>
+      </div>
+    </div>
+
+    <div class="card renforts" style="margin-top:10px;background:#0f1724">
+      <h2 style="font-size:16px">Renforts</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Commentaire</th>
+            <th>Statut d’appel</th>
+            <th>Sur place</th>
+          </tr>
+        </thead>
+        <tbody id="renforts_tbody"></tbody>
+      </table>
+      <small class="mut">Statut d’appel: Appelé / Confirmé / Refusé / En route / Non dispo — Sur place: Inconnu / Oui / Non</small>
+    </div>
+
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn" id="btnCreate">Créer la mission</button>
+    </div>
+  </div>
+
+  <!-- Colonne droite : missions actives -->
+  <div class="card">
+    <h2>Missions en cours</h2>
+    <div id="list" class="list"></div>
+  </div>
+</div>
+
+<!-- Datalists CP/Ville (ODWB index si tu l’utilises déjà) -->
+<datalist id="cpOptions"></datalist>
+<datalist id="villeOptions"></datalist>
 
 <script>
-/* ================== Clés de stockage ================== */
-const DISPATCH_KEY="dispatch_parc_vehicules";
-const MISSIONS_KEY="dispatch_missions";
-const MISSIONS_ARCHIVE_KEY="dispatch_missions_archive";
-const ADMIN_PASSWORD="Admin01";
+/* ---------- Constantes ---------- */
+const MISSIONS_KEY = "dispatch_missions";
+const SERVICES = ["Pompiers","RACS","SMUR","Ambu 112","Police"];
+const APPEL_STATI = ["","Appelé","Confirmé","Refusé","En route","Non dispo"];
+const SUR_PLACE_STATI = ["","Inconnu","Oui","Non"];
 
-/* ================== Etats ================== */
-let dispatchData={}, missions={}, archive={};
+/* ---------- État local ---------- */
+let MISSIONS = {};
+let saving = false;
 
-/* ================== Status ================== */
-const FLOW = ["Départ","Sur place","En charge","Arrivé hôpital","Retour dispo","Rentré base"];
-const EXTRAS = ["Dévié","Mise indispo","Annulé par CU112","Retour au poste"];
-// Clôture: autorisée UNIQUEMENT si l’un de ces statuts est présent (Annulé n’autorise PAS)
-const CLOSE_GUARDS = new Set(["Dévié","Mise indispo","Retour au poste"]);
+/* ---------- Utils ---------- */
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const nowISO = ()=> {
+  const d=new Date(), z2=n=>String(n).padStart(2,'0');
+  return `${d.getFullYear()}-${z2(d.getMonth()+1)}-${z2(d.getDate())} ${z2(d.getHours())}:${z2(d.getMinutes())}:${z2(d.getSeconds())}`;
+};
 
-/* ================== Utils ================== */
-function loadAll(){
-  dispatchData=JSON.parse(localStorage.getItem(DISPATCH_KEY)||"{}");
-  missions=JSON.parse(localStorage.getItem(MISSIONS_KEY)||"{}");
-  archive=JSON.parse(localStorage.getItem(MISSIONS_ARCHIVE_KEY)||"{}");
-}
-function saveMissions(){ localStorage.setItem(MISSIONS_KEY, JSON.stringify(missions)); }
-function saveArchive(){ localStorage.setItem(MISSIONS_ARCHIVE_KEY, JSON.stringify(archive)); }
-function saveDispatch(){ localStorage.setItem(DISPATCH_KEY, JSON.stringify(dispatchData)); }
-function now(){ return new Date(); }
-function todayKey(){ const d=now(); const z=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
-function hhmm(d){ const z=n=>String(n).padStart(2,"0"); return `${z(d.getHours())}:${z(d.getMinutes())}`; }
-function esc(s){ return String(s??"").replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
-
-/* ================== CP -> Ville ================== */
-let CP_MAP = {};
-(function initCP(){
-  try{ CP_MAP = JSON.parse(document.getElementById('postalData').textContent||"{}"); }catch{ CP_MAP = {}; }
-  document.getElementById('mCP').addEventListener('input', e=>{
-    const cp = (e.target.value||"").trim();
-    if (CP_MAP[cp]) document.getElementById('mLocalite').value = CP_MAP[cp];
-  });
-})();
-
-/* ================== Km départ auto (plaque) ================== */
-function getPlateByVeh(v){ return dispatchData?.[v]?.plaque || ""; }
-
-// Cherche le + grand km connu pour une plaque : dispatch + missions + archives
-function bestKmForPlate(plaque){
-  let best = 0;
-  if (!plaque) return best;
-  // dispatch
-  const vehs = (dispatchData._settings?.vehs||[]).map(v=>v.id);
-  vehs.forEach(id=>{
-    const d=dispatchData[id]; if(d && d.plaque===plaque){
-      const k=parseInt(d.km||"0",10); if(!isNaN(k) && k>best) best=k;
-    }
-  });
-  // missions terminées (du store courant)
-  Object.values(missions||{}).forEach(m=>{
-    if(m && m.done && m.plaque===plaque){
-      const k=parseInt(m.kmRet||m.kmret||"0",10); if(!isNaN(k) && k>best) best=k;
-    }
-  });
-  // archives
-  Object.values(archive||{}).forEach(m=>{
-    if(m && m.plaque===plaque){
-      const k=parseInt(m.kmRet||m.kmret||"0",10); if(!isNaN(k) && k>best) best=k;
-    }
-  });
-  return best;
-}
-
-/* ================== UI Nouvelle mission ================== */
-function populateVeh(){
-  const sel=document.getElementById('mVeh'); sel.innerHTML="<option value=''>—</option>";
-  const settings = dispatchData._settings?.vehs || [];
-  settings.forEach(v=>{
-    sel.insertAdjacentHTML("beforeend",`<option value="${esc(v.id)}">${esc(v.id)}</option>`);
+/* ---------- Rendu Renforts (form) ---------- */
+function renderRenfortsForm(){
+  const tb = $('renforts_tbody'); tb.innerHTML="";
+  SERVICES.forEach(s=>{
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td><b>${s}</b></td>
+      <td><textarea data-r="${s}" data-k="comment" placeholder="Commentaire..."></textarea></td>
+      <td>
+        <select data-r="${s}" data-k="appel">
+          ${APPEL_STATI.map(v=>`<option value="${v}">${v||"-"}</option>`).join("")}
+        </select>
+      </td>
+      <td>
+        <select data-r="${s}" data-k="sur_place">
+          ${SUR_PLACE_STATI.map(v=>`<option value="${v}">${v||"-"}</option>`).join("")}
+        </select>
+      </td>
+    `;
+    tb.appendChild(row);
   });
 }
-document.getElementById('mVeh').addEventListener('change', ()=>{
-  const id = document.getElementById('mVeh').value;
-  const d = dispatchData[id];
-  const attr = d ? (d.attribution||"") : "";
-  document.getElementById('mAttr').value = attr;
 
-  // Km best pour la plaque
-  const plate = getPlateByVeh(id);
-  const best = bestKmForPlate(plate);
-  document.getElementById('kmHint').textContent = plate ? `Km départ suggéré pour ${plate} : ${best}` : "";
-});
-document.getElementById('mType').addEventListener('change', ()=>{
-  document.getElementById('zone112').style.display = (document.getElementById('mType').value==="112")? "block":"none";
-});
+/* ---------- Recherche hôpital (OSM Nominatim) | attachable ---------- */
+function attachHospitalSearch(searchId, listId, outNameId, outAddrId, outCPId, outVilleId){
+  const NOM_URL = "https://nominatim.openstreetmap.org/search";
+  const input = $(searchId), dlist = $(listId);
+  const outName = $(outNameId), outAddr = $(outAddrId);
+  const outCP = outCPId? $(outCPId): null;
+  const outVille = outVilleId? $(outVilleId): null;
 
-/* ================== Création ================== */
-function startMission(){
-  const veh = document.getElementById('mVeh').value;
-  if(!veh) return alert("Choisis un véhicule.");
-  const attr = document.getElementById('mAttr').value || "";
-  const type = document.getElementById('mType').value || "";
-  const motif= document.getElementById('mMotif').value.trim();
-  if(!motif) return alert("Motif requis.");
-
-  const plaque = getPlateByVeh(veh);
-  const kmStart = bestKmForPlate(plaque); // km départ auto
-
-  const renforts = {
-    pompiers: document.getElementById('rfPompiers').checked,
-    police: document.getElementById('rfPolice').checked,
-    smur: document.getElementById('rfSmur').checked
+  const mem = new Map();
+  function formatDisplay(r){
+    const name = r.display_name?.split(",")[0] || r.name || "Structure";
+    const a = r.address || {};
+    const rue = [a.road,a.house_number].filter(Boolean).join(" ");
+    const cp  = a.postcode || "";
+    const city= a.city || a.town || a.village || a.municipality || "";
+    const line = [rue,cp,city].filter(Boolean).join(", ");
+    return { name, line, cp, city };
+  }
+  const doSearch = async ()=>{
+    const q = input.value.trim();
+    if(q.length<3){ dlist.innerHTML=""; return; }
+    if(mem.has(q.toLowerCase())){ render(mem.get(q.toLowerCase())); return; }
+    const url = `${NOM_URL}?format=jsonv2&addressdetails=1&countrycodes=be&limit=20&q=${encodeURIComponent(q+" hospital clinic clinique hopital centre hospitalier CHU UZ")}`;
+    try{
+      const res = await fetch(url, { cache:"no-store" });
+      const arr = await res.json();
+      const items = arr.map(r=>{
+        const f = formatDisplay(r);
+        return { k:String(r.place_id), name:f.name, line:f.line, cp:f.cp, city:f.city };
+      });
+      mem.set(q.toLowerCase(), items);
+      render(items);
+    }catch(e){ dlist.innerHTML=""; }
+  };
+  const render = (items)=>{
+    dlist.innerHTML = items.map(it=>`<option value="${esc(it.name)} — ${esc(it.line)}" data-k="${esc(it.k)}"></option>`).join("");
+  };
+  const onChoose = ()=>{
+    const val = input.value.trim().toLowerCase();
+    let choice=null;
+    for(const items of mem.values()){
+      const found = items.find(it => (`${it.name} — ${it.line}`).toLowerCase()===val || it.name.toLowerCase()===val);
+      if(found){ choice=found; break; }
+    }
+    if(!choice){ outName.value = input.value; outAddr.value=""; return; }
+    outName.value = choice.name;
+    outAddr.value = choice.line || "";
+    if(outCP && choice.cp) outCP.value = choice.cp;
+    if(outVille && choice.city) outVille.value = choice.city;
   };
 
-  const mission = {
-    id: String(Date.now()),
-    day: todayKey(),
-    veh, attr, type, motif,
-    plaque,
-    renforts,
-    centrale: (document.getElementById('mCentrale').value||""),
-    num112: (document.getElementById('mNum112').value||""),
-    depart112: (document.getElementById('mDepart').value||""),
-    adresse: {
-      rue: document.getElementById('mRue').value||"",
-      num: document.getElementById('mNum').value||"",
-      cp:  document.getElementById('mCP').value||"",
-      ville: document.getElementById('mLocalite').value||""
-    },
-    statuts: { "Départ": hhmm(now()) },   // Départ fixé à la création
-    kmDep: kmStart ? String(kmStart) : "",
-    kmRet: "",
-    done: false
-  };
-  missions[mission.id] = mission;
-
-  // véhicule -> Sorti
-  if(!dispatchData[veh]) dispatchData[veh]={};
-  dispatchData[veh].statut = "Sorti";
-  saveMissions(); saveDispatch();
-
-  renderActive(); alert("Mission démarrée.");
+  input.addEventListener('input', ()=>{ clearTimeout(input._t); input._t=setTimeout(doSearch,300); });
+  input.addEventListener('change', onChoose);
+  input.addEventListener('blur', onChoose);
 }
 
-/* ================== Rendu missions actives (EDITABLES) ================== */
-function renderActive(){
-  const box=document.getElementById('activeMissions'); box.innerHTML="";
-  const actives = Object.entries(missions).filter(([,m])=>!m.done);
-  if(!actives.length){ box.innerHTML = "<i>Aucune mission en cours</i>"; return; }
+/* ---------- Toggle PEC/Dest DOM/STR ---------- */
+function bindToggles(){
+  document.querySelectorAll('input[name="pecType"]').forEach(r=>{
+    r.onchange = ()=>{
+      $('pec_dom').style.display = (r.value==='dom')?'grid':'none';
+      $('pec_str').style.display = (r.value==='str')?'block':'none';
+    };
+  });
+  document.querySelectorAll('input[name="destType"]').forEach(r=>{
+    r.onchange = ()=>{
+      $('dest_dom').style.display = (r.value==='dom')?'grid':'none';
+      $('dest_str').style.display = (r.value==='str')?'block':'none';
+    };
+  });
+}
 
-  actives.forEach(([id,m])=>{
-    const div=document.createElement('div'); div.className="panel";
-    const statusButtons = [...FLOW, ...EXTRAS].map(st=>{
-      const active = Boolean(m.statuts && m.statuts[st]);
-      return `<button ${active?'class="active"':''} onclick="setStatus('${id}','${st}')">${st}</button>`;
+/* ---------- Création mission ---------- */
+async function createMissionFromForm(){
+  if(saving) return;
+  const type = $('m_type').value;
+  const veh  = $('m_veh').value.trim();
+  if(!veh){ alert("Véhicule requis"); return; }
+  const m = {
+    id: `M${Date.now()}`,
+    type,
+    veh,
+    attr: $('m_attr').value.trim() || "",
+    statuts: {},
+    metrics: {},
+    comment: $('m_comment').value.trim() || "",
+    renforts: {},
+
+    // TMS spécifique
+    retour_prevus: (type==='TMS' ? ($('m_retour_prevus').value==='true') : undefined),
+
+    // PEC
+    pec: (()=>{
+      const kind = document.querySelector('input[name="pecType"]:checked')?.value || 'dom';
+      if(type!=='TMS'){ return null; }
+      if(kind==='dom'){
+        return { type:'dom', rue:$('pec_rue').value.trim(), num:$('pec_num').value.trim(), cp:$('pec_cp').value.trim(), ville:$('pec_ville').value.trim() };
+      }else{
+        return { type:'str', name:$('pec_hop_name').value.trim(), addr:$('pec_hop_addr').value.trim(), cp:$('pec_cp2').value.trim(), ville:$('pec_ville2').value.trim() };
+      }
+    })(),
+
+    // Destination
+    destination: (()=>{
+      const kind = document.querySelector('input[name="destType"]:checked')?.value || 'dom';
+      if(kind==='dom'){
+        return { type:'dom', rue:$('dest_rue').value.trim(), num:$('dest_num').value.trim(), cp:$('dest_cp').value.trim(), ville:$('dest_ville').value.trim() };
+      }else{
+        return { type:'str', name:$('dest_hop_name').value.trim(), addr:$('dest_hop_addr').value.trim(), cp:$('dest_cp2').value.trim(), ville:$('dest_ville2').value.trim() };
+      }
+    })()
+  };
+
+  if(type==='112'){
+    m.centrale = $('m_centrale').value.trim();
+    m.num112   = $('m_num112').value.trim();
+    m.statuts["Appel"] = nowISO(); // création
+  }
+
+  // Renforts
+  SERVICES.forEach(s=>{
+    const comment = (document.querySelector(`textarea[data-r="${s}"][data-k="comment"]`)?.value||"").trim();
+    const appel   = (document.querySelector(`select[data-r="${s}"][data-k="appel"]`)?.value||"").trim();
+    const surp    = (document.querySelector(`select[data-r="${s}"][data-k="sur_place"]`)?.value||"").trim();
+    if(comment || appel || surp){
+      m.renforts[s] = { comment, appel_status:appel, sur_place:surp };
+    }
+  });
+
+  try{
+    saving = true; $('saveState').textContent="Sauvegarde…";
+    await patchKey(`${MISSIONS_KEY}/${m.id}`, m);
+    $('saveState').textContent="Sauvegardé ✔︎";
+    MISSIONS[m.id]=m;
+    renderList();
+  }catch(e){
+    $('saveState').innerHTML=`<span class="bad">Erreur de sauvegarde</span>`;
+    console.error(e);
+  }finally{ saving=false; setTimeout(()=>$('saveState').textContent="Connecté", 1500); }
+}
+
+/* ---------- Liste missions actives (aperçu) ---------- */
+function renderList(){
+  const cont = $('list'); cont.innerHTML = "";
+  const arr = Object.values(MISSIONS).filter(x=>!x.done);
+  // tri par date de création/id
+  arr.sort((a,b)=> (b.id||"").localeCompare(a.id||""));
+
+  arr.forEach(m=>{
+    const div = document.createElement('div');
+    div.className="mission";
+    const renfBadges = Object.entries(m.renforts||{}).map(([k,v])=>{
+      const a = v.appel_status?`<span class="mut">• ${esc(v.appel_status)}</span>`:"";
+      const s = v.sur_place?`<span class="mut">• SP:${esc(v.sur_place)}</span>`:"";
+      const c = v.comment?`<div class="mut">${esc(v.comment)}</div>`:"";
+      return `<div><b>${esc(k)}</b> ${a} ${s}${c}</div>`;
     }).join("");
-    const show112 = (m.type==="112");
-    const renf = m.renforts||{pompiers:false,police:false,smur:false};
+
+    const destText = m.destination
+      ? (m.destination.type==='str'
+          ? `[STR] ${esc(m.destination.name||"")} — ${esc(m.destination.addr||"")} ${esc(m.destination.cp||"")} ${esc(m.destination.ville||"")}`
+          : `[DOM] ${esc(m.destination.rue||"")} ${esc(m.destination.num||"")} ${esc(m.destination.cp||"")} ${esc(m.destination.ville||"")}`)
+      : "-";
+
+    const pecText = (m.type==='TMS' && m.pec)
+      ? (m.pec.type==='str'
+          ? `[STR] ${esc(m.pec.name||"")} — ${esc(m.pec.addr||"")} ${esc(m.pec.cp||"")} ${esc(m.pec.ville||"")}`
+          : `[DOM] ${esc(m.pec.rue||"")} ${esc(m.pec.num||"")} ${esc(m.pec.cp||"")} ${esc(m.pec.ville||"")}`)
+      : "-";
 
     div.innerHTML = `
-      <div class="row">
-        <div><b>${esc(m.veh)}</b> ${m.attr?`<span class="badge">${esc(m.attr)}</span>`:""} — 
-          <select onchange="editField('${id}','type',this.value)">
-            <option ${m.type===""?"selected":""} value="">—</option>
-            <option ${m.type==="TMS"?"selected":""}>TMS</option>
-            <option ${m.type==="112"?"selected":""}>112</option>
-            <option ${m.type==="Prévention"?"selected":""}>Prévention</option>
-            <option ${m.type==="Logistique"?"selected":""}>Logistique</option>
-          </select>
-        </div>
-        <div style="text-align:right" class="small">Plaque: ${esc(m.plaque||getPlateByVeh(m.veh)||"—")}</div>
-      </div>
-
-      <label>Motif</label>
-      <input value="${esc(m.motif||"")}" oninput="editField('${id}','motif',this.value)">
-
-      <fieldset>
-        <legend>Adresse</legend>
-        <div class="grid">
-          <div><label>Rue</label><input value="${esc(m.adresse?.rue||"")}" oninput="editAddr('${id}','rue',this.value)"></div>
-          <div><label>Numéro / Boîte</label><input value="${esc(m.adresse?.num||"")}" oninput="editAddr('${id}','num',this.value)"></div>
-          <div><label>Code postal</label><input maxlength="4" value="${esc(m.adresse?.cp||"")}" oninput="editAddrCP('${id}',this.value)"></div>
-          <div><label>Localité</label><input value="${esc(m.adresse?.ville||"")}" oninput="editAddr('${id}','ville',this.value)"></div>
-        </div>
-      </fieldset>
-
-      <div class="renforts">
-        <span class="thin">Renforts :</span>
-        <label><input type="checkbox" ${renf.pompiers?'checked':''} onchange="toggleRenfort('${id}','pompiers',this.checked)"> Pompiers</label>
-        <label><input type="checkbox" ${renf.police?'checked':''} onchange="toggleRenfort('${id}','police',this.checked)"> Police</label>
-        <label><input type="checkbox" ${renf.smur?'checked':''} onchange="toggleRenfort('${id}','smur',this.checked)"> SMUR</label>
-      </div>
-
-      <div id="blk112_${id}" style="${show112?'':'display:none'};margin-top:6px">
-        <label>Centrale 112</label>
-        <select onchange="editField('${id}','centrale',this.value)">
-          ${["","Mons","Namur","Arlon","Liège","Leuven","Bruxelles","Autres"].map(x=>`<option ${m.centrale===x?"selected":""} value="${x}">${x||"—"}</option>`).join("")}
-        </select>
-        <label>Numéro mission (4 derniers)</label>
-        <input maxlength="4" value="${esc(m.num112||"")}" oninput="editField('${id}','num112',this.value)">
-        <label>Départ</label>
-        <select onchange="editField('${id}','depart112',this.value)">
-          ${["Normal","Médical"].map(x=>`<option ${m.depart112===x?"selected":""}>${x}</option>`).join("")}
-        </select>
-      </div>
-
-      <div class="status-btns">${statusButtons}</div>
-
-      <div class="row" style="margin-top:10px">
+      <div style="display:flex;justify-content:space-between;align-items:start">
         <div>
-          <label>Kilométrage départ</label>
-          <input type="number" id="kmdep_${id}" value="${esc(m.kmDep||"")}" oninput="updKm('${id}','dep',this.value)" placeholder="auto selon plaque">
+          <div><b>${esc(m.veh||"-")}</b> ${m.attr?`<span class="mut">[${esc(m.attr)}]</span>`:""} — ${esc(m.type)}</div>
+          ${m.type==='TMS' ? `<div class="mut" style="margin-top:2px">PEC: ${pecText}</div>`:""}
+          <div class="mut" style="margin-top:2px">Destination: ${destText}</div>
+          ${m.comment?`<div class="mut" style="margin-top:6px">💬 ${esc(m.comment)}</div>`:""}
         </div>
-        <div>
-          <label>Kilométrage retour</label>
-          <input type="number" id="kmret_${id}" value="${esc(m.kmRet||"")}" oninput="updKm('${id}','ret',this.value)" placeholder="obligatoire avant clôture">
+        <div style="text-align:right">
+          ${m.type==='112'
+            ? `<div class="mut">CU112: ${esc(m.centrale||"-")} • N° ${esc(m.num112||"-")}</div>`
+            : (m.retour_prevus===true ? `<div class="mut">Retour patient: Oui</div>`:`<div class="mut">Retour patient: Non</div>`)}
         </div>
       </div>
-
-      <div style="text-align:right;margin-top:10px">
-        <button class="secondary" onclick="closeMission('${id}')">Clôturer mission</button>
-      </div>
+      ${renfBadges?`<div style="margin-top:8px">${renfBadges}</div>`:""}
     `;
-    box.appendChild(div);
+    cont.appendChild(div);
   });
+
+  if(!arr.length) cont.innerHTML = `<div class="mut">Aucune mission en cours</div>`;
 }
 
-/* Editions inline */
-function editField(id,key,val){
-  const m=missions[id]; if(!m) return;
-  m[key]=val;
-  if(key==="type"){
-    const blk=document.getElementById('blk112_'+id);
-    if(blk) blk.style.display = (val==="112")?"block":"none";
+/* ---------- Chargement + polling ---------- */
+async function loadAll(){
+  try{
+    MISSIONS = await readKey(MISSIONS_KEY) || {};
+  }catch(e){
+    console.warn("Lecture missions KO", e);
+    MISSIONS = {};
   }
-  saveMissions();
-}
-function editAddr(id,key,val){
-  const m=missions[id]; if(!m) return;
-  m.adresse = m.adresse||{};
-  m.adresse[key]=val;
-  saveMissions();
-}
-function editAddrCP(id,val){
-  const m=missions[id]; if(!m) return;
-  m.adresse = m.adresse||{};
-  m.adresse.cp = val;
-  if(CP_MAP[val]) m.adresse.ville = CP_MAP[val];
-  saveMissions();
-  renderActive();
-}
-function toggleRenfort(id,key,checked){
-  const m=missions[id]; if(!m) return;
-  m.renforts=m.renforts||{pompiers:false,police:false,smur:false};
-  m.renforts[key]=checked;
-  saveMissions();
+  renderList();
 }
 
-/* Km live */
-function updKm(id, which, val){
-  const m=missions[id]; if(!m) return;
-  if(which==="dep") m.kmDep = val;
-  if(which==="ret") m.kmRet = val;
-  saveMissions();
-}
+/* ---------- Bind UI ---------- */
+$('m_type').onchange = ()=>{
+  const t = $('m_type').value;
+  $('blk_112').style.display = (t==='112')?'grid':'none';
+  $('blk_retour_prevus').style.display = (t==='TMS')?'block':'none';
+};
 
-/* ================== Actions de statut ================== */
-function setStatus(id, st){
-  const m = missions[id]; if(!m) return;
-  if(!m.statuts) m.statuts = {};
-  if(m.statuts[st]) return; // déjà posé
+$('btnCreate').onclick = createMissionFromForm;
 
-  // Marque l'heure
-  m.statuts[st] = hhmm(now());
+/* Toggles PEC/Dest */
+bindToggles();
 
-  // Effets spéciaux
-  if (st === "Dévié"){
-    // Même ambulance, nouvelle mission éditable
-    const veh = m.veh;
-    const plaque = m.plaque || getPlateByVeh(veh);
-    const kmStart = bestKmForPlate(plaque);
-    const newM = {
-      id: String(Date.now()+1),
-      day: todayKey(),
-      veh, attr: (dispatchData[veh]?.attribution||m.attr||""),
-      type: "", motif: "",
-      plaque,
-      renforts: {pompiers:false,police:false,smur:false},
-      centrale: "", num112: "", depart112: "Normal",
-      adresse: { rue:"", num:"", cp:"", ville:"" },
-      statuts: { "Départ": hhmm(now()) },
-      kmDep: kmStart ? String(kmStart) : "",
-      kmRet: "",
-      done:false
-    };
-    missions[newM.id]=newM;
-    // s'assurer que le véhicule reste "Sorti"
-    dispatchData[veh] = dispatchData[veh]||{};
-    dispatchData[veh].statut="Sorti";
-    saveDispatch();
-  }
+/* Renforts form */
+renderRenfortsForm();
 
-  if (st === "Mise indispo"){
-    const motif = prompt("Motif d'indisponibilité ?");
-    if (motif===null){ delete m.statuts[st]; saveMissions(); renderActive(); return; }
-    const v = m.veh;
-    dispatchData[v] = dispatchData[v]||{};
-    dispatchData[v].statut = "Indisponible";
-    dispatchData[v].commentaire = motif.trim();
-    saveDispatch();
-  }
+/* Hôpital search attach (PEC & DEST) */
+attachHospitalSearch('pec_hop_search','pecHopList','pec_hop_name','pec_hop_addr','pec_cp2','pec_ville2');
+attachHospitalSearch('dest_hop_search','destHopList','dest_hop_name','dest_hop_addr','dest_cp2','dest_ville2');
 
-  if (st === "Annulé par CU112" || st === "Retour au poste"){
-    const v = m.veh;
-    dispatchData[v] = dispatchData[v]||{};
-    dispatchData[v].statut = "Disponible";
-    saveDispatch();
-  }
-
-  saveMissions();
-  renderActive();
-}
-
-/* ================== Clôture ================== */
-function closeMission(id){
-  const m = missions[id]; if(!m) return;
-
-  // Garde : statut autorisant la clôture (EXCLUT "Annulé par CU112")
-  const hasGuard = Object.keys(m.statuts||{}).some(s=>CLOSE_GUARDS.has(s));
-  if(!hasGuard){
-    alert("Impossible de clôturer : activer l’un des statuts Dévié, Mise indispo ou Retour au poste.");
-    return;
-  }
-  // Garde : kms
-  const dep = parseInt(m.kmDep||"",10);
-  const ret = parseInt(m.kmRet||"",10);
-  if(!(dep>0 && ret>0)){
-    alert("Impossible de clôturer : indique les kilomètres départ et retour.");
-    return;
-  }
-
-  // Δ km & heures
-  m.diffKm = ret - dep;
-  m.done = true;
-  m.heures = { ...m.statuts };
-
-  // Dispatch : KM véhicule et dispo si pas indispo
-  const v = m.veh;
-  if(dispatchData[v]){
-    dispatchData[v].km = String(ret);
-    if (!m.statuts["Mise indispo"]) dispatchData[v].statut = "Disponible";
-  }
-  saveDispatch(); saveMissions();
-
-  renderActive(); renderDone();
-}
-
-/* ================== Missions du jour ================== */
-function formatRenforts(r){
-  if(!r) return "—";
-  const arr=[];
-  if(r.pompiers) arr.push("Pompiers");
-  if(r.police) arr.push("Police");
-  if(r.smur) arr.push("SMUR");
-  return arr.length?arr.join(", "):"—";
-}
-
-function renderDone(){
-  const tb = document.querySelector("#tableDone tbody");
-  tb.innerHTML="";
-  const today = todayKey();
-  const done = Object.values(missions).filter(m=>m.done && m.day===today);
-  // ordre décroissant par heure "Départ"
-  done.sort((a,b)=> (b.statuts?.["Départ"]||"") < (a.statuts?.["Départ"]||"") ? -1 : 1);
-  done.forEach(m=>{
-    const heures = Object.entries(m.heures||{}).map(([k,v])=>`${esc(k)}: ${esc(v)}`).join("<br>");
-    tb.insertAdjacentHTML("beforeend",`
-      <tr>
-        <td><input type="checkbox" class="selDone" data-id="${esc(m.id)}"></td>
-        <td>${esc(m.veh)}</td>
-        <td>${esc(m.attr||"—")}</td>
-        <td>${esc(m.type||"—")}</td>
-        <td>${esc(m.motif||"—")}</td>
-        <td>${esc(formatRenforts(m.renforts))}</td>
-        <td>${(m.diffKm??"")}</td>
-        <td>${heures}</td>
-      </tr>
-    `);
-  });
-}
-
-/* ================== Suppression/Archivage missions du jour ================== */
-function deleteSelectedDone(){
-  const pw = prompt("Mot de passe administrateur :");
-  if (pw===null) return;
-  if (pw !== ADMIN_PASSWORD){ alert("Mot de passe incorrect."); return; }
-
-  const checks = Array.from(document.querySelectorAll(".selDone:checked"));
-  if (!checks.length){ alert("Sélectionne au moins une mission."); return; }
-
-  let movedCount=0;
-  checks.forEach(ch=>{
-    const id = ch.dataset.id;
-    const m = missions[id];
-    if(!m) return;
-    archive[id] = m;  // archive
-    delete missions[id]; // retire du jour
-    movedCount++;
-  });
-  if (movedCount>0){ saveArchive(); saveMissions(); renderDone(); alert(`${movedCount} mission(s) déplacée(s) vers l’archive.`); }
-}
-
-/* ================== Boot & Sync ================== */
-window.onload=()=>{ loadAll(); populateVeh(); renderActive(); renderDone(); };
-window.addEventListener("storage", e=>{
-  if(e.key===DISPATCH_KEY){ dispatchData=JSON.parse(e.newValue||"{}"); populateVeh(); renderActive(); }
-  if(e.key===MISSIONS_KEY){ missions=JSON.parse(e.newValue||"{}"); renderActive(); renderDone(); }
-  if(e.key===MISSIONS_ARCHIVE_KEY){ archive=JSON.parse(e.newValue||"{}"); }
-});
+/* Boot */
+(async function(){
+  await loadAll();
+  setInterval(loadAll, 5000);
+})();
 </script>
+
 </body>
 </html>
