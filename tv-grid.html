@@ -79,26 +79,39 @@
   .hall-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;row-gap:10px}
   .stack{display:flex;flex-direction:column;gap:10px}
 
-  /* Garage layout (droite), agencé comme la photo */
+  /* Garage layout fidèle à la photo */
   .garage{
     display:grid;gap:10px;
-    grid-template-columns: 1fr 1fr 1fr;
-    grid-template-rows: auto auto 1fr;
+    grid-template-columns: 1.05fr 1fr 1.15fr; /* gauche / milieu / droite */
+    grid-template-rows: auto 6px auto;        /* haut / séparateur / bas */
     grid-template-areas:
-      "g1  g8  g2"
-      "g1  g8  g3"
-      "sep sep g4"
-      "g6  g7  g5";
+      "g1   g8   rtop"
+      "sep  sep  sep"
+      "g6   gap  g7";
   }
   .g1  {grid-area:g1}
   .g8  {grid-area:g8}
-  .g2  {grid-area:g2}
-  .g3  {grid-area:g3}
-  .g4  {grid-area:g4}
-  .g5  {grid-area:g5}
+  .rtop{grid-area:rtop}
   .g6  {grid-area:g6}
   .g7  {grid-area:g7}
-  .sep {grid-area:sep;border-top:3px solid #33465f;margin:4px 0}
+  .gap {grid-area:gap}
+  .sep-wide{grid-area:sep; height:3px; background:#33465f; border-radius:2px}
+
+  /* Boîte droite du haut (G2,G3,G4 + trait + G5) */
+  .right-box{
+    border:2px solid #33465f;border-radius:10px;padding:10px;
+    display:flex;flex-direction:column;gap:10px;height:100%;
+  }
+  .right-box .inner-sep{height:3px;background:#33465f;border-radius:2px;margin:4px 0}
+
+  /* tailles visuelles proches de la photo */
+  .tall   {min-height:220px}
+  .small  {min-height:64px}
+  .medium {min-height:110px}
+
+  /* Colonnes de statut (droite ancienne) – conservées si besoin ailleurs
+     -> Ici non utilisées, mais gardées si tu veux réafficher plus tard */
+  .cols{display:none}
 
   /* Ticker */
   .banner{position:absolute;left:0;right:0;bottom:0;height:40px;background:var(--ticker-bg);
@@ -164,20 +177,33 @@
     </div>
   </div>
 
-  <!-- Garage -->
+  <!-- Garage fidèle à la photo -->
   <div class="pane">
     <h2 class="section-title">Garage</h2>
     <div class="frame">
       <div class="garage">
-        <div class="slot g1"  id="slot-G1"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-        <div class="slot g8"  id="slot-G8"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-        <div class="slot g2"  id="slot-G2"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-        <div class="slot g3"  id="slot-G3"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-        <div class="sep"></div>
-        <div class="slot g4"  id="slot-G4"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-        <div class="slot g6"  id="slot-G6"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-        <div class="slot g7"  id="slot-G7"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-        <div class="slot g5"  id="slot-G5"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+        <!-- Haut gauche et milieu : grands G1 & G8 -->
+        <div class="g1"><div id="slot-G1" class="slot tall"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div></div>
+        <div class="g8"><div id="slot-G8" class="slot tall"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div></div>
+
+        <!-- Haut droite : boîte encadrée avec G2,G3,G4, trait puis G5 -->
+        <div class="rtop">
+          <div class="right-box">
+            <div id="slot-G2" class="slot small"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+            <div id="slot-G3" class="slot small"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+            <div id="slot-G4" class="slot small"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+            <div class="inner-sep"></div>
+            <div id="slot-G5" class="slot medium"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          </div>
+        </div>
+
+        <!-- Séparateur horizontal global -->
+        <div class="sep-wide"></div>
+
+        <!-- Bas : grands G6 & G7 avec espace central -->
+        <div class="g6"><div id="slot-G6" class="slot tall"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div></div>
+        <div class="gap"></div>
+        <div class="g7"><div id="slot-G7" class="slot tall"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div></div>
       </div>
     </div>
   </div>
@@ -258,8 +284,8 @@ function resetSlots(ids){
     const el = document.getElementById('slot-'+id);
     if(!el) return;
     el.className = 'slot' + (id==='EXT' ? ' ext':'');
-    el.querySelector('.veh').textContent = '—';
-    const sub = el.querySelector('.sub'); if(sub) sub.textContent = '';
+    const v = el.querySelector('.veh'); if(v) v.textContent = '—';
+    const s = el.querySelector('.sub'); if(s) s.textContent = '';
   });
 }
 
@@ -281,15 +307,15 @@ function renderHall(){
   });
 }
 
-/* Garage renderer */
+/* Garage renderer fidèle à la géométrie */
 function renderGarage(){
   resetSlots(["G1","G2","G3","G4","G5","G6","G7","G8"]);
   const list=(data._settings?.vehs)||[];
   list.forEach(v=>{
     const d=data[v.id]||{};
-    const emp=(v.emplacement||"").trim();
-    if(!/^G\d+/i.test(emp)) return;
-    const box = document.getElementById('slot-'+emp.toUpperCase());
+    const emp=(v.emplacement||"").trim().toUpperCase();
+    if(!/^G[1-8]$/.test(emp)) return;
+    const box = document.getElementById('slot-'+emp);
     if(!box) return;
     const cl = slotClassForStatus(d.statut||"");
     if(cl) box.classList.add(cl);
@@ -331,7 +357,6 @@ async function refresh(){
     buildBanner();
   }catch(e){ console.error(e); }
 }
-
 refresh(); setInterval(refresh, 5000);
 window.addEventListener('storage', e=>{ if(e.key===KEY) refresh(); });
 </script>
