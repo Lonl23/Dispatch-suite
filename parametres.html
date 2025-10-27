@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Paramétrages des véhicules</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  body{background:#0b0f14;color:#fff;font-family:Inter,Segoe UI,Arial,sans-serif;margin:0;padding:20px}
+  h1{margin:0 0 20px;color:#cfe1ff}
+  .btn{background:#3a8bf2;color:#fff;border:0;border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer}
+  .btn.danger{background:#e74c3c}
+  .card{background:#121821;border:1px solid #223044;border-radius:10px;padding:12px;margin-bottom:15px}
+  label{display:block;color:#93a7bf;font-size:12px;margin:6px 0 3px}
+  input,select{width:100%;padding:6px 8px;border:1px solid #2c3d52;border-radius:8px;background:#0f1520;color:#fff;box-sizing:border-box}
+  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  table{width:100%;border-collapse:collapse;margin-top:12px}
+  th,td{border:1px solid #223044;padding:6px;text-align:left}
+  th{background:#182030}
+</style>
+</head>
+<body>
+
+<script src="store-bridge.js"></script>
+
+<h1>Paramétrages des véhicules</h1>
+
+<div class="card">
+  <h3>Ajouter un véhicule</h3>
+  <div class="grid3">
+    <div><label>Identifiant</label><input id="nv_id" placeholder="AS 55"></div>
+    <div><label>Nom affiché</label><input id="nv_name" placeholder="Ambulance 55"></div>
+    <div><label>Plaque</label><input id="nv_plate" placeholder="1-ABC-123"></div>
+    <div><label>Attribution</label>
+      <select id="nv_attr">
+        <option></option>
+        <option>LH1</option><option>LH2</option><option>LH3</option><option>LH4</option>
+        <option>LH5</option><option>LH6</option><option>LH7</option><option>LH8</option>
+        <option>Prev</option><option>LOG</option>
+      </select>
+    </div>
+    <div style="align-self:end"><button class="btn" onclick="addVehicle()">➕ Ajouter</button></div>
+  </div>
+</div>
+
+<div class="card">
+  <h3>Véhicules enregistrés</h3>
+  <table>
+    <thead>
+      <tr><th>Identifiant</th><th>Nom</th><th>Plaque</th><th>Attribution</th><th></th></tr>
+    </thead>
+    <tbody id="tb"></tbody>
+  </table>
+</div>
+
+<script>
+const STORAGE_KEY="dispatch_parc_vehicules";
+const LH_SET=new Set(["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8"]);
+let data={};
+
+if(typeof readKey!=='function'||typeof saveKey!=='function'){
+  console.warn("store-bridge.js non trouvé, fallback local");
+  window.readKey=async(k)=>JSON.parse(localStorage.getItem(k)||"{}");
+  window.saveKey=async(k,o)=>localStorage.setItem(k,JSON.stringify(o||{}));
+}
+
+function ensure(){
+  if(!data._settings)data._settings={vehs:[]};
+  (data._settings.vehs||[]).forEach(v=>{
+    if(!data[v.id])data[v.id]={XO:"",S:"",PS:"",statut:"Disponible",commentaire:"",attribution:v.attrib||"",plaque:v.plaque||"",km:"",heure_sortie:"",name:v.name||v.id};
+  });
+}
+
+function enforceLHUnicity(){
+  const seen={};
+  (data._settings.vehs||[]).forEach(v=>{
+    const a=(data[v.id]?.attribution||"").toUpperCase();
+    if(LH_SET.has(a)){
+      if(seen[a]){data[v.id].attribution="";v.attrib="";}
+      else seen[a]=v.id;
+    }
+  });
+}
+
+function render(){
+  const tb=document.getElementById('tb');
+  tb.innerHTML="";
+  (data._settings.vehs||[]).forEach(v=>{
+    const d=data[v.id];
+    const tr=document.createElement('tr');
+    tr.innerHTML=`
+      <td><b>${v.id}</b></td>
+      <td><input data-id="${v.id}" data-f="name" value="${d.name||""}"></td>
+      <td><input data-id="${v.id}" data-f="plaque" value="${d.plaque||""}"></td>
+      <td>
+        <select data-id="${v.id}" data-f="attribution">
+          ${["","LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","Prev","LOG"].map(a=>`<option ${a===(d.attribution||"")?"selected":""}>${a}</option>`).join("")}
+        </select>
+      </td>
+      <td><button class="btn danger" onclick="removeVeh('${v.id}')">🗑️</button></td>`;
+    tb.appendChild(tr);
+  });
+  tb.querySelectorAll("input,select").forEach(el=>{
+    el.oninput=async e=>{
+      const id=e.target.dataset.id,f=e.target.dataset.f,val=e.target.value;
+      if(!data[id])data[id]={};
+      data[id][f]=val;
+      const sv=data._settings.vehs.find(v=>v.id===id);
+      if(sv){
+        if(f==="name")sv.name=val;
+        if(f==="plaque")sv.plaque=val;
+        if(f==="attribution")sv.attrib=val;
+      }
+      enforceLHUnicity();
+      await saveKey(STORAGE_KEY,data);
+    };
+  });
+}
+
+async function addVehicle(){
+  const id=document.getElementById('nv_id').value.trim();
+  const name=document.getElementById('nv_name').value.trim()||id;
+  const plaque=document.getElementById('nv_plate').value.trim();
+  const attrib=document.getElementById('nv_attr').value;
+  if(!id)return alert("Identifiant requis");
+  if((data._settings.vehs||[]).some(v=>v.id===id))return alert("Déjà existant");
+  data._settings.vehs.push({id,name,plaque,attrib});
+  data[id]={XO:"",S:"",PS:"",attribution:attrib,plaque,km:"",heure_sortie:"",statut:"Disponible",commentaire:"",name};
+  enforceLHUnicity();
+  await saveKey(STORAGE_KEY,data);
+  document.getElementById('nv_id').value="";
+  document.getElementById('nv_name').value="";
+  document.getElementById('nv_plate').value="";
+  document.getElementById('nv_attr').value="";
+  render();
+}
+
+async function removeVeh(id){
+  if(!confirm("Supprimer "+id+" ?"))return;
+  data._settings.vehs=data._settings.vehs.filter(v=>v.id!==id);
+  delete data[id];
+  await saveKey(STORAGE_KEY,data);
+  render();
+}
+
+(async()=>{
+  data=await readKey(STORAGE_KEY);
+  ensure();
+  render();
+})();
+</script>
+</body>
+</html>
