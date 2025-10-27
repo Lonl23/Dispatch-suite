@@ -8,16 +8,18 @@
   :root{
     --bg:#0a0f16; --panel:#121821; --line:#1f2c3e;
     --text:#f1f5fa; --muted:#9bb5d3;
-    --ok-bg:#15351c;      /* vert foncé bloc entier = Disponible */
-    --ok-bd:#2e7d32;
-    --bad-bg:#3a1212;     /* rouge foncé bloc entier = Indisponible */
-    --bad-bd:#e74c3c;
+    --dispo-bg:#15351c;  --dispo-bd:#2e7d32;
+    --indispo-bg:#3a1212;--indispo-bd:#e74c3c;
+    --depart-bg:#7a6200; --depart-bd:#f0c000;
+    --surplace-bg:#7a3f00;--surplace-bd:#ff9800;
+    --hopital-bg:#3a006e;--hopital-bd:#9c27b0;
+    --route-bg:#00416a;  --route-bd:#2196f3;
     --ticker-bg:#a00020; --ticker-fg:#fff;
   }
+
   html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
     font-family:Segoe UI,Inter,system-ui,sans-serif;overflow:hidden}
 
-  /* Header compact */
   .header{display:flex;justify-content:space-between;align-items:center;
     padding:8px 16px;background:#0d1523;border-bottom:2px solid var(--line)}
   .header h1{margin:0;font-size:24px;color:#cfe1ff}
@@ -25,51 +27,50 @@
   .pill{background:#0f1624;border:1px solid #223146;border-radius:999px;
     padding:4px 10px;font-weight:600;font-size:14px}
 
-  /* Roles bandeau compact */
   .roles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
     padding:6px 10px;background:#101a2a;border-bottom:1px solid #223146}
-  .role{background:#142035;border:1px solid #223146;border-radius:8px;
-    padding:4px 8px;min-width:140px;text-align:center;font-size:14px}
+  .role{background:#142035; border:1px solid #223146; border-radius:8px;
+    padding:4px 8px; min-width:140px;text-align:center;font-size:14px}
   .role span{display:block;color:#9bb5d3;font-size:11px}
 
-  /* Split principal */
   .main{display:grid;grid-template-columns:1fr 1fr;gap:10px;
     height:calc(100vh - 140px);padding:10px;box-sizing:border-box;overflow:hidden}
   .leftPane,.rightPane{background:#0f1624;border:1px solid #223146;border-radius:12px;
     padding:8px;overflow:auto}
 
-  /* Hall compact */
   .section-title{margin:0 0 6px 0;color:#cfe1ff;font-size:16px;text-align:center}
   .hall-frame{border:2px solid #33465f;border-radius:10px;padding:10px}
-  .ext-row{display:flex;justify-content:center;margin-bottom:12px}
+  .ext-row{display:flex;justify-content:center;margin-bottom:10px}
   .slot.ext{width:92%}
 
-  .hall-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:16px;row-gap:14px}
-  .stack{display:flex;flex-direction:column;gap:14px}
+  .hall-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;row-gap:10px}
+  .stack{display:flex;flex-direction:column;gap:10px}
 
   .slot{
     background:#121e31;border:2px solid #425672;border-radius:10px;
-    padding:8px 10px;min-height:88px;
+    padding:6px 10px;min-height:80px;
     display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center
   }
-  /* cacher les libellés d’emplacement */
   .slot .code{display:none}
   .slot .veh{font-size:16px;font-weight:800}
   .slot .sub{font-size:12px;color:#b8c9e0;margin-top:2px}
-  /* Couleur bloc ENTIER (pas de bord uniquement) */
-  .slot.ok{ background:var(--ok-bg); border-color:var(--ok-bd); }
-  .slot.bad{ background:var(--bad-bg); border-color:var(--bad-bd); }
 
-  /* Colonnes (pas d’emplacement affiché) */
+  .slot.dispo{background:var(--dispo-bg);border-color:var(--dispo-bd);}
+  .slot.indispo{background:var(--indispo-bg);border-color:var(--indispo-bd);}
+  .slot.depart{background:var(--depart-bg);border-color:var(--depart-bd);}
+  .slot.surplace{background:var(--surplace-bg);border-color:var(--surplace-bd);}
+  .slot.route{background:var(--route-bg);border-color:var(--route-bd);}
+  .slot.hopital{background:var(--hopital-bg);border-color:var(--hopital-bd);}
+
   .cols{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-  .col{background:#121b2a;border:1px solid #223146;border-radius:10px;display:flex;flex-direction:column;min-height:120px}
+  .col{background:#121b2a;border:1px solid #223146;border-radius:10px;
+    display:flex;flex-direction:column;min-height:120px}
   .col h3{margin:0;padding:6px;text-align:center;border-bottom:1px solid #223146;color:#cfe1ff;font-size:15px}
   .list{padding:6px;display:flex;flex-direction:column;gap:6px}
   .vehCard{background:#1a2436;border:1px solid #2b3a51;border-radius:8px;padding:6px;text-align:center}
   .vehCard .name{font-weight:800}
   .vehCard .line{font-size:12px;color:#9bb5d3}
 
-  /* Bannière */
   .banner{position:absolute;left:0;right:0;bottom:0;height:40px;background:var(--ticker-bg);
     color:var(--ticker-fg);display:flex;align-items:center;overflow:hidden;border-top:1px solid #7a0016}
   .track{display:flex;gap:48px;white-space:nowrap;will-change:transform}
@@ -94,39 +95,31 @@
 <div id="roles" class="roles">Chargement des rôles…</div>
 
 <div class="main">
-  <!-- GAUCHE : HALL DES DÉPARTS -->
   <div class="leftPane">
     <h2 class="section-title">Hall des départs</h2>
     <div class="hall-frame">
       <div class="ext-row">
-        <div class="slot ext" id="slot-EXT">
-          <div class="code">Extérieur</div>
-          <div class="veh" style="opacity:.6">—</div>
-        </div>
+        <div class="slot ext" id="slot-EXT"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
       </div>
-
       <div class="hall-grid">
-        <!-- Colonne gauche : H6→H10 -->
         <div class="stack">
-          <div class="slot" id="slot-H6"><div class="code">H6</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-          <div class="slot" id="slot-H7"><div class="code">H7</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-          <div class="slot" id="slot-H8"><div class="code">H8</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-          <div class="slot" id="slot-H9"><div class="code">H9</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-          <div class="slot" id="slot-H10"><div class="code">H10</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H6"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H7"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H8"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H9"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H10"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
         </div>
-        <!-- Colonne droite : H5→H1 -->
         <div class="stack">
-          <div class="slot" id="slot-H5"><div class="code">H5</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-          <div class="slot" id="slot-H4"><div class="code">H4</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-          <div class="slot" id="slot-H3"><div class="code">H3</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-          <div class="slot" id="slot-H2"><div class="code">H2</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
-          <div class="slot" id="slot-H1"><div class="code">H1</div><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H5"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H4"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H3"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H2"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
+          <div class="slot" id="slot-H1"><div class="veh" style="opacity:.6">—</div><div class="sub"></div></div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- DROITE : COLONNES STATUTS (pas d’emplacements) -->
   <div class="rightPane">
     <div class="cols">
       <div class="col"><h3>Sortis</h3><div id="col-sortis" class="list"></div></div>
@@ -137,7 +130,6 @@
   </div>
 </div>
 
-<!-- Bannière -->
 <div class="banner">
   <div class="track">
     <div id="band1" class="scroll"></div>
@@ -154,29 +146,28 @@ let data={};
 const $ = s => document.querySelector(s);
 const esc = s => String(s??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
 
-/* date + heure */
+/* Date + heure */
 function tick(){
   const d=new Date();
   const jours=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
   const mois=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
-  $('#datetime').textContent=
-    `${jours[d.getDay()]} ${String(d.getDate()).padStart(2,'0')} ${mois[d.getMonth()]} ${d.getFullYear()} — `+
-    d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  $('#datetime').textContent=`${jours[d.getDay()]} ${String(d.getDate()).padStart(2,'0')} ${mois[d.getMonth()]} ${d.getFullYear()} — ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
 }
 setInterval(tick,1000); tick();
 
-/* météo La Hulpe */
+/* Météo */
 async function meteo(){
   try{
     const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=50.73&longitude=4.48&current=temperature_2m,weather_code&timezone=Europe/Brussels",{cache:"no-store"});
-    const j=await r.json(); const t=j.current?.temperature_2m; const c=j.current?.weather_code;
+    const j=await r.json();
+    const t=j.current?.temperature_2m; const c=j.current?.weather_code;
     const map={0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",61:"🌧️",63:"🌧️",65:"🌧️",71:"❄️",95:"⛈️"};
     $('#meteo').textContent=`${map[c]||"🌤️"} ${t}°C La Hulpe`;
   }catch{}
 }
 meteo(); setInterval(meteo, 10*60*1000);
 
-/* rôles */
+/* Rôles */
 const roleLabels={
   officier_semaine:"Officier de semaine",
   officier_garde:"Officier de garde",
@@ -192,36 +183,38 @@ function renderRoles(){
     .map(([k,l])=>`<div class="role"><span>${l}</span>${esc(r[k]||"-")}</div>`).join("");
 }
 
-/* Hall — couleur bloc ENTIER: Dispo/Indispo seulement */
+/* Codes couleur statuts */
 function slotClassForStatus(s){
-  if(s==="Disponible") return "ok";
-  if(s==="Indisponible") return "bad";
-  return ""; // Sorti & Réserve : neutre
+  switch(s){
+    case "Disponible": return "dispo";
+    case "Indisponible": return "indispo";
+    case "Départ": return "depart";
+    case "Sur place": return "surplace";
+    case "En route vers hôpital": return "route";
+    case "À l'hôpital": return "hopital";
+    case "Retour disponible": return "dispo";
+    case "Retour indisponible": return "indispo";
+    default: return "";
+  }
 }
-const H_SLOTS=["H6","H7","H8","H9","H10","H5","H4","H3","H2","H1"];
-function clearHall(){
-  const ext=$("#slot-EXT");
-  ext.classList.remove("ok","bad");
-  ext.querySelector('.veh').textContent="—";
-  ext.querySelector('.sub').textContent="";
-  H_SLOTS.forEach(h=>{
-    const el=$(`#slot-${h}`);
-    el.classList.remove("ok","bad");
+
+/* Hall */
+function renderHall(){
+  const all=["H1","H2","H3","H4","H5","H6","H7","H8","H9","H10","EXT"];
+  all.forEach(h=>{
+    const el=$(`#slot-${h}`); if(!el) return;
+    el.className="slot"+(h==="EXT"?" ext":"");
     el.querySelector('.veh').textContent="—";
     const sub=el.querySelector('.sub'); if(sub) sub.textContent="";
   });
-}
-function renderHall(){
-  clearHall();
+
   const list=(data._settings?.vehs)||[];
   list.forEach(v=>{
     const d=data[v.id]||{};
     const emp=(v.emplacement||"").trim();
     const target = /ext/i.test(emp) ? "#slot-EXT" : `#slot-${emp}`;
-    const box=$(target);
-    if(!box) return;
+    const box=$(target); if(!box) return;
     const cl=slotClassForStatus(d.statut||"");
-    box.classList.remove("ok","bad");
     if(cl) box.classList.add(cl);
     box.querySelector('.veh').textContent = (d.name||v.id);
     const sub = box.querySelector('.sub');
@@ -229,7 +222,7 @@ function renderHall(){
   });
 }
 
-/* Colonnes à droite (sans emplacements) */
+/* Colonnes droites */
 function renderCols(){
   $("#col-sortis").innerHTML="";
   $("#col-dispo").innerHTML="";
@@ -253,7 +246,7 @@ function renderCols(){
   });
 }
 
-/* Bannière fluide */
+/* Bannière */
 function buildBanner(){
   const notes=data._notes||{};
   const outs=[];
@@ -268,7 +261,7 @@ function buildBanner(){
   const chunks=[];
   if(outs.length) chunks.push(`<span class="tag">VÉHICULE OUT</span><span>${esc(outs.join("  •  "))}</span>`);
   if((notes.materiel||"").trim()) chunks.push(`<span class="tag">MATÉRIEL</span><span>${esc(notes.materiel.replace(/\s+/g,' ').trim())}</span>`);
-  if((notes.infos||"").trim())    chunks.push(`<span class="tag">INFOS</span><span>${esc(notes.infos.replace(/\s+/g,' ').trim())}</span>`);
+  if((notes.infos||"").trim()) chunks.push(`<span class="tag">INFOS</span><span>${esc(notes.infos.replace(/\s+/g,' ').trim())}</span>`);
   const content = chunks.length ? chunks.map(c=>`<span class="chunk">${c}</span>`).join('<span class="chunk">|</span>') : `<span class="chunk">Aucune information</span>`;
   const doubled = content + content;
   document.getElementById('band1').innerHTML=doubled;
