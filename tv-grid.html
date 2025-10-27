@@ -6,95 +6,66 @@
 <title>Tableau de garde – TV</title>
 <style>
   :root {
-    --bg:#0a0f16; --panel:#121821; --line:#1f2c3e;
-    --text:#f1f5fa;
+    --bg:#0a0f16; --panel:#121821; --line:#1f2c3e; --text:#f1f5fa;
     --dispo:#1b5e20;   /* vert */
     --sorti:#1565c0;   /* bleu */
     --reserve:#f57c00; /* orange */
     --indispo:#b71c1c; /* rouge */
   }
   html, body {
-    margin:0; padding:0;
-    background:var(--bg); color:var(--text);
-    font-family:Segoe UI, Inter, sans-serif;
-    height:100vh; overflow:hidden;
+    margin:0; padding:0; background:var(--bg); color:var(--text);
+    font-family:Segoe UI, Inter, sans-serif; height:100vh; overflow:hidden;
   }
   .header {
     display:flex; justify-content:space-between; align-items:center;
-    background:#111b2b; padding:10px 20px;
-    border-bottom:2px solid var(--line);
+    background:#111b2b; padding:10px 20px; border-bottom:2px solid var(--line);
   }
-  .header h1 {
-    font-size:26px; color:#cfe1ff; margin:0;
-  }
-  .header .right {
-    display:flex; align-items:center; gap:20px; font-size:18px;
-  }
+  .header h1 { font-size:26px; color:#cfe1ff; margin:0; }
+  .header .right { display:flex; align-items:center; gap:20px; font-size:18px; }
   .meteo { font-size:18px; font-weight:600; }
 
   .roles {
-    background:#121b2a; padding:8px 20px;
-    text-align:center; font-size:16px;
-    display:flex; flex-wrap:wrap; justify-content:center; gap:16px;
-    border-bottom:2px solid var(--line);
+    background:#121b2a; padding:8px 20px; border-bottom:2px solid var(--line);
+    display:flex; flex-wrap:wrap; justify-content:center; gap:16px; text-align:center; font-size:16px;
   }
   .roles div {
     padding:6px 10px; border:1px solid var(--line);
     border-radius:8px; background:#1a2335; min-width:160px;
   }
-  .roles span {
-    display:block; color:#9bb5d3; font-size:13px;
-  }
+  .roles span { display:block; color:#9bb5d3; font-size:13px; }
 
   .grid {
-    display:grid;
-    grid-template-columns:repeat(4,1fr);
-    gap:10px; padding:10px 20px;
-    height:calc(100vh - 210px);
-    overflow:auto;
+    display:grid; grid-template-columns:repeat(4,1fr);
+    gap:10px; padding:10px 20px; height:calc(100vh - 210px); overflow:auto;
   }
-  .col {
-    background:#121b2a; border-radius:8px;
-    padding:8px; display:flex; flex-direction:column;
-    border:1px solid var(--line);
-  }
+  .col { background:#121b2a; border:1px solid var(--line); border-radius:8px; padding:8px; display:flex; flex-direction:column; }
   .col h2 {
-    text-align:center; font-size:20px;
-    border-bottom:2px solid var(--line);
-    margin:0 0 8px 0; color:#cfe1ff;
-    padding-bottom:6px;
+    text-align:center; font-size:20px; margin:0 0 8px 0; color:#cfe1ff;
+    border-bottom:2px solid var(--line); padding-bottom:6px;
   }
-  .veh {
-    border-radius:10px; padding:8px; margin-bottom:8px;
-    text-align:center; color:#fff;
-  }
+
+  .veh { border-radius:10px; padding:8px; margin-bottom:8px; text-align:center; color:#fff; }
   .veh h3 { margin:4px 0; font-size:18px; }
   .veh small { color:#e0e0e0; font-size:14px; }
   .veh .crew { font-size:14px; margin-top:4px; }
   .veh .km { font-size:14px; margin-top:4px; color:#e0e0e0; }
-
   .veh.dispo { background:var(--dispo); }
   .veh.sorti { background:var(--sorti); }
   .veh.reserve { background:var(--reserve); }
   .veh.indispo { background:var(--indispo); }
 
-  /* Bannière fluide corrigée */
+  /* Bannière fluide corrigée sans aucun saut */
   .banner{
     position:absolute; bottom:0; left:0; width:100%;
     height:44px; display:flex; align-items:center;
     background:#a00; color:#fff; border-top:2px solid #700;
-    overflow:hidden; white-space:nowrap; font-size:22px; font-weight:600;
-    padding:0 10px;
+    overflow:hidden; white-space:nowrap; font-size:22px; font-weight:600; padding:0 10px;
   }
   #marquee{
-    display:inline-block;
-    will-change: transform;
+    display:inline-flex; flex-direction:row; will-change: transform;
     transform: translate3d(0,0,0);
   }
-  #marquee .track{
-    display:inline-block;
-    padding-right:60px; /* espace entre répétitions */
-  }
+  #marquee .track{ flex:0 0 auto; padding-right:60px; }
 </style>
 </head>
 <body>
@@ -140,17 +111,14 @@ let state={};
 /* Tri par attribution */
 const ORDER=["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","TMS","PREV","OFF"];
 const rankMap=Object.fromEntries(ORDER.map((k,i)=>[k,i]));
-function attribRank(str){
-  const key=(str||"").toUpperCase();
-  return key in rankMap?rankMap[key]:999;
-}
+function attribRank(str){ const k=(str||"").toUpperCase(); return k in rankMap?rankMap[k]:999; }
 function sortVehs(vehs){
   return (vehs||[]).slice().sort((a,b)=>{
     const da=state[a.id]||{}, db=state[b.id]||{};
     const aKey=(da.attribution||a.attrib||"").toUpperCase();
     const bKey=(db.attribution||b.attrib||"").toUpperCase();
     const ra=attribRank(aKey), rb=attribRank(bKey);
-    if(ra!==rb)return ra-rb;
+    if(ra!==rb) return ra-rb;
     return (a.id||"").localeCompare(b.id||"");
   });
 }
@@ -173,9 +141,9 @@ function updateDate(){
   document.getElementById("datetime").textContent=
     `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()} — ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
 }
-setInterval(updateDate,1000);updateDate();
+setInterval(updateDate,1000); updateDate();
 
-/* Météo */
+/* Météo La Hulpe */
 async function loadMeteo(){
   try{
     const res=await fetch("https://api.open-meteo.com/v1/forecast?latitude=50.73&longitude=4.48&current=temperature_2m,weather_code&timezone=Europe/Brussels");
@@ -184,9 +152,9 @@ async function loadMeteo(){
     const code=js.current.weather_code;
     const map={0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",95:"⛈️"};
     document.getElementById("meteo").textContent=`${map[code]||"☁️"} ${temp}°C La Hulpe`;
-  }catch(e){console.log("Erreur météo",e);}
+  }catch(e){ console.log("Erreur météo",e); }
 }
-loadMeteo();setInterval(loadMeteo,600000);
+loadMeteo(); setInterval(loadMeteo,600000);
 
 /* Chargement principal */
 async function refresh(){
@@ -194,7 +162,7 @@ async function refresh(){
   state=d;
   renderRoles();
   renderColumns();
-  updateBannerText(); // ⚠️ ne rebuild l’animation que si texte changé
+  updateBannerText(); // ne reconstruit l'animation que si le texte change
 }
 
 /* Rôles */
@@ -205,7 +173,7 @@ function renderRoles(){
     .map(([k,label])=>`<div><span>${label}</span>${r[k]||"-"}</div>`).join("");
 }
 
-/* Colonnes avec code couleur */
+/* Colonnes (code couleur) */
 function renderColumns(){
   ["sortis","dispo","reserve","indispo"].forEach(id=>document.getElementById(id).innerHTML="");
   const vehs=sortVehs(state._settings?.vehs||[]);
@@ -216,7 +184,7 @@ function renderColumns(){
     else if(d.statut==="Disponible"){container="dispo"; css="dispo";}
     else if(d.statut==="Réserve"){container="reserve"; css="reserve";}
     else if(d.statut==="Indisponible"){container="indispo"; css="indispo";}
-    if(!container)return;
+    if(!container) return;
     const html=`
       <div class="veh ${css}">
         <h3>${d.name||v.id}</h3>
@@ -228,8 +196,9 @@ function renderColumns(){
   });
 }
 
-/* ===== BANNIÈRE ULTRA-FLUIDE (sans saut) ===== */
-let marqueeRAF=null, marqueeStart=0, marqueeWidth=0, marqueeSpeed=80, marqueeTextCache="", needMeasure=false;
+/* ===== BANNIÈRE ULTRA-FLUIDE (corrigée définitivement) ===== */
+let marqueeRAF=null, marqueeStart=0, marqueeWidth=0, marqueeSpeed=80;
+let marqueeTextCache="", needMeasure=false, smoothOffset=0;
 
 function buildBannerDOM(text){
   const m=document.getElementById("marquee");
@@ -237,12 +206,10 @@ function buildBannerDOM(text){
   const t1=document.createElement("span"); t1.className="track"; t1.textContent=text;
   const t2=document.createElement("span"); t2.className="track"; t2.textContent=text;
   m.appendChild(t1); m.appendChild(t2);
-  // Mesure au frame suivant
   needMeasure=true;
 }
 
 function updateBannerText(){
-  // Construit le texte à partir de l’état
   const n=state._notes||{};
   const seg=[];
   if(n.materiel) seg.push(`⚠️ Matériel : ${n.materiel}`);
@@ -254,42 +221,39 @@ function updateBannerText(){
     }
   });
   const text=seg.length?seg.join("   •   "):"Aucune information disponible actuellement.";
-  // Si inchangé → ne pas reconstruire (sinon “saut”)
-  if(text===marqueeTextCache) return;
+
+  if(text===marqueeTextCache) return; // pas de rebuild inutile (évite les “sauts”)
   marqueeTextCache=text;
   buildBannerDOM(text);
-  // Restart time origin (recalage propre)
   marqueeStart=performance.now();
   if(marqueeRAF) cancelAnimationFrame(marqueeRAF);
   marqueeRAF=requestAnimationFrame(marqueeTick);
 }
 
 function marqueeTick(now){
-  // Mesure lazy pour éviter NaN sur offsetWidth au 1er frame
   if(needMeasure){
     const first=document.querySelector('#marquee .track');
-    marqueeWidth=(first?first.offsetWidth:0)+60;
-    if(marqueeWidth<10) marqueeWidth=1000; // fallback
+    marqueeWidth=(first?first.scrollWidth:0)+60;
+    if(marqueeWidth<10) marqueeWidth=1000;
     needMeasure=false;
-    // reset time origin pour une boucle parfaite
     marqueeStart=performance.now();
+    smoothOffset=0;
   }
   const m=document.getElementById("marquee");
   const elapsed=(now - marqueeStart)/1000; // sec
-  // offset = - (vitesse * temps) modulo largeur -> boucle sans saut
-  const offset = - ((marqueeSpeed * elapsed) % marqueeWidth);
-  m.style.transform=`translate3d(${offset}px,0,0)`;
+  const offset = (marqueeSpeed * elapsed) % marqueeWidth; // base
+  // lissage sub-pixel pour supprimer tout snap visuel
+  smoothOffset += (offset - smoothOffset) * 0.08;
+  m.style.transform=`translate3d(${-smoothOffset}px,0,0)`;
   marqueeRAF=requestAnimationFrame(marqueeTick);
 }
 
-// Recalcule largeur si la fenêtre change (évite “trou” après resize)
 window.addEventListener('resize', ()=>{
   needMeasure=true;
   marqueeStart=performance.now();
 });
 
-
-// ====== Boucle auto ======
+/* Boucle auto */
 refresh();
 setInterval(refresh,5000);
 </script>
