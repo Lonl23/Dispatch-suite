@@ -1,152 +1,164 @@
 <!doctype html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<title>Paramétrages des véhicules</title>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Paramétrages – Véhicules</title>
 <style>
-  body{background:#0b0f14;color:#fff;font-family:Inter,Segoe UI,Arial,sans-serif;margin:0;padding:20px}
-  h1{margin:0 0 20px;color:#cfe1ff}
-  .btn{background:#3a8bf2;color:#fff;border:0;border-radius:8px;padding:8px 12px;font-weight:600;cursor:pointer}
-  .btn.danger{background:#e74c3c}
-  .card{background:#121821;border:1px solid #223044;border-radius:10px;padding:12px;margin-bottom:15px}
-  label{display:block;color:#93a7bf;font-size:12px;margin:6px 0 3px}
-  input,select{width:100%;padding:6px 8px;border:1px solid #2c3d52;border-radius:8px;background:#0f1520;color:#fff;box-sizing:border-box}
-  .grid3{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-  table{width:100%;border-collapse:collapse;margin-top:12px}
-  th,td{border:1px solid #223044;padding:6px;text-align:left}
-  th{background:#182030}
+  :root{--bg:#071022;--panel:#0f1724;--line:#213243;--txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Segoe UI,Inter,Arial,sans-serif}
+  h1{margin:16px auto;text-align:center;color:#cfe1ff}
+  .wrap{max-width:1100px;margin:0 auto;padding:12px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-bottom:12px}
+  label{font-size:13px;color:var(--mut)}
+  input,select{width:100%;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:#081427;color:#fff}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th,td{border:1px solid var(--line);padding:6px;text-align:center}
+  th{background:#13233b}
+  .row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .mut{color:var(--mut);font-size:12px}
+  .btn{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 12px;cursor:pointer}
+  .danger{background:#b23b3b}
+  .warn{color:#ffcc66;margin:6px 0}
 </style>
 </head>
 <body>
 
+<!-- Guard simple -->
+<script>
+(function ensureAuth(){
+  if(!localStorage.getItem("dispatch_idToken")) location.href="index.html";
+})();
+</script>
+
 <script src="store-bridge.js"></script>
 
-<h1>Paramétrages des véhicules</h1>
+<h1>Paramétrages – Véhicules</h1>
+<div class="wrap">
+  <p class="warn" id="roleWarn" style="display:none">⚠️ Vous n’êtes pas connecté en tant que <b>centrale@acsrs.be</b> (lecture seule). Les modifications peuvent être refusées par la base.</p>
 
-<div class="card">
-  <h3>Ajouter un véhicule</h3>
-  <div class="grid3">
-    <div><label>Identifiant</label><input id="nv_id" placeholder="AS 55"></div>
-    <div><label>Nom affiché</label><input id="nv_name" placeholder="Ambulance 55"></div>
-    <div><label>Plaque</label><input id="nv_plate" placeholder="1-ABC-123"></div>
-    <div><label>Attribution</label>
-      <select id="nv_attr">
-        <option></option>
-        <option>LH1</option><option>LH2</option><option>LH3</option><option>LH4</option>
-        <option>LH5</option><option>LH6</option><option>LH7</option><option>LH8</option>
-        <option>Prev</option><option>LOG</option><option>TMS</option><option>OFF</option>
-      </select>
+  <div class="card">
+    <h3 style="margin:0 0 8px">Ajouter / Modifier un véhicule</h3>
+    <div class="row">
+      <div><label>ID (unique) – ex: AS 55</label><input id="v_id" placeholder="AS 55"></div>
+      <div><label>Nom affiché</label><input id="v_name" placeholder="Ambulance 55"></div>
+      <div><label>Attribution (LH1…LH8, Prev, LOG, TMS, OFF)</label><input id="v_attrib" placeholder="LH1"></div>
+      <div><label>Plaque</label><input id="v_plaque" placeholder="1-ABC-123"></div>
     </div>
-    <div style="align-self:end"><button class="btn" onclick="addVehicle()">➕ Ajouter</button></div>
+    <div style="margin-top:8px">
+      <button class="btn" onclick="saveVeh()">Enregistrer</button>
+      <button class="btn danger" onclick="delVeh()">Supprimer</button>
+      <span class="mut">Sélectionne dans la liste pour pré-remplir / éditer.</span>
+    </div>
   </div>
-</div>
 
-<div class="card">
-  <h3>Véhicules enregistrés</h3>
-  <table> 
-    <thead>
-      <tr><th>Identifiant</th><th>Nom</th><th>Plaque</th><th>Attribution</th><th></th></tr>
-    </thead>
-    <tbody id="tb"></tbody>
-  </table>
+  <div class="card">
+    <h3 style="margin:0 0 8px">Véhicules enregistrés</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Nom</th><th>Attribution</th><th>Plaque</th>
+        </tr>
+      </thead>
+      <tbody id="list"></tbody>
+    </table>
+  </div>
 </div>
 
 <script>
 const STORAGE_KEY="dispatch_parc_vehicules";
-const LH_SET=new Set(["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8"]);
 let data={};
+const isCentral=(localStorage.getItem("dispatch_email")||"").toLowerCase()==="centrale@acsrs.be";
+if(!isCentral) document.getElementById('roleWarn').style.display='block';
 
-if(typeof readKey!=='function'||typeof saveKey!=='function'){
-  console.warn("store-bridge.js non trouvé, fallback local");
-  window.readKey=async(k)=>JSON.parse(localStorage.getItem(k)||"{}");
-  window.saveKey=async(k,o)=>localStorage.setItem(k,JSON.stringify(o||{}));
-}
+const $=id=>document.getElementById(id);
 
 function ensure(){
-  if(!data._settings)data._settings={vehs:[]};
-  (data._settings.vehs||[]).forEach(v=>{
-    if(!data[v.id])data[v.id]={XO:"",S:"",PS:"",statut:"Disponible",commentaire:"",attribution:v.attrib||"",plaque:v.plaque||"",km:"",heure_sortie:"",name:v.name||v.id};
-  });
+  if(!data || typeof data!=='object') data={};
+  if(!data._settings) data._settings={vehs:[]};
+  if(!data._roles) data._roles={
+    officier_semaine:"",officier_garde:"",responsable_operations:"",
+    chef_groupe:"",chef_poste:"",centraliste_1:"",centraliste_2:""
+  };
+  if(!data._notes) data._notes={materiel:"",infos:""};
 }
 
-function enforceLHUnicity(){
-  const seen={};
+function renderList(){
+  const tb=$('list'); tb.innerHTML="";
   (data._settings.vehs||[]).forEach(v=>{
-    const a=(data[v.id]?.attribution||"").toUpperCase();
-    if(LH_SET.has(a)){
-      if(seen[a]){data[v.id].attribution="";v.attrib="";}
-      else seen[a]=v.id;
-    }
+    tb.insertAdjacentHTML('beforeend',`
+      <tr data-id="${v.id}" style="cursor:pointer">
+        <td>${v.id}</td>
+        <td>${v.name||""}</td>
+        <td>${v.attrib||""}</td>
+        <td>${v.plaque||""}</td>
+      </tr>
+    `);
   });
-}
-
-function render(){
-  const tb=document.getElementById('tb');
-  tb.innerHTML="";
-  (data._settings.vehs||[]).forEach(v=>{
-    const d=data[v.id];
-    const tr=document.createElement('tr');
-    tr.innerHTML=`
-      <td><b>${v.id}</b></td>
-      <td><input data-id="${v.id}" data-f="name" value="${d.name||""}"></td>
-      <td><input data-id="${v.id}" data-f="plaque" value="${d.plaque||""}"></td>
-      <td>
-        <select data-id="${v.id}" data-f="attribution">
-          ${["","LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","Prev","LOG"].map(a=>`<option ${a===(d.attribution||"")?"selected":""}>${a}</option>`).join("")}
-        </select>
-      </td>
-      <td><button class="btn danger" onclick="removeVeh('${v.id}')">🗑️</button></td>`;
-    tb.appendChild(tr);
-  });
-  tb.querySelectorAll("input,select").forEach(el=>{
-    el.oninput=async e=>{
-      const id=e.target.dataset.id,f=e.target.dataset.f,val=e.target.value;
-      if(!data[id])data[id]={};
-      data[id][f]=val;
-      const sv=data._settings.vehs.find(v=>v.id===id);
-      if(sv){
-        if(f==="name")sv.name=val;
-        if(f==="plaque")sv.plaque=val;
-        if(f==="attribution")sv.attrib=val;
-      }
-      enforceLHUnicity();
-      await saveKey(STORAGE_KEY,data);
+  tb.querySelectorAll('tr').forEach(tr=>{
+    tr.onclick=()=>{
+      const id=tr.dataset.id;
+      const v=(data._settings.vehs||[]).find(x=>x.id===id)||{};
+      $('v_id').value=id;
+      $('v_name').value=v.name||"";
+      $('v_attrib').value=v.attrib||"";
+      $('v_plaque').value=v.plaque||"";
     };
   });
 }
 
-async function addVehicle(){
-  const id=document.getElementById('nv_id').value.trim();
-  const name=document.getElementById('nv_name').value.trim()||id;
-  const plaque=document.getElementById('nv_plate').value.trim();
-  const attrib=document.getElementById('nv_attr').value;
-  if(!id)return alert("Identifiant requis");
-  if((data._settings.vehs||[]).some(v=>v.id===id))return alert("Déjà existant");
-  data._settings.vehs.push({id,name,plaque,attrib});
-  data[id]={XO:"",S:"",PS:"",attribution:attrib,plaque,km:"",heure_sortie:"",statut:"Disponible",commentaire:"",name};
-  enforceLHUnicity();
-  await saveKey(STORAGE_KEY,data);
-  document.getElementById('nv_id').value="";
-  document.getElementById('nv_name').value="";
-  document.getElementById('nv_plate').value="";
-  document.getElementById('nv_attr').value="";
-  render();
+async function saveVeh(){
+  const id=$('v_id').value.trim();
+  if(!id){ alert("ID requis"); return; }
+  const name=$('v_name').value.trim();
+  const attrib=$('v_attrib').value.trim();
+  const plaque=$('v_plaque').value.trim();
+
+  // liste
+  const idx=(data._settings.vehs||[]).findIndex(x=>x.id===id);
+  const item={id,name,attrib,plaque};
+  if(idx>=0) data._settings.vehs[idx]=item; else data._settings.vehs.push(item);
+
+  // fiche véhicule
+  data[id]=data[id]||{XO:"",S:"",PS:"",km:"",statut:"Disponible",commentaire:""};
+  data[id].name=name; data[id].attribution=attrib; data[id].plaque=plaque;
+
+  try{
+    await saveKey(STORAGE_KEY,data);
+    renderList();
+    alert("Enregistré ✅");
+  }catch(e){
+    console.warn("Save refused",e);
+    alert("Échec de l’enregistrement (compte non autorisé ?)");
+  }
 }
 
-async function removeVeh(id){
-  if(!confirm("Supprimer "+id+" ?"))return;
-  data._settings.vehs=data._settings.vehs.filter(v=>v.id!==id);
+async function delVeh(){
+  const id=$('v_id').value.trim();
+  if(!id) return;
+  if(!confirm(`Supprimer ${id} ?`)) return;
+
+  data._settings.vehs=(data._settings.vehs||[]).filter(x=>x.id!==id);
   delete data[id];
-  await saveKey(STORAGE_KEY,data);
-  render();
+
+  try{
+    await saveKey(STORAGE_KEY,data);
+    $('v_id').value=$('v_name').value=$('v_attrib').value=$('v_plaque').value="";
+    renderList();
+    alert("Supprimé ✅");
+  }catch(e){
+    console.warn("Delete refused",e);
+    alert("Échec de la suppression (compte non autorisé ?)");
+  }
 }
 
-(async()=>{
-  data=await readKey(STORAGE_KEY);
+async function boot(){
+  if(typeof readKey!=='function'){ alert("store-bridge.js manquant"); return; }
+  data=await readKey(STORAGE_KEY)||{};
   ensure();
-  render();
-})();
+  renderList();
+}
+boot();
 </script>
 </body>
 </html>
