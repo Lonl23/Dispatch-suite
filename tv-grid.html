@@ -7,7 +7,11 @@
 <style>
   :root {
     --bg:#0a0f16; --panel:#121821; --line:#1f2c3e;
-    --text:#f1f5fa; --accent:#3a8bf2;
+    --text:#f1f5fa;
+    --dispo:#1b5e20;
+    --sorti:#1565c0;
+    --reserve:#f57c00;
+    --indispo:#b71c1c;
   }
   html, body {
     margin:0; padding:0;
@@ -61,38 +65,46 @@
     padding-bottom:6px;
   }
   .veh {
-    background:#1a2436; border:1px solid var(--line);
     border-radius:10px; padding:8px; margin-bottom:8px;
-    text-align:center;
+    text-align:center; color:#fff;
   }
   .veh h3 { margin:4px 0; font-size:18px; }
-  .veh small { color:#9bb5d3; font-size:14px; }
+  .veh small { color:#e0e0e0; font-size:14px; }
   .veh .crew { font-size:14px; margin-top:4px; }
-  .veh .km { font-size:14px; margin-top:4px; color:#9bb5d3; }
+  .veh .km { font-size:14px; margin-top:4px; color:#e0e0e0; }
 
-  /* Bannière fluide */
-  .banner {
+  .veh.dispo { background:var(--dispo); }
+  .veh.sorti { background:var(--sorti); }
+  .veh.reserve { background:var(--reserve); }
+  .veh.indispo { background:var(--indispo); }
+
+  /* Bannière fluide corrigée */
+  .banner{
     position:absolute; bottom:0; left:0; width:100%;
-    background:#a00; color:#fff; overflow:hidden;
-    white-space:nowrap; font-size:22px; font-weight:600;
-    border-top:2px solid #700; height:40px; display:flex; align-items:center;
+    height:44px; display:flex; align-items:center;
+    background:#a00; color:#fff; border-top:2px solid #700;
+    overflow:hidden; white-space:nowrap; font-size:22px; font-weight:600;
+    padding:0 10px;
   }
-  .marquee {
-    display:inline-block; will-change: transform;
-    padding-left:100%; /* départ offscreen droite */
+  #marquee{
+    display:inline-block;
+    will-change: transform;
   }
-  .chunk { display:inline-block; padding-right:60px; }
+  #marquee .track{
+    display:inline-block;
+    padding-right:60px;
+  }
 </style>
 </head>
 <body>
 
-<!-- Guard simple : nécessite un login préalable via index.html -->
+<!-- Protection : nécessite une connexion -->
 <script>
-  (function ensureAuth(){
-    if(!localStorage.getItem("dispatch_idToken")){
-      location.href = "index.html";
-    }
-  })();
+(function(){
+  if(!localStorage.getItem("dispatch_idToken")){
+    location.href="index.html";
+  }
+})();
 </script>
 
 <script src="store-bridge.js"></script>
@@ -115,7 +127,7 @@
 </div>
 
 <div class="banner">
-  <div id="marquee" class="marquee"></div>
+  <div id="marquee"></div>
 </div>
 
 <script>
@@ -124,21 +136,19 @@ if(typeof readKey!=='function'){alert("store-bridge.js manquant");}
 const STORAGE_KEY="dispatch_parc_vehicules";
 let state={};
 
-/* Ordre d'attribution souhaité */
-const ORDER = ["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","TMS","PREV","OFF"];
-const rankMap = Object.fromEntries(ORDER.map((k,i)=>[k, i]));
+const ORDER=["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","TMS","PREV","OFF"];
+const rankMap=Object.fromEntries(ORDER.map((k,i)=>[k,i]));
 function attribRank(str){
-  const key = (str||"").toUpperCase();
-  return key in rankMap ? rankMap[key] : 999;
+  const key=(str||"").toUpperCase();
+  return key in rankMap?rankMap[key]:999;
 }
 function sortVehs(vehs){
   return (vehs||[]).slice().sort((a,b)=>{
-    const da = state[a.id] || {};
-    const db = state[b.id] || {};
-    const aKey = (da.attribution || a.attrib || "").toUpperCase();
-    const bKey = (db.attribution || b.attrib || "").toUpperCase();
-    const ra = attribRank(aKey), rb = attribRank(bKey);
-    if (ra !== rb) return ra - rb;
+    const da=state[a.id]||{}, db=state[b.id]||{};
+    const aKey=(da.attribution||a.attrib||"").toUpperCase();
+    const bKey=(db.attribution||b.attrib||"").toUpperCase();
+    const ra=attribRank(aKey), rb=attribRank(bKey);
+    if(ra!==rb)return ra-rb;
     return (a.id||"").localeCompare(b.id||"");
   });
 }
@@ -158,21 +168,21 @@ function updateDate(){
   const d=new Date();
   const jours=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
   const mois=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
-  const txt=`${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()} — ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
-  document.getElementById("datetime").textContent=txt;
+  document.getElementById("datetime").textContent=
+    `${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()} — ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
 }
 setInterval(updateDate,1000);updateDate();
 
-/* Météo La Hulpe (50.73, 4.48) */
+/* Météo */
 async function loadMeteo(){
   try{
     const res=await fetch("https://api.open-meteo.com/v1/forecast?latitude=50.73&longitude=4.48&current=temperature_2m,weather_code&timezone=Europe/Brussels");
     const js=await res.json();
-    const temp=js.current.temperature_2m;
+    const temp=Math.round(js.current.temperature_2m);
     const code=js.current.weather_code;
     const map={0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",95:"⛈️"};
-    document.getElementById("meteo").textContent=`${map[code]||"☁️"} ${Math.round(temp)}°C La Hulpe`;
-  }catch(e){console.log("Météo erreur",e);}
+    document.getElementById("meteo").textContent=`${map[code]||"☁️"} ${temp}°C La Hulpe`;
+  }catch(e){console.log("Erreur météo",e);}
 }
 loadMeteo();setInterval(loadMeteo,600000);
 
@@ -193,20 +203,20 @@ function renderRoles(){
     .map(([k,label])=>`<div><span>${label}</span>${r[k]||"-"}</div>`).join("");
 }
 
-/* Colonnes triées par attribution */
+/* Colonnes avec code couleur */
 function renderColumns(){
   ["sortis","dispo","reserve","indispo"].forEach(id=>document.getElementById(id).innerHTML="");
-  const vehs = sortVehs(state._settings?.vehs || []);
+  const vehs=sortVehs(state._settings?.vehs||[]);
   vehs.forEach(v=>{
     const d=state[v.id]||{};
-    let container;
-    if(d.statut==="Sorti") container="sortis";
-    else if(d.statut==="Disponible") container="dispo";
-    else if(d.statut==="Réserve") container="reserve";
-    else if(d.statut==="Indisponible") container="indispo";
-    if(!container) return;
+    let container, css="";
+    if(d.statut==="Sorti"){container="sortis"; css="sorti";}
+    else if(d.statut==="Disponible"){container="dispo"; css="dispo";}
+    else if(d.statut==="Réserve"){container="reserve"; css="reserve";}
+    else if(d.statut==="Indisponible"){container="indispo"; css="indispo";}
+    if(!container)return;
     const html=`
-      <div class="veh">
+      <div class="veh ${css}">
         <h3>${d.name||v.id}</h3>
         <small>${(d.attribution||v.attrib)?`[${d.attribution||v.attrib}] `:""}${d.plaque||v.plaque||""}</small>
         <div class="crew">${d.XO||""} ${d.S?"/ "+d.S:""} ${d.PS?"/ "+d.PS:""}</div>
@@ -216,48 +226,40 @@ function renderColumns(){
   });
 }
 
-/* Bannière – boucle continue sans trou */
-let marqueeAnim=null;
+/* Bannière fluide parfaite */
+let marqueeRAF=null, marqueeLast=0, marqueeX=0, marqueeW=0;
 function renderBanner(){
   const n=state._notes||{};
-  let segments=[];
-
+  const segments=[];
   if(n.materiel) segments.push(`⚠️ Matériel : ${n.materiel}`);
   if(n.infos)    segments.push(`ℹ️ Infos : ${n.infos}`);
-
   (state._settings?.vehs||[]).forEach(v=>{
     const d=state[v.id];
     if(d?.statut==="Indisponible"){
       segments.push(`🚑 ${d.name||v.id}${d.attribution?` [${d.attribution}]`:""} : ${d.commentaire||"Indispo"}`);
     }
   });
-
-  const txt = segments.length ? segments.join("  •  ") : "Aucune information disponible actuellement.";
-  const marquee = document.getElementById("marquee");
-  marquee.innerHTML = `
-    <span class="chunk">${txt}</span>
-    <span class="chunk">${txt}</span>
-    <span class="chunk">${txt}</span>
-  `;
-
-  // Animation lisse calculée selon largeur du contenu
-  if (marqueeAnim) cancelAnimationFrame(marqueeAnim);
-  let x = 0;
-  const speed = 60; // px/sec
-  let last = performance.now();
-
-  function step(now){
-    const dt = (now - last) / 1000;
-    last = now;
-    x -= speed * dt;
-    // largeur d’un bloc
-    const first = marquee.querySelector('.chunk');
-    const w = first ? first.offsetWidth + 60 : 1000;
-    if (Math.abs(x) >= w) x += w; // recoller sans trou
-    marquee.style.transform = `translateX(${x}px)`;
-    marqueeAnim = requestAnimationFrame(step);
-  }
-  marqueeAnim = requestAnimationFrame(step);
+  const text=segments.length?segments.join("   •   "):"Aucune information disponible actuellement.";
+  const m=document.getElementById("marquee");
+  m.innerHTML="";
+  const t1=document.createElement("span"); t1.className="track"; t1.textContent=text;
+  const t2=document.createElement("span"); t2.className="track"; t2.textContent=text;
+  m.appendChild(t1); m.appendChild(t2);
+  if(marqueeRAF) cancelAnimationFrame(marqueeRAF);
+  marqueeX=0; marqueeW=0; marqueeLast=performance.now();
+  requestAnimationFrame(()=>{
+    marqueeW=t1.offsetWidth+60;
+    if(marqueeW<10) marqueeW=1000;
+    const speed=80;
+    function step(now){
+      const dt=(now-marqueeLast)/1000; marqueeLast=now;
+      marqueeX-=speed*dt;
+      if(marqueeX<=-marqueeW) marqueeX+=marqueeW;
+      m.style.transform=`translateX(${marqueeX}px)`;
+      marqueeRAF=requestAnimationFrame(step);
+    }
+    marqueeRAF=requestAnimationFrame(step);
+  });
 }
 
 /* Boucle auto */
