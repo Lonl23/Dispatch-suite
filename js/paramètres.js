@@ -3,34 +3,76 @@
   'use strict';
 
   const DISPATCH_KEY = 'dispatch_parc_vehicules';
-  let data = {};        // snapshot complet
-  let vehs = [];        // _settings.vehs (array)
+  let data = {};
+  let vehs = [];
   let saving = false;
 
   const $ = (s) => document.querySelector(s);
   const tb = () => document.querySelector('#vehTable tbody');
 
-  // Form
-  const v_id = $('#v_id');
-  const v_name = $('#v_name');
-  const v_plaque = $('#v_plaque');
-  const v_attr = $('#v_attr');
-  const v_slot = $('#v_slot');
+  // Utilitaires
+  function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
+  function toast(msg, error=false) {
+    const el = $('#saveInfo');
+    el.textContent = msg;
+    el.className = 'small toast ' + (error?'err':'ok');
+    setTimeout(()=>{ el.textContent=''; el.className='small toast'; }, 3000);
+  }
 
-  $('#btnAddVeh').addEventListener('click', addOrUpdateVeh);
-  $('#btnResetVehForm').addEventListener('click', resetVehForm);
+  function slotOptions(selected) {
+    const opts = [
+      { label:'—', value:'' },
+      ...['H1','H2','H3','H4','H5','H6','H7','H8','H9','H10'].map(x=>({label:x,value:x})),
+      ...['G1','G2','G3','G4','G5','G6','G7','G8'].map(x=>({label:x,value:x})),
+      { label:'Extérieur', value:'Extérieur' }
+    ];
+    return opts.map(o => `<option value="${o.value}" ${o.value===selected?'selected':''}>${o.label}</option>`).join('');
+  }
 
-  // Lecture en polling (stable pendant édition)
-  subscribeKey(DISPATCH_KEY, (snap) => {
-    if (!snap) snap = {};
-    data = snap;
-    vehs = Array.isArray(snap?._settings?.vehs) ? snap._settings.vehs : [];
-    renderVehTable();
-    $('#debug').textContent = `Véhicules: ${vehs.length}`;
-  }, { mode: 'poll', intervalMs: 3000 });
+  async function saveVehs() {
+    if (!data._settings) data._settings = {};
+    vehs.sort((a,b)=> (a.id||'').localeCompare(b.id||''));
+    data._settings.vehs = vehs;
+    saving = true;
+    try {
+      await updateKey(DISPATCH_KEY, { _settings: data._settings });
+      console.log('[parametres] save ok', data._settings.vehs);
+    } catch (e) {
+      console.error('[parametres] save error', e);
+      toast('Erreur de sauvegarde (réseau/permissions).', true);
+    } finally {
+      saving = false;
+      renderVehTable();
+    }
+  }
+
+  async function setEmplacementWithSwap(idx, newSlot) {
+    const me = vehs[idx];
+    const oldSlot = me.emplacement || '';
+    if (newSlot === oldSlot) return;
+    if (!newSlot) {
+      me.emplacement = '';
+      await saveVehs();
+      return;
+    }
+    // Slot déjà pris ?
+    const otherIdx = vehs.findIndex((v,i)=> i!==idx && (v.emplacement||'')===newSlot);
+    if (otherIdx >= 0) {
+      const other = vehs[otherIdx];
+      const ok = confirm(`L’emplacement ${newSlot} est occupé par ${other.id}. Échanger les emplacements ?`);
+      if (!ok) { renderVehTable(); return; }
+      vehs[otherIdx].emplacement = oldSlot || '';
+      me.emplacement = newSlot;
+      await saveVehs();
+      return;
+    }
+    me.emplacement = newSlot;
+    await saveVehs();
+  }
 
   function renderVehTable() {
     const body = tb();
+    if (!body) return;
     body.innerHTML = '';
     vehs.forEach((v, idx) => {
       const tr = document.createElement('tr');
@@ -50,8 +92,8 @@
           </select>
         </td>
         <td>
-          <button class="btn ghost" data-act="edit" data-idx="${idx}">Éditer</button>
-          <button class="btn danger" data-act="del" data-idx="${idx}">Supprimer</button>
+          <button class="btn ghost" type="button" data-act="edit" data-idx="${idx}">Éditer</button>
+          <button class="btn danger" type="button" data-act="del" data-idx="${idx}">Supprimer</button>
         </td>
       `;
       body.appendChild(tr);
@@ -63,7 +105,6 @@
         const idx = parseInt(sel.dataset.idx, 10);
         const key = sel.dataset.k;
         const val = sel.value;
-
         if (key === 'emplacement') {
           await setEmplacementWithSwap(idx, val);
         } else {
@@ -73,14 +114,13 @@
       };
     });
 
-    // Bind boutons
+    // Bind actions
     body.querySelectorAll('button[data-act]').forEach(btn => {
       btn.onclick = async () => {
         const act = btn.dataset.act;
         const idx = parseInt(btn.dataset.idx, 10);
-        if (act === 'edit') {
-          editVehToForm(idx);
-        } else if (act === 'del') {
+        if (act === 'edit') editVehToForm(idx);
+        if (act === 'del') {
           const v = vehs[idx];
           if (!confirm(`Supprimer le véhicule ${v.id} ?`)) return;
           vehs.splice(idx, 1);
@@ -90,80 +130,39 @@
     });
   }
 
-  function slotOptions(selected) {
-    const opts = [
-      { label:'—', value:'' },
-      ...['H1','H2','H3','H4','H5','H6','H7','H8','H9','H10'].map(x=>({label:x,value:x})),
-      ...['G1','G2','G3','G4','G5','G6','G7','G8'].map(x=>({label:x,value:x})),
-      { label:'Extérieur', value:'Extérieur' }
-    ];
-    return opts.map(o => `<option value="${o.value}" ${o.value===selected?'selected':''}>${o.label}</option>`).join('');
-  }
-
-  async function setEmplacementWithSwap(idx, newSlot) {
-    const me = vehs[idx];
-    const oldSlot = me.emplacement || '';
-    if (newSlot === oldSlot) return;
-
-    if (!newSlot) {
-      me.emplacement = '';
-      await saveVehs();
-      return;
-    }
-
-    // Cherche s’il est déjà occupé
-    const otherIdx = vehs.findIndex((v,i)=> i!==idx && (v.emplacement||'')===newSlot);
-    if (otherIdx >= 0) {
-      const other = vehs[otherIdx];
-      const ok = confirm(`L’emplacement ${newSlot} est occupé par ${other.id}. Échanger les emplacements ?`);
-      if (!ok) {
-        // Annule visuel
-        renderVehTable();
-        return;
-      }
-      vehs[otherIdx].emplacement = oldSlot || '';
-      me.emplacement = newSlot;
-      await saveVehs();
-      return;
-    }
-
-    me.emplacement = newSlot;
-    await saveVehs();
-  }
-
   function editVehToForm(idx) {
     const v = vehs[idx];
-    v_id.value = v.id;
-    v_id.disabled = true; // ID non modifiable
-    v_name.value = v.name || '';
-    v_plaque.value = v.plaque || '';
-    v_attr.value = v.attribution || '';
-    v_slot.value = v.emplacement || '';
+    $('#v_id').value = v.id;
+    $('#v_id').disabled = true;
+    $('#v_name').value = v.name || '';
+    $('#v_plaque').value = v.plaque || '';
+    $('#v_attr').value = v.attribution || '';
+    $('#v_slot').value = v.emplacement || '';
     $('#btnAddVeh').textContent = 'Mettre à jour';
   }
 
   function resetVehForm() {
-    v_id.value=''; v_id.disabled=false;
-    v_name.value=''; v_plaque.value='';
-    v_attr.value=''; v_slot.value='';
+    $('#v_id').value=''; $('#v_id').disabled=false;
+    $('#v_name').value=''; $('#v_plaque').value='';
+    $('#v_attr').value=''; $('#v_slot').value='';
     $('#btnAddVeh').textContent = 'Ajouter';
-    $('#saveInfo').textContent = '';
+    toast('Formulaire réinitialisé.');
   }
 
   async function addOrUpdateVeh() {
-    const id = (v_id.value || '').trim();
+    const id = ($('#v_id').value || '').trim();
     if (!id) return toast('Un identifiant est requis.', true);
 
     const existsIdx = vehs.findIndex(v => (v.id||'') === id);
     const obj = {
       id,
-      name: (v_name.value||'').trim(),
-      plaque: (v_plaque.value||'').trim(),
-      attribution: v_attr.value || '',
-      emplacement: v_slot.value || ''
+      name: ($('#v_name').value||'').trim(),
+      plaque: ($('#v_plaque').value||'').trim(),
+      attribution: $('#v_attr').value || '',
+      emplacement: $('#v_slot').value || ''
     };
 
-    // Unicité d’emplacement
+    // Unicité emplacements
     if (obj.emplacement) {
       const otherIdx = vehs.findIndex((v,i)=> (v.emplacement||'')===obj.emplacement && (existsIdx<0 || i!==existsIdx));
       if (otherIdx >= 0) {
@@ -173,7 +172,6 @@
           const prevSlot = (existsIdx>=0 ? (vehs[existsIdx].emplacement||'') : '') || '';
           vehs[otherIdx].emplacement = prevSlot;
         } else {
-          // annule l’emplacement si refus
           obj.emplacement = existsIdx>=0 ? (vehs[existsIdx].emplacement||'') : '';
         }
       }
@@ -188,32 +186,33 @@
 
     await saveVehs();
     resetVehForm();
-    toast('Véhicule enregistré.', false);
+    toast('Véhicule enregistré.');
   }
 
-  async function saveVehs() {
-    if (!data._settings) data._settings = {};
-    // On force un tri stable par id pour cohérence (optionnel)
-    vehs.sort((a,b)=> (a.id||'').localeCompare(b.id||''));
-    data._settings.vehs = vehs;
-    saving = true;
+  // Attache les events après DOM prêt
+  window.addEventListener('DOMContentLoaded', () => {
     try {
-      await updateKey(DISPATCH_KEY, { _settings: data._settings });
+      $('#btnAddVeh').addEventListener('click', addOrUpdateVeh);
+      $('#btnResetVehForm').addEventListener('click', resetVehForm);
     } catch (e) {
-      console.error(e);
-      toast('Erreur de sauvegarde (réseau/permissions).', true);
-    } finally {
-      saving = false;
-      renderVehTable();
+      console.error('[parametres] binding error', e);
+      toast('Erreur initialisation boutons.', true);
     }
-  }
+  });
 
-  function toast(msg, error=false) {
-    const el = $('#saveInfo');
-    el.textContent = msg;
-    el.className = 'small ' + (error?'err':'ok');
-    setTimeout(()=>{ el.textContent=''; el.className='small'; }, 3000);
-  }
+  // Abonnement Dispatch (polling stable)
+  subscribeKey(DISPATCH_KEY, (snap) => {
+    try {
+      if (!snap) snap = {};
+      data = snap;
+      vehs = Array.isArray(snap?._settings?.vehs) ? snap._settings.vehs : [];
+      renderVehTable();
+      const dbg = $('#debug');
+      if (dbg) dbg.textContent = `Véhicules: ${vehs.length}`;
+    } catch (e) {
+      console.error('[parametres] subscribe error', e);
+      toast('Erreur de lecture des données.', true);
+    }
+  }, { mode: 'poll', intervalMs: 3000 });
 
-  function esc(s){ return String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 })();
