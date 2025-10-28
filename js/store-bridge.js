@@ -1,16 +1,16 @@
 /* store-bridge.js
    Pont unique Firebase <-> UI
-   - Missions: realtime (onValue)
-   - Dispatch: poll par défaut (anti "éjection" pendant édition)
+   - Mixte: missions en temps réel, dispatch en polling par défaut
+   - Cache local & anti-écho pour ne pas éjecter l’utilisateur pendant la saisie
    Expose: readKey, setKey, updateKey, removeKey, subscribeKey, unsubscribeAll
 */
-
 (function (global) {
   'use strict';
 
-  /***********************
-   *  Firebase bootstrap  *
-   ***********************/
+  /*********** Config Firebase ***********/
+  // 1) Priorité: window.FIREBASE_CONFIG si défini par la page
+  // 2) Sinon: <meta name="firebase-config" content='{...}'>
+  // 3) Sinon: fallback = TA CONFIG fournie ci-dessous
   function getConfigFromMeta() {
     try {
       const tag = document.querySelector('meta[name="firebase-config"]');
@@ -22,42 +22,48 @@
     }
   }
 
+  const FALLBACK_CONFIG = {
+    apiKey: "AIzaSyCP6ZClAectP8OPneAeoYGYdRYO0CvnbnQ",
+    authDomain: "racs-dispatch.firebaseapp.com",
+    databaseURL: "https://racs-dispatch-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "racs-dispatch",
+    storageBucket: "racs-dispatch.firebasestorage.app",
+    messagingSenderId: "589135271261",
+    appId: "1:589135271261:web:d080a5da49a061929b84b4"
+  };
+
   const fbCfg =
     global.FIREBASE_CONFIG ||
     getConfigFromMeta() ||
-    null;
+    FALLBACK_CONFIG;
 
   if (!global.firebase || !global.firebase.initializeApp) {
     console.error('[store-bridge] Firebase SDK manquant. Ajoute les scripts compat: app, auth, database.');
   }
 
   if (!global.firebase?.apps?.length) {
-    if (!fbCfg) {
-      console.error('[store-bridge] Aucune configuration Firebase détectée. Définis window.FIREBASE_CONFIG ou un <meta name="firebase-config">.');
-    } else {
+    try {
       global.firebase.initializeApp(fbCfg);
+      console.log('[store-bridge] Firebase initialisé:', (global.firebase.app().options || {}).projectId);
+    } catch (e) {
+      console.error('[store-bridge] Erreur init Firebase', e);
     }
   }
 
   const db = () => global.firebase.database();
 
-  /***********************
-   *   Chemins standards  *
-   ***********************/
+  /*********** Chemins standards ***********/
   const PATHS = {
-    DISPATCH: 'dispatch_parc_vehicules',   // parc + rôles + notes + settings + emplacements
-    MISSIONS_CANON: 'missions_canon',      // détails complets
-    MISSIONS_ACTIVE: 'missions_actives',   // résumé live TV
-    MISSIONS_ORDER: 'missions_order',      // { missionId: number }
-    GEO_CACHE: 'missions_geo_cache'        // { "cp-ville": {lat,lon} } (optionnel)
+    DISPATCH: 'dispatch_parc_vehicules',    // parc + rôles + notes + settings + emplacements
+    MISSIONS_CANON: 'missions_canon',       // détails complets (géocodés)
+    MISSIONS_ACTIVE: 'missions_actives',    // résumé live TV
+    MISSIONS_ORDER: 'missions_order',       // mapping missionId -> numéro d’ordre
+    GEO_CACHE: 'missions_geo_cache'         // optionnel si tu veux cacher des géos
   };
 
-  // Accept both aliases and raw paths
   function keyToPath(key) {
     if (!key) throw new Error('key required');
-    // direct path
     if (key.startsWith('/')) return key.replace(/^\//, '');
-    // known names
     switch (key) {
       case 'DISPATCH': return PATHS.DISPATCH;
       case 'MISSIONS_CANON':
@@ -69,82 +75,59 @@
       case 'GEO_CACHE':
       case 'missions_geo_cache': return PATHS.GEO_CACHE;
       case 'dispatch_parc_vehicules': return PATHS.DISPATCH;
-      default: return key; // allow arbitrary paths
+      default: return key;
     }
   }
+  const refFor = (key) => db().ref(keyToPath(key));
 
-  function refFor(key) {
-    return db().ref(keyToPath(key));
-  }
-
-  /***********************
-   *     Utilitaires      *
-   ***********************/
+  /*********** Utilitaires ***********/
   function deepEqual(a, b) {
-    try {
-      return JSON.stringify(a) === JSON.stringify(b);
-    } catch {
-      return a === b;
-    }
+    try { return JSON.stringify(a) === JSON.stringify(b); }
+    catch { return a === b; }
   }
 
-  // Anti-écho: on mémorise la dernière valeur écrite pendant une petite fenêtre
+  // Anti-écho: ignore l’évènement 'value' immédiatement après notre propre écriture
   const lastWrites = new Map(); // path -> { ts, json }
   const ECHO_MS = 1000;
 
   function rememberWrite(path, value) {
-    try {
-      lastWrites.set(path, { ts: Date.now(), json: JSON.stringify(value) });
-    } catch {
-      lastWrites.set(path, { ts: Date.now(), json: null });
-    }
+    try { lastWrites.set(path, { ts: Date.now(), json: JSON.stringify(value) }); }
+    catch { lastWrites.set(path, { ts: Date.now(), json: null }); }
   }
-
   function ignoreIfJustWritten(path, snapshotVal) {
     const m = lastWrites.get(path);
     if (!m) return false;
     if (Date.now() - m.ts > ECHO_MS) return false;
-    try {
-      const snap = JSON.stringify(snapshotVal);
-      return snap === m.json;
-    } catch {
-      return false;
-    }
+    try { return JSON.stringify(snapshotVal) === m.json; }
+    catch { return false; }
   }
 
-  /***********************
-   *     API publique     *
-   ***********************/
-
+  /*********** API publique ***********/
   async function readKey(key) {
     const p = keyToPath(key);
     const snap = await refFor(p).get();
     return snap.exists() ? snap.val() : null;
   }
-
   async function setKey(key, value) {
     const p = keyToPath(key);
     rememberWrite(p, value);
     await refFor(p).set(value);
     return true;
   }
-
   async function updateKey(key, patch) {
     const p = keyToPath(key);
-    // Mémoriser la valeur but we don't know full object; we store patch only.
-    rememberWrite(p, patch);
+    rememberWrite(p, patch); // on mémorise le patch (suffisant pour l’anti-écho)
     await refFor(p).update(patch);
     return true;
   }
-
   async function removeKey(key) {
     const p = keyToPath(key);
     await refFor(p).remove();
     return true;
   }
 
-  // Gestion des abonnements
-  const subscriptions = new Set(); // stocke les unsubscribe
+  // Abonnements (mixte: missions en realtime, dispatch en polling par défaut)
+  const subscriptions = new Set();
 
   /**
    * subscribeKey(key, callback, options?)
@@ -157,7 +140,7 @@
     const modeDefault =
       (path === PATHS.MISSIONS_CANON || path === PATHS.MISSIONS_ACTIVE || path === PATHS.MISSIONS_ORDER)
         ? 'realtime'
-        : 'poll'; // dispatch par défaut en poll
+        : 'poll';
 
     const opts = Object.assign(
       { mode: modeDefault, intervalMs: 3000, debounceMs: 200 },
@@ -166,19 +149,16 @@
 
     let lastSent = undefined;
     let debounceTimer = null;
-
-    function emit(val) {
+    const emit = (val) => {
       if (deepEqual(val, lastSent)) return;
       lastSent = val;
-      callback(val || null);
-    }
+      try { callback(val || null); } catch (e) { console.error('[store-bridge] callback error', e); }
+    };
 
-    let unsub = null;
-
+    let unsub;
     if (opts.mode === 'realtime') {
       const handler = (snap) => {
         if (ignoreIfJustWritten(path, snap.val())) return;
-        // Debounce optionnel
         if (opts.debounceMs > 0) {
           clearTimeout(debounceTimer);
           debounceTimer = setTimeout(() => emit(snap.val()), opts.debounceMs);
@@ -187,13 +167,10 @@
         }
       };
       refFor(path).on('value', handler);
+      unsub = () => { clearTimeout(debounceTimer); refFor(path).off('value', handler); };
 
-      unsub = () => {
-        clearTimeout(debounceTimer);
-        refFor(path).off('value', handler);
-      };
     } else {
-      // POLLING
+      // Polling
       let killed = false;
       async function tick() {
         if (killed) return;
@@ -207,29 +184,22 @@
         }
       }
       tick();
-
-      unsub = () => {
-        killed = true;
-      };
+      unsub = () => { killed = true; };
     }
 
     subscriptions.add(unsub);
     return function unsubscribe() {
-      if (unsub) unsub();
+      try { unsub && unsub(); } catch {}
       subscriptions.delete(unsub);
     };
   }
 
   function unsubscribeAll() {
-    subscriptions.forEach((u) => {
-      try { u(); } catch {}
-    });
+    subscriptions.forEach((u) => { try { u(); } catch {} });
     subscriptions.clear();
   }
 
-  /***********************
-   *   Exposition globale *
-   ***********************/
+  // Expose global
   global.readKey = readKey;
   global.setKey = setKey;
   global.updateKey = updateKey;
@@ -237,6 +207,5 @@
   global.subscribeKey = subscribeKey;
   global.unsubscribeAll = unsubscribeAll;
 
-  console.log('[store-bridge] prêt — mode mixte (missions realtime, dispatch poll).');
-
+  console.log('[store-bridge] prêt — mixte (missions realtime, dispatch poll).');
 })(window);

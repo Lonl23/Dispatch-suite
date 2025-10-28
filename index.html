@@ -3,39 +3,36 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Accueil — ACSRS</title>
+<title>ACSRS — Accueil</title>
 
-<!-- Fournis ta config Firebase ici (ou via window.FIREBASE_CONFIG avant les scripts) -->
-const firebaseConfig = {
-  apiKey: "AIzaSyCP6ZClAectP8OPneAeoYGYdRYO0CvnbnQ",
-  authDomain: "racs-dispatch.firebaseapp.com",
-  databaseURL: "https://racs-dispatch-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "racs-dispatch",
-  storageBucket: "racs-dispatch.firebasestorage.app",
-  messagingSenderId: "589135271261",
-  appId: "1:589135271261:web:d080a5da49a061929b84b4"
-};
+<!-- Optionnel : tu peux laisser cette meta (le store-bridge a déjà ta config en fallback) -->
+<meta name="firebase-config" content='{
+  "apiKey":"AIzaSyCP6ZClAectP8OPneAeoYGYdRYO0CvnbnQ",
+  "authDomain":"racs-dispatch.firebaseapp.com",
+  "databaseURL":"https://racs-dispatch-default-rtdb.europe-west1.firebasedatabase.app",
+  "projectId":"racs-dispatch",
+  "storageBucket":"racs-dispatch.firebasestorage.app",
+  "messagingSenderId":"589135271261",
+  "appId":"1:589135271261:web:d080a5da49a061929b84b4"
+}'>
 
 <style>
-  :root{
-    --bg:#0b0f14; --panel:#121821; --line:#223044;
-    --text:#e8eef5; --muted:#93a7bf; --accent:#3a8bf2; --danger:#e74c3c;
-  }
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
-  .wrap{max-width:880px;margin:0 auto;padding:16px}
-  h1{margin:8px 0 16px 0}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:16px}
-  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
-  input{width:100%;padding:10px;border-radius:8px;border:1px solid #2c3d52;background:#0f1520;color:#fff;box-sizing:border-box}
-  .btn{background:var(--accent);border:0;border-radius:8px;padding:10px 14px;color:#fff;font-weight:700;cursor:pointer}
-  .btn.ghost{background:#0f1520;border:1px solid #2c3d52}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:8px}
-  .tile{background:#0f1520;border:1px solid #2c3d52;border-radius:12px;padding:16px;cursor:pointer}
-  .tile:hover{border-color:#3a8bf2}
-  .mut{color:var(--muted)}
-  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
-  .err{color:#fff;background:var(--danger);border:1px solid #b93c30;padding:8px;border-radius:8px;margin-top:10px;display:none}
+:root{--bg:#0b0f14;--panel:#121821;--line:#223044;--text:#e8eef5;--muted:#93a7bf;--accent:#3a8bf2;--danger:#e74c3c}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+.wrap{max-width:960px;margin:0 auto;padding:16px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+h1{margin:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:12px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+input{width:100%;padding:10px;border-radius:8px;border:1px solid #2c3d52;background:#0f1520;color:#fff;box-sizing:border-box}
+.btn{background:var(--accent);border:0;border-radius:8px;padding:10px 14px;color:#fff;font-weight:700;cursor:pointer}
+.btn.ghost{background:#0f1520;border:1px solid #2c3d52}
+.menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:8px}
+.tile{background:#0f1520;border:1px solid #2c3d52;border-radius:12px;padding:16px;cursor:pointer}
+.tile:hover{border-color:#3a8bf2}
+.mut{color:var(--muted)}
+.err{color:#fff;background:var(--danger);border:1px solid #b93c30;padding:8px;border-radius:8px;margin-top:10px;display:none}
 </style>
 </head>
 <body>
@@ -46,10 +43,9 @@ const firebaseConfig = {
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
 <!-- Bridge & Auth -->
-<script src="store-bridge.js"></script>
-<script src="auth.js"></script>
-<script src="auth-guard.js"></script>
-<script src="index.js" defer></script>
+<script src="js/store-bridge.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/index.js" defer></script>
 
 <div class="wrap">
   <div class="topbar">
@@ -57,28 +53,26 @@ const firebaseConfig = {
     <div id="userBox" class="mut">Non connecté</div>
   </div>
 
-  <!-- Bloc Login -->
   <div id="loginCard" class="card">
     <h2>Connexion</h2>
     <div class="row">
       <div>
         <label>Email</label>
-        <input id="email" type="email" placeholder="centrale@acsrs.be" autocomplete="username" />
+        <input id="email" type="email" placeholder="centrale@acsrs.be" autocomplete="username">
       </div>
       <div>
         <label>Mot de passe</label>
-        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password">
       </div>
     </div>
     <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
       <button class="btn" id="btnLogin">Se connecter</button>
-      <button class="btn ghost" id="btnLoginDemo" title="Connexion rapide si compte de démo actif">Démo</button>
+      <button class="btn ghost" id="btnLoginDemo" title="Connexion rapide (si compte démo actif)">Démo</button>
     </div>
     <div id="err" class="err"></div>
-    <p class="mut" style="margin-top:10px">Accès réservé. Si besoin d’un compte, contacte l’administrateur.</p>
+    <p class="mut" style="margin-top:10px">Accès réservé.</p>
   </div>
 
-  <!-- Bloc Menu après login -->
   <div id="menuCard" class="card" style="display:none">
     <div class="topbar" style="margin:0 0 10px 0">
       <h2>Que souhaites-tu faire ?</h2>
@@ -87,23 +81,23 @@ const firebaseConfig = {
     <div class="menu">
       <div class="tile" data-href="parametres.html">
         <h3>Paramètres</h3>
-        <p class="mut">Gérer les véhicules, plaques, attributions, emplacements (H1–H10, G1–G8, Extérieur), rôles et listes d’hôpitaux/CP.</p>
+        <p class="mut">Véhicules, plaques, attributions, emplacements (H1–H10, G1–G8, Extérieur), rôles, hôpitaux & CP.</p>
       </div>
       <div class="tile" data-href="dispatch.html">
         <h3>Dispatch</h3>
-        <p class="mut">Encoder les équipages, statuts, km, notes (matériel, infos). Sauvegarde live Firebase.</p>
+        <p class="mut">Équipages, statuts, km, notes (matériel, infos). Sauvegarde live Firebase.</p>
       </div>
       <div class="tile" data-href="tv-grid.html">
         <h3>TV — Hall & Garage</h3>
-        <p class="mut">Affichage TV du hall des départs (H6→H10 | H5→H1) + Extérieur, garage, orphelins, bannière fluide.</p>
+        <p class="mut">Hall des départs + Extérieur + garage + bannière fluide.</p>
       </div>
       <div class="tile" data-href="missions.html">
         <h3>Missions</h3>
-        <p class="mut">Créer/éditer les missions (numéro d’ordre, géocodage adresse exacte, renforts, statuts).</p>
+        <p class="mut">Création/édition (numéro d’ordre, géocodage adresse exacte, renforts, statuts).</p>
       </div>
       <div class="tile" data-href="tv-missions.html">
         <h3>TV — Missions</h3>
-        <p class="mut">Colonne missions + carte OSM (Leaflet), marqueurs colorés, numérotation persistante.</p>
+        <p class="mut">Colonne missions + carte OSM, marqueurs colorés, numérotation persistante.</p>
       </div>
     </div>
   </div>
