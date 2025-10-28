@@ -3,531 +3,840 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Missions</title>
+<title>Missions en cours</title>
 <style>
-  body{background:#0d131c;color:#e8eef5;font-family:Inter,Segoe UI,sans-serif;margin:0;padding:20px}
-  h2{margin:0 0 12px}
-  table{width:100%;border-collapse:collapse;margin-top:10px}
-  th,td{border:1px solid #223044;padding:8px;text-align:left;font-size:14px;vertical-align:top}
-  th{background:#121821;position:sticky;top:0;z-index:1}
-  tr:nth-child(even){background:#0f1520}
-  .btn{padding:6px 10px;border:none;border-radius:6px;cursor:pointer;color:#fff;font-weight:600}
-  .btn-add{background:#2ecc71;margin-bottom:10px}
-  .btn-edit{background:#00695c}
-  .btn-close{background:#b71c1c}
-  .btn-status{background:#1e3a8a;margin:2px;font-size:12px}
-  .badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #2c3d52;font-size:12px;background:#0f1520;margin-right:6px}
-  .renf{display:flex;flex-wrap:wrap;gap:6px}
-  .mut{color:#9fb2c9}
-
-  /* Modal */
-  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);justify-content:center;align-items:center;z-index:100}
-  .modal-content{background:#121821;border-radius:10px;padding:18px;min-width:380px;max-width:640px;box-shadow:0 10px 40px rgba(0,0,0,.5)}
-  .modal h3{margin:0 0 10px}
-  .close-modal{float:right;cursor:pointer;font-size:20px}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-  .input-row{margin-bottom:10px}
-  label{display:block;margin-bottom:4px;font-weight:600}
-  input,select{width:100%;padding:6px;border-radius:6px;border:1px solid #2c3d52;background:#0f1520;color:#fff}
-  .suggest{position:relative}
-  .suggest-list{position:absolute;z-index:50;left:0;right:0;background:#0f1520;border:1px solid #2c3d52;border-radius:6px;display:none;max-height:220px;overflow:auto}
-  .opt{padding:6px 8px;border-bottom:1px solid #2c3d52;cursor:pointer}
-  .opt:hover{background:#162235}
+:root{
+  --bg:#0b0f14;--panel:#121821;--line:#223044;
+  --text:#e8eef5;--muted:#93a7bf;--accent:#3a8bf2;--danger:#e74c3c;--ok:#27ae60;
+}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;}
+h1{margin:16px;font-size:24px}
+.toolbar{display:flex;gap:8px;margin:0 16px}
+button{background:var(--accent);border:0;border-radius:8px;padding:8px 14px;color:#fff;cursor:pointer;font-weight:600}
+button.secondary{background:#607d8b}
+button.ghost{background:#0f1520;border:1px solid #2c3d52}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;margin:16px;padding:16px}
+label{display:block;font-size:12px;color:var(--muted);margin-top:8px}
+input,select,textarea{width:100%;padding:6px;border-radius:6px;border:1px solid #2c3d52;background:#0f1520;color:#fff;box-sizing:border-box}
+table{width:100%;border-collapse:collapse;margin-top:10px}
+th,td{border:1px solid var(--line);padding:6px;text-align:left;vertical-align:top}
+th{background:#182030}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:10px}
+fieldset{border:1px solid #2c3d52;border-radius:8px;margin-top:10px;padding:10px}
+legend{color:var(--accent)}
+.status-btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.status-btns button{flex:1;min-width:140px;background:#0f1520;border:1px solid #2c3d52}
+.status-btns button.active{background:var(--accent)}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #2c3d52;font-size:12px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media (max-width:900px){ .row{grid-template-columns:1fr} }
+.small{font-size:12px;color:#cfe1ff}
+.renforts{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:8px}
+.renforts label{margin:0;font-size:13px;color:#e8eef5;display:flex;gap:6px;align-items:center}
+.thin{font-weight:400;opacity:.9}
+.subgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+@media (max-width:1100px){ .subgrid{grid-template-columns:1fr} }
+.help{font-size:12px;color:#9fb2c9}
 </style>
 </head>
 <body>
+<h1>Gestion des missions</h1>
 
-<script src="store-bridge.js"></script>
+<div class="toolbar">
+  <button class="ghost" onclick="window.open('dispatch.html','_blank')">↩️ Retour dispatch</button>
+  <button class="ghost" onclick="window.open('missions-passees.html','_blank')">📚 Missions passées</button>
+</div>
 
-<h2>Missions</h2>
-<button class="btn btn-add" onclick="openModal()">+ Nouvelle mission</button>
+<div class="panel">
+  <h2>Nouvelle mission</h2>
+  <div class="grid">
+    <div><label>Véhicule</label><select id="mVeh"></select></div>
+    <div><label>Attribution</label><input id="mAttr" readonly></div>
+    <div>
+      <label>Type</label>
+      <select id="mType">
+        <option value="">—</option><option>TMS</option><option>112</option><option>Prévention</option><option>Logistique</option>
+      </select>
+    </div>
+    <div id="zone112" style="display:none">
+      <label>Centrale 112</label>
+      <select id="mCentrale">
+        <option value="">—</option><option>Mons</option><option>Namur</option><option>Arlon</option><option>Liège</option><option>Leuven</option><option>Bruxelles</option><option>Autres</option>
+      </select>
+      <label>Numéro mission (4 derniers)</label>
+      <input id="mNum112" maxlength="4" placeholder="xxxx">
+      <label>Départ</label>
+      <select id="mDepart"><option>Normal</option><option>Médical</option></select>
+    </div>
+  </div>
 
-<table id="missionsTable">
-  <thead>
-    <tr>
-      <th>Ordre</th>
-      <th>Véhicule</th>
-      <th>Motif</th>
-      <th>Lieu PEC</th>
-      <th>Renforts (dernier statut)</th>
-      <th>Statuts vecteur (heure)</th>
-      <th>Destination</th>
-      <th>Éditer</th>
-      <th>Clôturer</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+  <label>Motif du transport</label>
+  <input id="mMotif" placeholder="Ex: Malaise, dialyse, transfert…">
 
-<!-- Modal création / édition -->
-<div id="missionModal" class="modal">
-  <div class="modal-content">
-    <span class="close-modal" onclick="closeModal()">&times;</span>
-    <h3 id="modalTitle">Nouvelle mission</h3>
+  <label>Commentaire mission</label>
+  <textarea id="mComment" placeholder="Infos complémentaires utiles à la centrale / équipage…"></textarea>
 
-    <div class="row">
-      <div class="input-row">
-        <label>Véhicule</label>
-        <input id="mVeh" placeholder="Ex: AS 55 / LH2">
-      </div>
-      <div class="input-row">
-        <label>Type</label>
-        <select id="mType">
-          <option value="112">112</option>
-          <option value="TMS">TMS</option>
-          <option value="Prévention">Prévention</option>
-          <option value="Logistique">Logistique</option>
-        </select>
+  <fieldset>
+    <legend>Adresse (lieu d’appel)</legend>
+    <div class="grid">
+      <div><label>Rue</label><input id="mRue"></div>
+      <div><label>Numéro / Boîte</label><input id="mNum"></div>
+      <div><label>Code postal</label><input id="mCP" maxlength="4"></div>
+      <div><label>Localité</label><input id="mLocalite" placeholder="Auto si CP connu"></div>
+    </div>
+  </fieldset>
+
+  <fieldset id="pecField" style="display:none">
+    <legend>PEC (TMS)</legend>
+    <div class="help">Lieu de prise en charge (TMS) : Domicile ou Structure (Hôpital/MR(S))</div>
+    <div class="renforts" style="margin-top:6px">
+      <label><input type="radio" name="pecType" value="dom" checked> Domicile</label>
+      <label><input type="radio" name="pecType" value="str"> Hôpital / MR(S)</label>
+    </div>
+    <div id="pec_dom" class="grid" style="margin-top:6px">
+      <div><label>Rue</label><input id="pec_rue"></div>
+      <div><label>N°</label><input id="pec_num"></div>
+      <div><label>CP</label><input id="pec_cp" maxlength="4" list="cpOptions"></div>
+      <div><label>Localité</label><input id="pec_ville" list="villeOptions"></div>
+    </div>
+    <div id="pec_str" style="display:none;margin-top:6px">
+      <div><label>Recherche structure</label><input id="pec_hop_search" list="pecHopList" placeholder="CHU / Clinique …"><datalist id="pecHopList"></datalist></div>
+      <div class="grid" style="margin-top:6px">
+        <div><label>Nom sélectionné</label><input id="pec_hop_name" readonly></div>
+        <div><label>Adresse</label><input id="pec_hop_addr" readonly></div>
+        <div><label>CP</label><input id="pec_cp2"></div>
+        <div><label>Localité</label><input id="pec_ville2"></div>
       </div>
     </div>
+  </fieldset>
 
-    <div class="input-row">
-      <label>Motif</label>
-      <input id="mMotif" placeholder="Motif du transport">
+  <fieldset>
+    <legend>Destination (112 & TMS)</legend>
+    <div class="help">Domicile ou Structure (Hôpital/MR(S)) — recherche Internet disponible</div>
+    <div class="renforts" style="margin-top:6px">
+      <label><input type="radio" name="destType" value="dom" checked> Domicile</label>
+      <label><input type="radio" name="destType" value="str"> Hôpital / MR(S)</label>
     </div>
-
-    <div class="row">
-      <div class="input-row">
-        <label>Lieu de PEC – Rue</label>
-        <input id="mRue" placeholder="Rue">
-      </div>
-      <div class="input-row">
-        <label>Numéro / Boîte</label>
-        <input id="mNum" placeholder="N° / Boîte">
-      </div>
+    <div id="dest_dom" class="grid" style="margin-top:6px">
+      <div><label>Rue</label><input id="dest_rue"></div>
+      <div><label>N°</label><input id="dest_num"></div>
+      <div><label>CP</label><input id="dest_cp" maxlength="4" list="cpOptions"></div>
+      <div><label>Localité</label><input id="dest_ville" list="villeOptions"></div>
     </div>
-
-    <div class="row">
-      <div class="input-row">
-        <label>Code postal</label>
-        <input id="mCP" maxlength="4" placeholder="Ex: 1310">
-      </div>
-      <div class="input-row">
-        <label>Localité</label>
-        <input id="mLocalite" placeholder="Ex: La Hulpe">
+    <div id="dest_str" style="display:none;margin-top:6px">
+      <div><label>Recherche structure</label><input id="dest_hop_search" list="destHopList" placeholder="Saint-Luc / Erasme …"><datalist id="destHopList"></datalist></div>
+      <div class="grid" style="margin-top:6px">
+        <div><label>Nom sélectionné</label><input id="dest_hop_name" readonly></div>
+        <div><label>Adresse</label><input id="dest_hop_addr" readonly></div>
+        <div><label>CP</label><input id="dest_cp2"></div>
+        <div><label>Localité</label><input id="dest_ville2"></div>
       </div>
     </div>
+  </fieldset>
 
-    <div class="input-row">
-      <label>Hôpital destination (facultatif)</label>
-      <input id="mHopital" placeholder="Commence à taper le nom…">
-      <div class="suggest">
-        <div id="hospList" class="suggest-list"></div>
+  <fieldset>
+    <legend>Renforts</legend>
+    <div class="renforts">
+      <span class="thin">Raccourcis :</span>
+      <label><input type="checkbox" id="rfPompiers"> Pompiers</label>
+      <label><input type="checkbox" id="rfPolice"> Police</label>
+      <label><input type="checkbox" id="rfSmur"> SMUR</label>
+      <label><input type="checkbox" id="rfAmbu112"> Ambu 112</label>
+      <label><input type="checkbox" id="rfRacs"> RACS</label>
+    </div>
+    <div class="subgrid" style="margin-top:10px">
+      <div>
+        <h4>Pompiers</h4>
+        <label>Statut d’appel</label>
+        <select id="rf_p_appel"><option></option><option>Appelé</option><option>Confirmé</option><option>Refusé</option><option>En route</option><option>Non dispo</option></select>
+        <label>Sur place</label>
+        <select id="rf_p_sp"><option></option><option>Inconnu</option><option>Oui</option><option>Non</option></select>
+        <label>Commentaire</label>
+        <textarea id="rf_p_com"></textarea>
+      </div>
+      <div>
+        <h4>RACS</h4>
+        <label>Statut d’appel</label>
+        <select id="rf_r_appel"><option></option><option>Appelé</option><option>Confirmé</option><option>Refusé</option><option>En route</option><option>Non dispo</option></select>
+        <label>Sur place</label>
+        <select id="rf_r_sp"><option></option><option>Inconnu</option><option>Oui</option><option>Non</option></select>
+        <label>Commentaire</label>
+        <textarea id="rf_r_com"></textarea>
+      </div>
+      <div>
+        <h4>SMUR</h4>
+        <label>Statut d’appel</label>
+        <select id="rf_s_appel"><option></option><option>Appelé</option><option>Confirmé</option><option>Refusé</option><option>En route</option><option>Non dispo</option></select>
+        <label>Sur place</label>
+        <select id="rf_s_sp"><option></option><option>Inconnu</option><option>Oui</option><option>Non</option></select>
+        <label>Commentaire</label>
+        <textarea id="rf_s_com"></textarea>
+      </div>
+      <div>
+        <h4>Ambu 112</h4>
+        <label>Statut d’appel</label>
+        <select id="rf_a_appel"><option></option><option>Appelé</option><option>Confirmé</option><option>Refusé</option><option>En route</option><option>Non dispo</option></select>
+        <label>Sur place</label>
+        <select id="rf_a_sp"><option></option><option>Inconnu</option><option>Oui</option><option>Non</option></select>
+        <label>Commentaire</label>
+        <textarea id="rf_a_com"></textarea>
+      </div>
+      <div>
+        <h4>Police</h4>
+        <label>Statut d’appel</label>
+        <select id="rf_pol_appel"><option></option><option>Appelé</option><option>Confirmé</option><option>Refusé</option><option>En route</option><option>Non dispo</option></select>
+        <label>Sur place</label>
+        <select id="rf_pol_sp"><option></option><option>Inconnu</option><option>Oui</option><option>Non</option></select>
+        <label>Commentaire</label>
+        <textarea id="rf_pol_com"></textarea>
       </div>
     </div>
+  </fieldset>
 
-    <div class="input-row">
-      <label>Renforts (coche = actif, 2 statuts : Appel / Sur place)</label>
-      <div class="row3">
-        <label><input type="checkbox" id="rfPompiers"> Pompiers</label>
-        <label><input type="checkbox" id="rfPolice"> Police</label>
-        <label><input type="checkbox" id="rfSmur"> SMUR</label>
-        <label><input type="checkbox" id="rfAmbu"> Ambu 112</label>
-        <label><input type="checkbox" id="rfRacs"> RACS</label>
-      </div>
-    </div>
+  <div class="small" id="kmHint" style="margin-top:6px;opacity:.9"></div>
 
-    <div class="input-row" style="text-align:right">
-      <button class="btn btn-add" onclick="saveMission()">Enregistrer</button>
-    </div>
+  <div style="text-align:right;margin-top:10px">
+    <button onclick="startMission()">Démarrer la mission</button>
   </div>
 </div>
 
+<div class="panel">
+  <h2>Missions en cours</h2>
+  <div id="activeMissions"></div>
+</div>
+
+<div class="panel">
+  <div class="row" style="align-items:center">
+    <h2 style="margin:0">Missions du jour</h2>
+    <div style="text-align:right">
+      <button class="secondary" onclick="deleteSelectedDone()">🗑 Supprimer la sélection (Admin)</button>
+    </div>
+  </div>
+  <table id="tableDone">
+    <thead>
+      <tr>
+        <th style="width:32px"></th>
+        <th>Véhicule</th><th>Attribution</th><th>Type</th><th>Motif</th>
+        <th>Renforts</th><th>Δ km</th><th>Heures par statut</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<!-- Référentiel CP -> Ville (rapide ; garde si pas d’ODWB complet) -->
+<script type="application/json" id="postalData">
+{
+  "1000":"Bruxelles","1310":"La Hulpe","1300":"Wavre","1330":"Rixensart","1340":"Ottignies",
+  "1050":"Ixelles","1180":"Uccle","4020":"Liège","4000":"Liège","5000":"Namur","7000":"Mons"
+}
+</script>
+
 <script>
-/* ================== Clés Firebase ================== */
-const MISSIONS_KEY = "missions_actives";            // source TV & cette page
-const ORDER_KEY    = "dispatch_order_numbers";      // réservations numéros d’ordre
-const DISPATCH_KEY = "dispatch_parc_vehicules";     // MAJ statut véhicule + km
-const HOSP_KEY     = "ref_hospitals";               // cache hôpitaux
+/* ================== Clés de stockage ================== */
+const DISPATCH_KEY="dispatch_parc_vehicules";
+const MISSIONS_KEY="dispatch_missions";
+const MISSIONS_ARCHIVE_KEY="dispatch_missions_archive";
+const ADMIN_PASSWORD="Admin01";
 
 /* ================== Etats ================== */
-let missions = {};       // {id: {...}}
-let orderNumbers = {};   // {"1":"id", "2":"id2", ...}
-let dispatchData = {};   // pour MAJ véhicule
-let HOSP_CACHE = {};     // {slug: {name,address,cp,localite,lat,lon}}
+let dispatchData={}, missions={}, archive={};
 
-let editingId = null;
+/* ================== Status ================== */
+const FLOW = ["Départ","Sur place","En charge","Arrivé hôpital","Retour dispo","Rentré base"];
+const EXTRAS = ["Dévié","Mise indispo","Annulé par CU112","Retour au poste"];
+const CLOSE_GUARDS = new Set(["Dévié","Mise indispo","Retour au poste"]);
 
 /* ================== Utils ================== */
-const z2 = n=>String(n).padStart(2,'0');
-const hhmm = (d=new Date()) => `${z2(d.getHours())}:${z2(d.getMinutes())}`;
-const esc = s => String(s??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const slug = s => (s||"").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,'-');
-
-function lastStatus(obj){ // retourne dernier label avec heure
-  if(!obj) return "";
-  const labels = Object.keys(obj);
-  if(!labels.length) return "";
-  // enregistrements au fil des clics : on affiche le dernier posé
-  const last = labels.reduce((acc,k)=> acc.time && obj[k] < acc.time ? acc : {label:k, time:obj[k]} , {label:"",time:""});
-  return `${last.label} ${last.time||""}`.trim();
+function loadAll(){
+  dispatchData=JSON.parse(localStorage.getItem(DISPATCH_KEY)||"{}");
+  missions=JSON.parse(localStorage.getItem(MISSIONS_KEY)||"{}");
+  archive=JSON.parse(localStorage.getItem(MISSIONS_ARCHIVE_KEY)||"{}");
 }
+function saveMissions(){ localStorage.setItem(MISSIONS_KEY, JSON.stringify(missions)); }
+function saveArchive(){ localStorage.setItem(MISSIONS_ARCHIVE_KEY, JSON.stringify(archive)); }
+function saveDispatch(){ localStorage.setItem(DISPATCH_KEY, JSON.stringify(dispatchData)); }
+function now(){ return new Date(); }
+function todayKey(){ const d=now(); const z=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${z(d.getMonth()+1)}-${z(d.getDate())}`; }
+function hhmm(d){ const z=n=>String(n).padStart(2,"0"); return `${z(d.getHours())}:${z(d.getMinutes())}`; }
+function esc(s){ return String(s??"").replace(/[&<>"']/g,m=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[m])); }
 
-/* ================== Flows ================== */
-const FLOW_112 = ["Appel","Départ","Sur place","En charge vers hôpital","À l'hôpital","Retour disponible","Retour indisponible","Rentré au poste"];
-const FLOW_TMS = ["Départ","Sur place","En charge vers destination","À destination","Retour disponible","Retour indisponible","Rentré au poste"];
-
-/* ================== Numéros d’ordre ================== */
-async function loadOrders(){ orderNumbers = await readKey(ORDER_KEY) || {}; }
-async function saveOrders(){ await updateKey(ORDER_KEY, orderNumbers); }
-function nextOrderNumber(max=99){
-  for(let i=1;i<=max;i++){ const s=String(i); if(!orderNumbers[s]) return s; }
-  return null;
-}
-async function releaseOrderNumber(missionId){
-  for(const [num,id] of Object.entries(orderNumbers)){
-    if(id===missionId){ delete orderNumbers[num]; await saveOrders(); return; }
-  }
-}
-
-/* ================== Hôpitaux (cache + recherche) ================== */
-async function loadHospCache(){ HOSP_CACHE = await readKey(HOSP_KEY) || {}; }
-function showHospList(items){
-  const box = document.getElementById('hospList');
-  if(!items?.length){ box.style.display='none'; box.innerHTML=''; return; }
-  box.innerHTML = items.map(it=>`
-    <div class="opt" data-sl="${esc(it.slug)}">
-      <div style="font-weight:700">${esc(it.name)}</div>
-      <div class="mut" style="font-size:12px">${esc([it.address, it.cp, it.localite].filter(Boolean).join(' '))}</div>
-    </div>`).join("");
-  box.style.display='block';
-  box.querySelectorAll('.opt').forEach(el=>{
-    el.onclick = ()=>{
-      const s = el.dataset.sl;
-      const h = HOSP_CACHE[s];
-      if(!h) return;
-      document.getElementById('mHopital').value = h.name;
-      // Pré-remplit destination (si tu gardes la même structure PEC/dest)
-      document.getElementById('mRue').value = h.address || "";
-      document.getElementById('mNum').value = "";
-      document.getElementById('mCP').value = h.cp || "";
-      document.getElementById('mLocalite').value = h.localite || "";
-      box.style.display='none';
-    };
+/* ================== CP -> Ville ================== */
+let CP_MAP = {};
+(function initCP(){
+  try{ CP_MAP = JSON.parse(document.getElementById('postalData').textContent||"{}"); }catch{ CP_MAP = {}; }
+  document.getElementById('mCP').addEventListener('input', e=>{
+    const cp = (e.target.value||"").trim();
+    if (CP_MAP[cp]) document.getElementById('mLocalite').value = CP_MAP[cp];
   });
-}
-async function searchHospitalOnline(q){
-  const url = `https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=8&q=${encodeURIComponent(q+' Belgium hospital')}`;
-  const r = await fetch(url, { headers:{'Accept-Language':'fr'} });
-  const j = await r.json();
-  return j.map(o=>{
-    const a=o.address||{};
-    const name = (a.hospital || a.medical || o.display_name.split(',')[0] || q).trim();
-    return {
-      slug: slug(name),
-      name,
-      address: [a.road, a.house_number].filter(Boolean).join(' ') || '',
-      cp: a.postcode || '',
-      localite: a.town || a.city || a.village || a.municipality || '',
-      lat: parseFloat(o.lat), lon: parseFloat(o.lon)
-    };
-  });
-}
-async function findHospitals(q){
-  q = (q||"").trim(); if(q.length<2) return [];
-  const qslug = slug(q);
-  const cached = Object.values(HOSP_CACHE).filter(h =>
-    slug(h.name).includes(qslug) || (h.localite && slug(h.localite).includes(qslug))
-  ).slice(0,8);
-  if(cached.length) return cached.map(h=>({...h, slug: slug(h.name)}));
-  const online = await searchHospitalOnline(q);
-  if(online.length){
-    online.forEach(h=>{
-      const s = slug(h.name);
-      if(!HOSP_CACHE[s]) HOSP_CACHE[s]=h;
+  ["pec_cp","dest_cp"].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el) el.addEventListener('input', ev=>{
+      const cp=(ev.target.value||"").trim();
+      const outId = id==="pec_cp" ? "pec_ville" : "dest_ville";
+      if(CP_MAP[cp]) document.getElementById(outId).value = CP_MAP[cp];
     });
-    await updateKey(HOSP_KEY, HOSP_CACHE);
-  }
-  return online;
-}
-// brancher l’input
-let hospDebounce;
-document.getElementById('mHopital').addEventListener('input', e=>{
-  clearTimeout(hospDebounce);
-  const q=e.target.value;
-  hospDebounce=setTimeout(async ()=>{
-    const res = await findHospitals(q);
-    showHospList(res);
-  }, 200);
-});
-document.addEventListener('click', (e)=>{
-  if(!document.getElementById('hospList').contains(e.target) && e.target.id!=="mHopital"){
-    document.getElementById('hospList').style.display='none';
-  }
-});
-
-/* ================== Modal ================== */
-function openModal(id=null){
-  editingId = id;
-  document.getElementById('missionModal').style.display='flex';
-  document.getElementById('modalTitle').textContent = id ? "Éditer mission" : "Nouvelle mission";
-}
-function closeModal(){
-  document.getElementById('missionModal').style.display='none';
-  ['mVeh','mMotif','mRue','mNum','mCP','mLocalite','mHopital'].forEach(id=>document.getElementById(id).value='');
-  ['rfPompiers','rfPolice','rfSmur','rfAmbu','rfRacs'].forEach(id=>document.getElementById(id).checked=false);
-}
-
-/* ================== TV bridge ================== */
-function toTvPayload(m){
-  // On envoie CP/ville du lieu PEC par défaut (ou de destination si à l’hôpital / en charge)
-  let cp = m.adresse?.cp || "";
-  let loc = m.adresse?.ville || "";
-  if (m.statutActuel==="En charge vers hôpital" || m.statutActuel==="À l'hôpital"){
-    cp = m.dest?.cp || cp;
-    loc = m.dest?.ville || loc;
-  }
-  return {
-    id: m.id,
-    order: m.order,
-    type: m.type || "",
-    statut: m.statutActuel || "",
-    vehicule: m.veh || "",
-    equipage: [m.XO,m.S,m.PS].filter(Boolean).join(' / ') || "",
-    code_postal: cp,
-    localite: loc,
-    lat: m.dest?.lat || m.adresse?.lat || null,
-    lon: m.dest?.lon || m.adresse?.lon || null,
-    timestamp: Date.now()
-  };
-}
-async function publishMissionToTv(m){ await updateKey(MISSIONS_KEY, { [m.id]: toTvPayload(m) }); }
-async function updateMissionOnTv(m){ await updateKey(MISSIONS_KEY, { [m.id]: toTvPayload(m) }); }
-async function removeMissionFromTv(id){ await updateKey(MISSIONS_KEY, { [id]: null }); }
-
-/* ================== CRUD Missions ================== */
-function normalizeMissionBase(id, orderNum, form){
-  const renfortsInit = (type)=>({
-    pompiers: { actif: form.rfPompiers, appel:"", sur_place:"" },
-    police:   { actif: form.rfPolice,   appel:"", sur_place:"" },
-    smur:     { actif: form.rfSmur,     appel:"", sur_place:"" },
-    ambu:     { actif: form.rfAmbu,     appel:"", sur_place:"" },
-    racs:     { actif: form.rfRacs,     appel:"", sur_place:"" }
   });
+})();
 
-  const m = {
-    id, order: orderNum,
-    veh: form.veh, type: form.type, motif: form.motif,
-    adresse: { rue: form.rue, num: form.num, cp: form.cp, ville: form.localite },
-    dest: {}, // rempli si hôpital choisi
-    renforts: renfortsInit(form.type),
-    statuts: {}, statutActuel: "",
-    kmDep: "", kmRet: "", done:false,
-    timestamp: Date.now()
-  };
-
-  if (form.hopital && HOSP_CACHE[slug(form.hopital)]){
-    const h = HOSP_CACHE[slug(form.hopital)];
-    m.dest = { hopital:h.name, address:h.address, cp:h.cp, ville:h.localite, lat:h.lat, lon:h.lon };
-  }
-
-  // Statut initial
-  if (form.type==="112"){
-    m.statuts["Appel"] = hhmm();
-    m.statutActuel = "Appel";
-    // Renforts cochés : marquer "Appel" simultané
-    Object.entries(m.renforts).forEach(([k,v])=>{
-      if(v.actif) v.appel = m.statuts["Appel"];
-    });
-  }else{
-    // TMS commence sans "Appel"
-    m.statutActuel = "";
-  }
-
-  return m;
-}
-
-async function saveMission(){
-  const form = {
-    veh: document.getElementById('mVeh').value.trim(),
-    type: document.getElementById('mType').value,
-    motif: document.getElementById('mMotif').value.trim(),
-    rue: document.getElementById('mRue').value.trim(),
-    num: document.getElementById('mNum').value.trim(),
-    cp:  document.getElementById('mCP').value.trim(),
-    localite: document.getElementById('mLocalite').value.trim(),
-    hopital: document.getElementById('mHopital').value.trim(),
-    rfPompiers: document.getElementById('rfPompiers').checked,
-    rfPolice:   document.getElementById('rfPolice').checked,
-    rfSmur:     document.getElementById('rfSmur').checked,
-    rfAmbu:     document.getElementById('rfAmbu').checked,
-    rfRacs:     document.getElementById('rfRacs').checked
-  };
-  if(!form.veh){ alert("Indique un véhicule"); return; }
-  if(!form.motif){ alert("Motif requis"); return; }
-
-  // Numéro d’ordre
-  const orderNum = nextOrderNumber();
-  if(!orderNum){ alert("Aucun numéro d’ordre disponible."); return; }
-
-  const id = String(Date.now());
-  const m = normalizeMissionBase(id, orderNum, form);
-
-  // Réserver ordre + enregistrer mission live
-  orderNumbers[orderNum] = id; await saveOrders();
-  missions[id] = m;
-
-  // MAJ dispatch : véhicule Sorti
-  try{
-    dispatchData[form.veh] = dispatchData[form.veh] || {};
-    dispatchData[form.veh].statut = "Sorti";
-    await updateKey(DISPATCH_KEY, { [form.veh]: dispatchData[form.veh] });
-  }catch{}
-
-  // Publier à la TV
-  await publishMissionToTv(m);
-
-  closeModal();
-  renderTable();
-}
-
-/* Renforts: toggle "Appel"/"Sur place" */
-async function setRenfortStatus(id, key, which){
-  const m = missions[id]; if(!m) return;
-  m.renforts = m.renforts || {};
-  m.renforts[key] = m.renforts[key] || {actif:true, appel:"", sur_place:""};
-  if(which==="Appel") m.renforts[key].appel = hhmm();
-  if(which==="Sur place") m.renforts[key].sur_place = hhmm();
-  await updateKey(MISSIONS_KEY, { [id]: toTvPayload(m) }); // pour la TV on enverra l’état global
-  renderTable();
-}
-
-/* Statuts vecteur */
-async function setStatut(id, st){
-  const m = missions[id]; if(!m) return;
-  const flow = (m.type==="112") ? FLOW_112 : FLOW_TMS;
-  if(!flow.includes(st)) return;
-  m.statuts = m.statuts || {};
-  m.statuts[st] = hhmm();
-  m.statutActuel = st;
-  await updateKey(MISSIONS_KEY, { [id]: toTvPayload(m) });
-  renderTable();
-}
-
-/* Edition (ajout renfort / hôpital) */
-async function editMission(id){
-  const m = missions[id]; if(!m) return;
-  const h = prompt("Hôpital destination (laisser vide si inchangé):", m.dest?.hopital||"");
-  if(h){
-    // si cache connu, on enrichit
-    const s = slug(h);
-    if(HOSP_CACHE[s]){
-      const o = HOSP_CACHE[s];
-      m.dest = { hopital:o.name, address:o.address, cp:o.cp, ville:o.localite, lat:o.lat, lon:o.lon };
-    }else{
-      m.dest = { hopital:h };
+/* ================== Km départ auto (plaque) ================== */
+function getPlateByVeh(v){ return dispatchData?.[v]?.plaque || ""; }
+function bestKmForPlate(plaque){
+  let best = 0;
+  if (!plaque) return best;
+  const vehs = (dispatchData._settings?.vehs||[]).map(v=>v.id);
+  vehs.forEach(id=>{
+    const d=dispatchData[id]; if(d && d.plaque===plaque){
+      const k=parseInt(d.km||"0",10); if(!isNaN(k) && k>best) best=k;
     }
+  });
+  Object.values(missions||{}).forEach(m=>{
+    if(m && m.done && m.plaque===plaque){
+      const k=parseInt(m.kmRet||m.kmret||"0",10); if(!isNaN(k) && k>best) best=k;
+    }
+  });
+  Object.values(archive||{}).forEach(m=>{
+    if(m && m.plaque===plaque){
+      const k=parseInt(m.kmRet||m.kmret||"0",10); if(!isNaN(k) && k>best) best=k;
+    }
+  });
+  return best;
+}
+
+/* ================== UI Nouvelle mission ================== */
+function populateVeh(){
+  const sel=document.getElementById('mVeh'); sel.innerHTML="<option value=''>—</option>";
+  const settings = dispatchData._settings?.vehs || [];
+  settings.forEach(v=>{ sel.insertAdjacentHTML("beforeend",`<option value="${esc(v.id)}">${esc(v.id)}</option>`); });
+}
+document.getElementById('mVeh').addEventListener('change', ()=>{
+  const id = document.getElementById('mVeh').value;
+  const d = dispatchData[id];
+  const attr = d ? (d.attribution||"") : "";
+  document.getElementById('mAttr').value = attr;
+  const plate = getPlateByVeh(id);
+  const best = bestKmForPlate(plate);
+  document.getElementById('kmHint').textContent = plate ? `Km départ suggéré pour ${plate} : ${best}` : "";
+});
+document.getElementById('mType').addEventListener('change', ()=>{
+  const is112 = document.getElementById('mType').value==="112";
+  document.getElementById('zone112').style.display = is112? "block":"none";
+  document.getElementById('pecField').style.display = (document.getElementById('mType').value==="TMS")? "block":"none";
+});
+
+/* ================== Renforts checkboxes -> objets détaillés ================== */
+function readRenfortsForm(){
+  const obj={};
+  const setBlock=(key, checked, appelId, spId, comId)=>{
+    const r={
+      enabled: !!checked,
+      appel: (document.getElementById(appelId)?.value||""),
+      sur_place: (document.getElementById(spId)?.value||""),
+      comment: (document.getElementById(comId)?.value||"").trim()
+    };
+    if(checked || r.appel || r.sur_place || r.comment) obj[key]=r;
+  };
+  setBlock("Pompiers", document.getElementById('rfPompiers').checked, 'rf_p_appel','rf_p_sp','rf_p_com');
+  setBlock("RACS",     document.getElementById('rfRacs').checked,     'rf_r_appel','rf_r_sp','rf_r_com');
+  setBlock("SMUR",     document.getElementById('rfSmur').checked,     'rf_s_appel','rf_s_sp','rf_s_com');
+  setBlock("Ambu 112", document.getElementById('rfAmbu112').checked,  'rf_a_appel','rf_a_sp','rf_a_com');
+  setBlock("Police",   document.getElementById('rfPolice').checked,   'rf_pol_appel','rf_pol_sp','rf_pol_com');
+  return obj;
+}
+
+/* ================== Création ================== */
+function startMission(){
+  const veh = document.getElementById('mVeh').value;
+  if(!veh) return alert("Choisis un véhicule.");
+  const attr = document.getElementById('mAttr').value || "";
+  const type = document.getElementById('mType').value || "";
+  const motif= document.getElementById('mMotif').value.trim();
+  if(!motif) return alert("Motif requis.");
+
+  const plaque = getPlateByVeh(veh);
+  const kmStart = bestKmForPlate(plaque);
+
+  // PEC (TMS)
+  let pec = null;
+  if(type==="TMS"){
+    const pecType = document.querySelector('input[name="pecType"]:checked')?.value || 'dom';
+    pec = (pecType==='dom')
+      ? { type:'dom', rue:val('pec_rue'), num:val('pec_num'), cp:val('pec_cp'), ville:val('pec_ville') }
+      : { type:'str', name:val('pec_hop_name'), addr:val('pec_hop_addr'), cp:val('pec_cp2'), ville:val('pec_ville2') };
   }
-  const rf = prompt("Ajouter un renfort ? (pompiers/police/smur/ambu/racs)");
-  if(rf && ["pompiers","police","smur","ambu","racs"].includes(rf)){
-    m.renforts = m.renforts || {};
-    m.renforts[rf] = m.renforts[rf] || {actif:false,appel:"",sur_place:""};
-    m.renforts[rf].actif = true;
+
+  // Destination (tous types)
+  const destType = document.querySelector('input[name="destType"]:checked')?.value || 'dom';
+  const destination = (destType==='dom')
+    ? { type:'dom', rue:val('dest_rue'), num:val('dest_num'), cp:val('dest_cp'), ville:val('dest_ville') }
+    : { type:'str', name:val('dest_hop_name'), addr:val('dest_hop_addr'), cp:val('dest_cp2'), ville:val('dest_ville2') };
+
+  const renforts = readRenfortsForm();
+
+  const mission = {
+    id: String(Date.now()),
+    day: todayKey(),
+    veh, attr, type, motif,
+    plaque,
+    comment: document.getElementById('mComment').value.trim() || "",
+    renforts,
+    centrale: (document.getElementById('mCentrale').value||""),
+    num112: (document.getElementById('mNum112').value||""),
+    depart112: (document.getElementById('mDepart').value||""),
+    adresse: {
+      rue: val('mRue'), num: val('mNum'), cp: val('mCP'), ville: val('mLocalite')
+    },
+    pec,
+    destination,
+    statuts: { "Départ": hhmm(now()) },
+    kmDep: kmStart ? String(kmStart) : "",
+    kmRet: "",
+    done: false
+  };
+  missions[mission.id] = mission;
+
+  // véhicule -> Sorti
+  if(!dispatchData[veh]) dispatchData[veh]={};
+  dispatchData[veh].statut = "Sorti";
+  saveMissions(); saveDispatch();
+
+  renderActive(); alert("Mission démarrée.");
+}
+function val(id){ return (document.getElementById(id)?.value||"").trim(); }
+
+/* ================== Recherche hôpital (OSM Nominatim) ================== */
+function attachHospitalSearch(searchId, listId, outNameId, outAddrId, outCPId, outVilleId){
+  const NOM_URL="https://nominatim.openstreetmap.org/search";
+  const input=document.getElementById(searchId), dlist=document.getElementById(listId);
+  const outName=document.getElementById(outNameId), outAddr=document.getElementById(outAddrId);
+  const outCP=outCPId?document.getElementById(outCPId):null;
+  const outVille=outVilleId?document.getElementById(outVilleId):null;
+  const mem=new Map();
+
+  function fmt(r){
+    const name=r.display_name?.split(",")[0]||r.name||"Structure";
+    const a=r.address||{};
+    const rue=[a.road,a.house_number].filter(Boolean).join(" ");
+    const cp=a.postcode||"";
+    const city=a.city||a.town||a.village||a.municipality||"";
+    const line=[rue,cp,city].filter(Boolean).join(", ");
+    return {name,line,cp,city};
   }
-  await updateKey(MISSIONS_KEY, { [id]: toTvPayload(m) });
-  renderTable();
+  const doSearch=async()=>{
+    const q=input.value.trim();
+    if(q.length<3){ dlist.innerHTML=""; return; }
+    const key=q.toLowerCase();
+    if(mem.has(key)){ render(mem.get(key)); return; }
+    const url=`${NOM_URL}?format=jsonv2&addressdetails=1&countrycodes=be&limit=20&q=${encodeURIComponent(q+" hospital clinic clinique hopital centre hospitalier CHU UZ")}`;
+    try{
+      const res=await fetch(url,{cache:"no-store"});
+      const arr=await res.json();
+      const items=arr.map(r=>{const f=fmt(r);return {k:String(r.place_id),name:f.name,line:f.line,cp:f.cp,city:f.city};});
+      mem.set(key,items); render(items);
+    }catch{ dlist.innerHTML=""; }
+  };
+  const render=(items)=>{ dlist.innerHTML=items.map(it=>`<option value="${esc(it.name)} — ${esc(it.line)}"></option>`).join(""); };
+  const choose=()=>{
+    const val=(input.value||"").trim().toLowerCase();
+    let choice=null;
+    for(const arr of mem.values()){
+      const f=arr.find(it=>(`${it.name} — ${it.line}`).toLowerCase()===val || it.name.toLowerCase()===val);
+      if(f){ choice=f; break; }
+    }
+    outName.value = choice?choice.name:input.value;
+    outAddr.value = choice?(choice.line||""):"";
+    if(choice){
+      if(outCP && choice.cp) outCP.value=choice.cp;
+      if(outVille && choice.city) outVille.value=choice.city;
+    }
+  };
+  input.addEventListener('input', ()=>{ clearTimeout(input._t); input._t=setTimeout(doSearch,300); });
+  input.addEventListener('change', choose);
+  input.addEventListener('blur', choose);
 }
+attachHospitalSearch('pec_hop_search','pecHopList','pec_hop_name','pec_hop_addr','pec_cp2','pec_ville2');
+attachHospitalSearch('dest_hop_search','destHopList','dest_hop_name','dest_hop_addr','dest_cp2','dest_ville2');
 
-/* Clôture : demande km, libère ordre, retire de TV et met à jour dispatch */
-async function closeMission(id){
-  const m = missions[id]; if(!m) return;
-  const km = prompt("Kilométrage final du vecteur :");
-  if(km===null) return;
-  const kmNum = parseInt(km,10);
-  if(!(kmNum>0)){ alert("Kilométrage invalide."); return; }
+/* ================== Toggles PEC / DEST ================== */
+document.querySelectorAll('input[name="pecType"]').forEach(r=>{
+  r.onchange=()=>{
+    document.getElementById('pec_dom').style.display = (r.value==='dom')?'grid':'none';
+    document.getElementById('pec_str').style.display = (r.value==='str')?'block':'none';
+  };
+});
+document.querySelectorAll('input[name="destType"]').forEach(r=>{
+  r.onchange=()=>{
+    document.getElementById('dest_dom').style.display = (r.value==='dom')?'grid':'none';
+    document.getElementById('dest_str').style.display = (r.value==='str')?'block':'none';
+  };
+});
 
-  // MAJ dispatch: km + dispo/indispo selon dernier statut
-  try{
-    const v = m.veh;
-    dispatchData[v] = dispatchData[v] || {};
-    dispatchData[v].km = String(kmNum);
-    const last = m.statutActuel || "";
-    if (last==="Retour indisponible"){ dispatchData[v].statut="Indisponible"; }
-    else { dispatchData[v].statut="Disponible"; }
-    await updateKey(DISPATCH_KEY, { [v]: dispatchData[v] });
-  }catch{}
+/* ================== Rendu missions actives (EDITABLES) ================== */
+function renderActive(){
+  const box=document.getElementById('activeMissions'); box.innerHTML="";
+  const actives = Object.entries(missions).filter(([,m])=>!m.done);
+  if(!actives.length){ box.innerHTML = "<i>Aucune mission en cours</i>"; return; }
 
-  // Libère order + supprime TV + mémoire locale
-  await releaseOrderNumber(id);
-  await removeMissionFromTv(id);
-  delete missions[id];
-  renderTable();
-}
+  actives.forEach(([id,m])=>{
+    const div=document.createElement('div'); div.className="panel";
+    const statusButtons = [...FLOW, ...EXTRAS].map(st=>{
+      const active = Boolean(m.statuts && m.statuts[st]);
+      return `<button ${active?'class="active"':''} onclick="setStatus('${id}','${st}')">${st}</button>`;
+    }).join("");
 
-/* ================== Rendu tableau ================== */
-function renderMissionsRow(m){
-  const flow = (m.type==="112") ? FLOW_112 : FLOW_TMS;
-  const statusBtns = flow.map(st=>{
-    const t = m.statuts?.[st] || "";
-    return `<button class="btn btn-status" onclick="setStatut('${m.id}','${st}')">${esc(st)}<br><span class="mut">${esc(t)}</span></button>`;
-  }).join('');
+    // petits helpers renforts
+    const R=(s,k,def="")=>esc(m.renforts?.[s]?.[k]??def);
+    const C=(s,k)=> (m.renforts?.[s]?.[k]??"")==="" ? "" : (m.renforts?.[s]?.[k]??"");
 
-  const renf = m.renforts || {};
-  const renfHtml = Object.entries(renf)
-    .filter(([,v])=>v?.actif)
-    .map(([k,v])=>{
-      const last = v.sur_place ? `Sur place ${v.sur_place}` : (v.appel ? `Appel ${v.appel}` : "—");
-      return `<div class="badge">${esc(k)}</div>
-              <div class="mut" style="margin-right:8px">${esc(last)}</div>
-              <div style="display:inline-block">
-                <button class="btn btn-status" onclick="setRenfortStatus('${m.id}','${k}','Appel')">Appel</button>
-                <button class="btn btn-status" onclick="setRenfortStatus('${m.id}','${k}','Sur place')">Sur place</button>
-              </div>`;
-    }).join('<br>') || "-";
+    const renfChk = (s)=> (m.renforts?.[s]?.enabled ? 'checked' : '');
+    const setSel = (val, arr)=> arr.map(x=>`<option ${val===x?"selected":""}>${x}</option>`).join("");
 
-  const lieu = [m.adresse?.cp, m.adresse?.ville].filter(Boolean).join(' ');
+    div.innerHTML = `
+      <div class="row">
+        <div><b>${esc(m.veh)}</b> ${m.attr?`<span class="badge">${esc(m.attr)}</span>`:""} — 
+          <select onchange="editField('${id}','type',this.value)">
+            <option ${m.type===""?"selected":""} value="">—</option>
+            <option ${m.type==="TMS"?"selected":""}>TMS</option>
+            <option ${m.type==="112"?"selected":""}>112</option>
+            <option ${m.type==="Prévention"?"selected":""}>Prévention</option>
+            <option ${m.type==="Logistique"?"selected":""}>Logistique</option>
+          </select>
+        </div>
+        <div style="text-align:right" class="small">Plaque: ${esc(m.plaque||getPlateByVeh(m.veh)||"—")}</div>
+      </div>
 
-  const destTxt = m.dest?.hopital
-    ? `${esc(m.dest.hopital)}<br><span class="mut">${esc([m.dest.cp, m.dest.ville].filter(Boolean).join(' '))}</span>`
-    : "-";
+      <label>Motif</label>
+      <input value="${esc(m.motif||"")}" oninput="editField('${id}','motif',this.value)">
 
-  return `
-    <tr>
-      <td><b>${esc(m.order||"")}</b></td>
-      <td>${esc(m.veh||"")}</td>
-      <td>${esc(m.motif||"")}</td>
-      <td>${esc(lieu||"")}</td>
-      <td class="renf">${renfHtml}</td>
-      <td>${statusBtns}</td>
-      <td>${destTxt}</td>
-      <td><button class="btn btn-edit" onclick="editMission('${m.id}')">Éditer</button></td>
-      <td><button class="btn btn-close" onclick="closeMission('${m.id}')">Clôturer</button></td>
-    </tr>`;
-}
+      <label>Commentaire mission</label>
+      <textarea oninput="editField('${id}','comment',this.value)">${esc(m.comment||"")}</textarea>
 
-function renderTable(){
-  const tb = document.querySelector('#missionsTable tbody');
-  // tri : plus récentes en haut
-  const list = Object.values(missions).sort((a,b)=> (b.timestamp||0)-(a.timestamp||0));
-  tb.innerHTML = list.map(renderMissionsRow).join('');
-}
+      <fieldset>
+        <legend>Adresse (lieu d’appel)</legend>
+        <div class="grid">
+          <div><label>Rue</label><input value="${esc(m.adresse?.rue||"")}" oninput="editAddr('${id}','rue',this.value)"></div>
+          <div><label>Numéro / Boîte</label><input value="${esc(m.adresse?.num||"")}" oninput="editAddr('${id}','num',this.value)"></div>
+          <div><label>Code postal</label><input maxlength="4" value="${esc(m.adresse?.cp||"")}" oninput="editAddrCP('${id}',this.value)"></div>
+          <div><label>Localité</label><input value="${esc(m.adresse?.ville||"")}" oninput="editAddr('${id}','ville',this.value)"></div>
+        </div>
+      </fieldset>
 
-/* ================== Boot & Sync temps réel ================== */
-async function boot(){
-  // charge caches
-  await Promise.all([loadOrders(), loadHospCache()]);
-  // charge dispatch pour MAJ statut véhicule
-  dispatchData = await readKey(DISPATCH_KEY) || {};
+      ${m.type==="TMS" ? `
+      <fieldset>
+        <legend>PEC (TMS)</legend>
+        <div class="renforts">
+          <label><input type="radio" name="pec_${id}" value="dom" ${m.pec?.type!=='str'?'checked':''} onchange="togglePecType('${id}',this.value)"> Domicile</label>
+          <label><input type="radio" name="pec_${id}" value="str" ${m.pec?.type==='str'?'checked':''} onchange="togglePecType('${id}',this.value)"> Hôpital / MR(S)</label>
+        </div>
+        <div id="pec_dom_${id}" class="grid" style="margin-top:6px; ${m.pec?.type==='str'?'display:none':''}">
+          <div><label>Rue</label><input value="${esc(m.pec?.rue||"")}" oninput="editPec('${id}','rue',this.value)"></div>
+          <div><label>N°</label><input value="${esc(m.pec?.num||"")}" oninput="editPec('${id}','num',this.value)"></div>
+          <div><label>CP</label><input value="${esc(m.pec?.cp||"")}" maxlength="4" oninput="editPec('${id}','cp',this.value)"></div>
+          <div><label>Localité</label><input value="${esc(m.pec?.ville||"")}" oninput="editPec('${id}','ville',this.value)"></div>
+        </div>
+        <div id="pec_str_${id}" style="margin-top:6px; ${m.pec?.type==='str'?'':'display:none'}">
+          <div class="grid">
+            <div><label>Nom</label><input value="${esc(m.pec?.name||"")}" oninput="editPec('${id}','name',this.value)"></div>
+            <div><label>Adresse</label><input value="${esc(m.pec?.addr||"")}" oninput="editPec('${id}','addr',this.value)"></div>
+            <div><label>CP</label><input value="${esc(m.pec?.cp||"")}" maxlength="4" oninput="editPec('${id}','cp',this.value)"></div>
+            <div><label>Localité</label><input value="${esc(m.pec?.ville||"")}" oninput="editPec('${id}','ville',this.value)"></div>
+          </div>
+        </div>
+      </fieldset>` : ``}
 
-  // Abonnement missions temps réel
-  subscribeKey(MISSIONS_KEY, data=>{
-    // Reconstruit missions depuis payload TV (idempotent)
-    const m = {};
-    Object.entries(data||{}).forEach(([id, row])=>{
-      if(id.startsWith('_') || row==null) return;
-      // On garde l’info TV (minimale) et merge si local plus riche
-      m[id] = { ...(missions[id]||{}), id, order:row.order, type:row.type, veh:row.vehicule, statutActuel:row.statut, timestamp:row.timestamp };
-      // CP/ville TV pour affichage si pas mieux
-      m[id].adresse = m[id].adresse || {};
-      if(row.code_postal) m[id].adresse.cp = row.code_postal;
-      if(row.localite)    m[id].adresse.ville = row.localite;
-    });
-    missions = m;
-    renderTable();
+      <fieldset>
+        <legend>Destination</legend>
+        <div class="renforts">
+          <label><input type="radio" name="dest_${id}" value="dom" ${m.destination?.type!=='str'?'checked':''} onchange="toggleDestType('${id}',this.value)"> Domicile</label>
+          <label><input type="radio" name="dest_${id}" value="str" ${m.destination?.type==='str'?'checked':''} onchange="toggleDestType('${id}',this.value)"> Hôpital / MR(S)</label>
+        </div>
+        <div id="dest_dom_${id}" class="grid" style="margin-top:6px; ${m.destination?.type==='str'?'display:none':''}">
+          <div><label>Rue</label><input value="${esc(m.destination?.rue||"")}" oninput="editDest('${id}','rue',this.value)"></div>
+          <div><label>N°</label><input value="${esc(m.destination?.num||"")}" oninput="editDest('${id}','num',this.value)"></div>
+          <div><label>CP</label><input value="${esc(m.destination?.cp||"")}" maxlength="4" oninput="editDest('${id}','cp',this.value)"></div>
+          <div><label>Localité</label><input value="${esc(m.destination?.ville||"")}" oninput="editDest('${id}','ville',this.value)"></div>
+        </div>
+        <div id="dest_str_${id}" style="margin-top:6px; ${m.destination?.type==='str'?'':'display:none'}">
+          <div class="grid">
+            <div><label>Nom</label><input value="${esc(m.destination?.name||"")}" oninput="editDest('${id}','name',this.value)"></div>
+            <div><label>Adresse</label><input value="${esc(m.destination?.addr||"")}" oninput="editDest('${id}','addr',this.value)"></div>
+            <div><label>CP</label><input value="${esc(m.destination?.cp||"")}" maxlength="4" oninput="editDest('${id}','cp',this.value)"></div>
+            <div><label>Localité</label><input value="${esc(m.destination?.ville||"")}" oninput="editDest('${id}','ville',this.value)"></div>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Renforts (détaillés)</legend>
+        <div class="subgrid">
+          ${renderRenfortBlock(id,m,"Pompiers","p")}
+          ${renderRenfortBlock(id,m,"RACS","r")}
+          ${renderRenfortBlock(id,m,"SMUR","s")}
+          ${renderRenfortBlock(id,m,"Ambu 112","a")}
+          ${renderRenfortBlock(id,m,"Police","pol")}
+        </div>
+      </fieldset>
+
+      ${m.type==="112" ? `
+      <div id="blk112_${id}" style="margin-top:6px">
+        <label>Centrale 112</label>
+        <select onchange="editField('${id}','centrale',this.value)">
+          ${["","Mons","Namur","Arlon","Liège","Leuven","Bruxelles","Autres"].map(x=>`<option ${m.centrale===x?"selected":""} value="${x}">${x||"—"}</option>`).join("")}
+        </select>
+        <label>Numéro mission (4 derniers)</label>
+        <input maxlength="4" value="${esc(m.num112||"")}" oninput="editField('${id}','num112',this.value)">
+        <label>Départ</label>
+        <select onchange="editField('${id}','depart112',this.value)">
+          ${["Normal","Médical"].map(x=>`<option ${m.depart112===x?"selected":""}>${x}</option>`).join("")}
+        </select>
+      </div>`:""}
+
+      <div class="status-btns">${statusButtons}</div>
+
+      <div class="row" style="margin-top:10px">
+        <div>
+          <label>Kilométrage départ</label>
+          <input type="number" id="kmdep_${id}" value="${esc(m.kmDep||"")}" oninput="updKm('${id}','dep',this.value)" placeholder="auto selon plaque">
+        </div>
+        <div>
+          <label>Kilométrage retour</label>
+          <input type="number" id="kmret_${id}" value="${esc(m.kmRet||"")}" oninput="updKm('${id}','ret',this.value)" placeholder="obligatoire avant clôture">
+        </div>
+      </div>
+
+      <div style="text-align:right;margin-top:10px">
+        <button class="secondary" onclick="closeMission('${id}')">Clôturer mission</button>
+      </div>
+    `;
+    box.appendChild(div);
   });
 }
-boot();
+
+/* sous-rendu renforts */
+function renderRenfortBlock(id,m,label,short){
+  const r=m.renforts?.[label]||{};
+  const chk = r.enabled ? "checked" : "";
+  const appelOpts=["","Appelé","Confirmé","Refusé","En route","Non dispo"].map(x=>`<option ${r.appel===x?"selected":""}>${x}</option>`).join("");
+  const spOpts=["","Inconnu","Oui","Non"].map(x=>`<option ${r.sur_place===x?"selected":""}>${x}</option>`).join("");
+  return `
+  <div>
+    <h4><label><input type="checkbox" ${chk} onchange="renfortToggle('${id}','${label}',this.checked)"> ${label}</label></h4>
+    <label>Statut d’appel</label>
+    <select onchange="renfortEdit('${id}','${label}','appel',this.value)">${appelOpts}</select>
+    <label>Sur place</label>
+    <select onchange="renfortEdit('${id}','${label}','sur_place',this.value)">${spOpts}</select>
+    <label>Commentaire</label>
+    <textarea oninput="renfortEdit('${id}','${label}','comment',this.value)">${esc(r.comment||"")}</textarea>
+  </div>`;
+}
+
+/* Editions inline */
+function editField(id,key,val){
+  const m=missions[id]; if(!m) return;
+  m[key]=val;
+  if(key==="type"){
+    // Affiche PEC si TMS
+    setTimeout(()=>renderActive(),0);
+  }
+  saveMissions();
+}
+function editAddr(id,key,val){
+  const m=missions[id]; if(!m) return;
+  m.adresse = m.adresse||{}; m.adresse[key]=val;
+  saveMissions();
+}
+function editAddrCP(id,val){
+  const m=missions[id]; if(!m) return;
+  m.adresse = m.adresse||{}; m.adresse.cp = val;
+  if(CP_MAP[val]) m.adresse.ville = CP_MAP[val];
+  saveMissions(); renderActive();
+}
+function updKm(id, which, val){
+  const m=missions[id]; if(!m) return;
+  if(which==="dep") m.kmDep = val;
+  if(which==="ret") m.kmRet = val;
+  saveMissions();
+}
+
+/* PEC / DEST edits */
+function togglePecType(id,kind){
+  const m=missions[id]; if(!m) return;
+  m.pec = m.pec||{}; m.pec.type = kind;
+  saveMissions(); renderActive();
+}
+function editPec(id,key,val){
+  const m=missions[id]; if(!m) return;
+  m.pec = m.pec||{type:'dom'}; m.pec[key]=val;
+  saveMissions();
+}
+function toggleDestType(id,kind){
+  const m=missions[id]; if(!m) return;
+  m.destination = m.destination||{}; m.destination.type = kind;
+  saveMissions(); renderActive();
+}
+function editDest(id,key,val){
+  const m=missions[id]; if(!m) return;
+  m.destination = m.destination||{type:'dom'}; m.destination[key]=val;
+  saveMissions();
+}
+
+/* Renforts */
+function renfortToggle(id,label,checked){
+  const m=missions[id]; if(!m) return;
+  m.renforts=m.renforts||{};
+  m.renforts[label]=m.renforts[label]||{};
+  m.renforts[label].enabled = !!checked;
+  saveMissions(); renderActive();
+}
+function renfortEdit(id,label,key,val){
+  const m=missions[id]; if(!m) return;
+  m.renforts=m.renforts||{}; m.renforts[label]=m.renforts[label]||{};
+  m.renforts[label][key]=val;
+  // synchro rapide: si on met appel/sur place/comment, on considère enabled
+  if(key!=="comment" || val.trim()!=="") m.renforts[label].enabled = true;
+  saveMissions();
+}
+
+/* ================== Actions de statut ================== */
+function setStatus(id, st){
+  const m = missions[id]; if(!m) return;
+  if(!m.statuts) m.statuts = {};
+  if(m.statuts[st]) return;
+  m.statuts[st] = hhmm(now());
+
+  if (st === "Dévié"){
+    const veh = m.veh;
+    const plaque = m.plaque || getPlateByVeh(veh);
+    const kmStart = bestKmForPlate(plaque);
+    const newM = {
+      id: String(Date.now()+1),
+      day: todayKey(),
+      veh, attr: (dispatchData[veh]?.attribution||m.attr||""),
+      type: "", motif: "",
+      plaque,
+      comment:"",
+      renforts: {},
+      centrale: "", num112: "", depart112: "Normal",
+      adresse: { rue:"", num:"", cp:"", ville:"" },
+      destination: { type:'dom', rue:"", num:"", cp:"", ville:"" },
+      statuts: { "Départ": hhmm(now()) },
+      kmDep: kmStart ? String(kmStart) : "",
+      kmRet: "",
+      done:false
+    };
+    missions[newM.id]=newM;
+    dispatchData[veh] = dispatchData[veh]||{};
+    dispatchData[veh].statut="Sorti";
+    saveDispatch();
+  }
+
+  if (st === "Mise indispo"){
+    const motif = prompt("Motif d'indisponibilité ?");
+    if (motif===null){ delete m.statuts[st]; saveMissions(); renderActive(); return; }
+    const v = m.veh;
+    dispatchData[v] = dispatchData[v]||{};
+    dispatchData[v].statut = "Indisponible";
+    dispatchData[v].commentaire = motif.trim();
+    saveDispatch();
+  }
+
+  if (st === "Annulé par CU112" || st === "Retour au poste"){
+    const v = m.veh;
+    dispatchData[v] = dispatchData[v]||{};
+    dispatchData[v].statut = "Disponible";
+    saveDispatch();
+  }
+
+  saveMissions();
+  renderActive();
+}
+
+/* ================== Clôture ================== */
+function closeMission(id){
+  const m = missions[id]; if(!m) return;
+  const hasGuard = Object.keys(m.statuts||{}).some(s=>CLOSE_GUARDS.has(s));
+  if(!hasGuard){
+    alert("Impossible de clôturer : activer l’un des statuts Dévié, Mise indispo ou Retour au poste.");
+    return;
+  }
+  const dep = parseInt(m.kmDep||"",10);
+  const ret = parseInt(m.kmRet||"",10);
+  if(!(dep>0 && ret>0)){
+    alert("Impossible de clôturer : indique les kilomètres départ et retour.");
+    return;
+  }
+  m.diffKm = ret - dep;
+  m.done = true;
+  m.heures = { ...m.statuts };
+
+  const v = m.veh;
+  if(dispatchData[v]){
+    dispatchData[v].km = String(ret);
+    if (!m.statuts["Mise indispo"]) dispatchData[v].statut = "Disponible";
+  }
+  saveDispatch(); saveMissions();
+
+  renderActive(); renderDone();
+}
+
+/* ================== Missions du jour ================== */
+function formatRenforts(r){
+  if(!r) return "—";
+  const arr=[];
+  for (const k of ["Pompiers","RACS","SMUR","Ambu 112","Police"]){
+    if(r[k]?.enabled) arr.push(k);
+  }
+  return arr.length?arr.join(", "):"—";
+}
+function renderDone(){
+  const tb = document.querySelector("#tableDone tbody");
+  tb.innerHTML="";
+  const today = todayKey();
+  const done = Object.values(missions).filter(m=>m.done && m.day===today);
+  done.sort((a,b)=> (b.statuts?.["Départ"]||"") < (a.statuts?.["Départ"]||"") ? -1 : 1);
+  done.forEach(m=>{
+    const heures = Object.entries(m.heures||{}).map(([k,v])=>`${esc(k)}: ${esc(v)}`).join("<br>");
+    tb.insertAdjacentHTML("beforeend",`
+      <tr>
+        <td><input type="checkbox" class="selDone" data-id="${esc(m.id)}"></td>
+        <td>${esc(m.veh)}</td>
+        <td>${esc(m.attr||"—")}</td>
+        <td>${esc(m.type||"—")}</td>
+        <td>${esc(m.motif||"—")}${m.comment?`<br><span class="small">💬 ${esc(m.comment)}</span>`:""}</td>
+        <td>${esc(formatRenforts(m.renforts))}</td>
+        <td>${(m.diffKm??"")}</td>
+        <td>${heures}</td>
+      </tr>
+    `);
+  });
+}
+
+/* ================== Suppression/Archivage missions du jour ================== */
+function deleteSelectedDone(){
+  const pw = prompt("Mot de passe administrateur :");
+  if (pw===null) return;
+  if (pw !== ADMIN_PASSWORD){ alert("Mot de passe incorrect."); return; }
+  const checks = Array.from(document.querySelectorAll(".selDone:checked"));
+  if (!checks.length){ alert("Sélectionne au moins une mission."); return; }
+  let movedCount=0;
+  checks.forEach(ch=>{
+    const id = ch.dataset.id;
+    const m = missions[id];
+    if(!m) return;
+    archive[id] = m;
+    delete missions[id];
+    movedCount++;
+  });
+  if (movedCount>0){ saveArchive(); saveMissions(); renderDone(); alert(`${movedCount} mission(s) déplacée(s) vers l’archive.`); }
+}
+
+/* ================== Boot & Sync ================== */
+window.onload=()=>{ loadAll(); populateVeh(); renderActive(); renderDone(); };
+window.addEventListener("storage", e=>{
+  if(e.key===DISPATCH_KEY){ dispatchData=JSON.parse(e.newValue||"{}"); populateVeh(); renderActive(); }
+  if(e.key===MISSIONS_KEY){ missions=JSON.parse(e.newValue||"{}"); renderActive(); renderDone(); }
+  if(e.key===MISSIONS_ARCHIVE_KEY){ archive=JSON.parse(e.newValue||"{}"); }
+});
 </script>
 </body>
 </html>
