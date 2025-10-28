@@ -3,363 +3,118 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Dispatch — Tableau de garde</title>
+<title>Dispatch — ACSRS</title>
 <style>
-  :root{
-    --bg:#0b0f14; --panel:#121821; --line:#223044;
-    --text:#e8eef5; --muted:#9fb2c9; --accent:#3a8bf2;
-    --ok:#2ecc71; --warn:#f1c40f; --bad:#e74c3c; --info:#00bcd4;
-  }
-  html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
-  .wrap{max-width:1200px;margin:0 auto;padding:16px}
-  h1{margin:0 0 10px}
-  .bar{display:flex;gap:8px;align-items:center;margin-bottom:10px}
-  .btn{background:var(--accent);border:0;border-radius:8px;padding:8px 12px;color:#fff;font-weight:700;cursor:pointer}
-  .btn.ghost{background:#0f1520;border:1px solid #2c3d52}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-  @media (max-width:1000px){ .grid{grid-template-columns:1fr} }
-  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-  input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #2c3d52;background:#0f1520;color:#fff;box-sizing:border-box}
-  textarea{min-height:60px;resize:vertical}
-  table{width:100%;border-collapse:collapse;margin-top:10px}
-  th,td{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:middle}
-  th{background:#162235;position:sticky;top:0;z-index:1}
-  .mut{color:#9fb2c9}
-  .status-pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #2c3d52;background:#0f1520;font-size:12px}
-  .stat-Disponible{background:#0f2416;border-color:#1e6b3a;color:#a8f5c4}
-  .stat-Sorti{background:#0f1d2a;border-color:#2a6fb3;color:#b8dcff}
-  .stat-Réserve{background:#27220f;border-color:#8a6f1e;color:#ffe7a8}
-  .stat-Indisponible{background:#2a1111;border-color:#a33;color:#ffc9c9}
-  .small{font-size:12px}
-
-  /* Modal d’attribution */
-  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center}
-  .modal .box{background:#121821;border:1px solid #2c3d52;border-radius:12px;padding:16px;min-width:320px;max-width:520px}
-  .modal h3{margin:0 0 10px}
-  .row-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+:root{
+  --bg:#0b0f14; --panel:#121821; --line:#223044; --text:#e8eef5; --muted:#93a7bf; --accent:#3a8bf2;
+  --ok:#2ecc71; --warn:#f1c40f; --bad:#e74c3c; --info:#00c2ff;
+}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+.wrap{max-width:1400px;margin:0 auto;padding:16px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+h1{margin:0}
+.btn{background:var(--accent);border:0;border-radius:8px;padding:10px 14px;color:#fff;font-weight:700;cursor:pointer}
+.btn.ghost{background:#0f1520;border:1px solid #2c3d52}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+input,select,textarea{width:100%;padding:10px;border-radius:8px;border:1px solid #2c3d52;background:#0f1520;color:#fff;box-sizing:border-box}
+textarea{min-height:72px;resize:vertical}
+.small{color:var(--muted);font-size:12px}
+.table{width:100%;border-collapse:collapse}
+th,td{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}
+th{background:#182030;position:sticky;top:0;z-index:1}
+.mut{color:var(--muted)}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #2c3d52;background:#0f1520;font-size:12px}
+.status-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:baseline}
+.st-Dispo{background:var(--ok)}
+.st-Sorti{background:var(--info)}
+.st-Indispo{background:var(--bad)}
+.toast{font-size:13px;margin-top:6px}
+.ok{color:#9fe3b1}
+.err{color:#ffd1cf}
 </style>
 </head>
 <body>
-<script src="store-bridge.js"></script>
+
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
+<!-- Bridge + Guard + Page JS -->
+<script src="js/store-bridge.js"></script>
+<script src="js/auth-guard.js"></script>
+<script>AuthGuard.ensureAuthOrRedirect();</script>
+<script src="js/dispatch.js" defer></script>
 
 <div class="wrap">
-  <h1>Dispatch — Tableau de garde</h1>
-  <div class="bar">
-    <button class="btn ghost" onclick="window.open('parametrages.html','_blank')">⚙️ Paramétrages (nouvelle fenêtre)</button>
-  </div>
-
-  <!-- Rôles de commandement -->
-  <div class="panel">
-    <h3>Rôles de commandement</h3>
-    <div class="grid">
-      <div><label>Officier de semaine</label><input id="r_semaine"></div>
-      <div><label>Officier de garde</label><input id="r_garde"></div>
-      <div><label>Responsable opérations</label><input id="r_ops"></div>
-      <div><label>Chef de groupe</label><input id="r_cg"></div>
-      <div><label>Chef de poste</label><input id="r_cp"></div>
-      <div><label>1er centraliste</label><input id="r_c1"></div>
-      <div><label>2e centraliste</label><input id="r_c2"></div>
+  <div class="topbar">
+    <h1>Dispatch</h1>
+    <div>
+      <button class="btn ghost" type="button" onclick="location.href='index.html'">Accueil</button>
+      <button class="btn ghost" type="button" onclick="location.href='parametres.html'">Paramètres</button>
+      <button class="btn ghost" type="button" onclick="location.href='tv-grid.html'">TV Grid</button>
+      <button class="btn ghost" type="button" onclick="location.href='missions.html'">Missions</button>
     </div>
   </div>
 
-  <!-- Notes -->
-  <div class="panel">
-    <h3>Notes de garde</h3>
+  <div class="card">
+    <h2>Rôles de commandement</h2>
+    <div class="grid">
+      <div><label>Officier de semaine</label><input id="r_off_sem" placeholder="Nom"></div>
+      <div><label>Officier de garde</label><input id="r_off_gar" placeholder="Nom"></div>
+      <div><label>Responsable opérations</label><input id="r_resp_ops" placeholder="Nom"></div>
+      <div><label>Chef de groupe</label><input id="r_chef_grp" placeholder="Nom"></div>
+      <div><label>Chef de poste</label><input id="r_chef_poste" placeholder="Nom"></div>
+      <div><label>1er centraliste</label><input id="r_cent1" placeholder="Nom"></div>
+      <div><label>2e centraliste</label><input id="r_cent2" placeholder="Nom"></div>
+    </div>
+    <div style="margin-top:10px">
+      <button class="btn" id="btnSaveRoles" type="button">Enregistrer les rôles</button>
+      <span class="small" id="rolesInfo"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Notes de garde</h2>
     <div class="grid">
       <div>
         <label>Matériel à récupérer</label>
-        <textarea id="n_mat"></textarea>
+        <textarea id="note_materiel" placeholder="Ex: Seringues, perfusions, oxygène…"></textarea>
       </div>
       <div>
-        <label>Informations / Remarques</label>
-        <textarea id="n_info"></textarea>
+        <label>Informations & remarques</label>
+        <textarea id="note_infos" placeholder="Ex: Attention route barrée, consigne équipe…"></textarea>
       </div>
-      <div class="small">
-        Les notes et rôles sont sauvegardés automatiquement et utilisés par les affichages TV (bannière).
-      </div>
+    </div>
+    <div style="margin-top:10px">
+      <button class="btn" id="btnSaveNotes" type="button">Enregistrer les notes</button>
+      <span class="small" id="notesInfo"></span>
     </div>
   </div>
 
-  <!-- Tableau de garde -->
-  <div class="panel">
-    <h3>Véhicules</h3>
-    <table id="tbl">
+  <div class="card" style="overflow:auto;max-height:62vh">
+    <h2 style="margin-top:0">Tableau de garde</h2>
+    <table class="table">
       <thead>
         <tr>
-          <th>Véhicule</th>
+          <th style="min-width:180px">Véhicule</th>
           <th>Attribution</th>
           <th>Chauffeur</th>
           <th>Soins</th>
           <th>3ᵉ homme</th>
-          <th>Km</th>
-          <th>Statut</th>
+          <th style="min-width:130px">Statut</th>
+          <th style="min-width:110px">Km</th>
           <th>Commentaire</th>
-          <th>Emplacement</th>
         </tr>
       </thead>
-      <tbody></tbody>
+      <tbody id="tblBody"><!-- JS --></tbody>
     </table>
-    <div class="small mut" id="hint">Chargement…</div>
+    <div class="small mut" id="dbg"></div>
   </div>
+
+  <div class="small toast" id="toaster"></div>
 </div>
-
-<!-- Modal de réassignation attribution LH* -->
-<div id="attrModal" class="modal">
-  <div class="box">
-    <h3>Réassigner l’attribution</h3>
-    <div id="attrText" class="mut" style="margin-bottom:8px"></div>
-    <label>Choisir le véhicule qui recevra l’attribution :</label>
-    <select id="attrTarget" style="width:100%;margin-top:6px"></select>
-    <div class="row-actions">
-      <button class="btn ghost" onclick="closeAttr()">Annuler</button>
-      <button class="btn" onclick="confirmAttr()">Confirmer</button>
-    </div>
-  </div>
-</div>
-
-<script>
-/* ================== Clés ================== */
-const DISPATCH_KEY = "dispatch_parc_vehicules";
-
-/* ================== Etats ================== */
-let data = {};
-let vehs = [];            // _settings.vehs (liste)
-let isEditing = false;    // évite “éjection” lors de saisie
-let typingTimer = null;
-
-/* ================== Utils ================== */
-const esc = s => String(s??"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const ATTRS_ORDER = ["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","TMS","Prev","OFF","LOG",""];
-function attrRank(a){
-  const i = ATTRS_ORDER.indexOf(a||"");
-  return i === -1 ? 999 : i;
-}
-function sortVehsByAttribution(list){
-  return [...list].sort((a,b)=>{
-    const ra = attrRank(a.attribution||"");
-    const rb = attrRank(b.attribution||"");
-    if(ra !== rb) return ra - rb;
-    return (a.id||"").localeCompare(b.id||"");
-  });
-}
-function statusClass(s){
-  if(s==="Disponible") return "stat-Disponible";
-  if(s==="Sorti") return "stat-Sorti";
-  if(s==="Réserve") return "stat-Réserve";
-  if(s==="Indisponible") return "stat-Indisponible";
-  return "";
-}
-
-/* ================== Chargement initial ================== */
-async function loadAll(){
-  data = await readKey(DISPATCH_KEY) || {};
-  vehs = Array.isArray(data?._settings?.vehs) ? data._settings.vehs : [];
-  renderAll();
-}
-
-/* ================== Rôle + Notes (bind) ================== */
-function bindRole(id, path){
-  const el = document.getElementById(id);
-  el.oninput = () => {
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(async ()=>{
-      await updateKey(DISPATCH_KEY, { [path]: el.value.trim() });
-    }, 500);
-  };
-}
-function bindNote(id, path){
-  const el = document.getElementById(id);
-  el.oninput = () => {
-    clearTimeout(typingTimer);
-    typingTimer = setTimeout(async ()=>{
-      await updateKey(DISPATCH_KEY, { [path]: el.value });
-    }, 500);
-  };
-}
-
-/* ================== Rendu ================== */
-function renderRolesNotes(){
-  const r = data._roles || {};
-  const n = data._notes || {};
-  document.getElementById('r_semaine').value = r.officier_semaine || "";
-  document.getElementById('r_garde').value   = r.officier_garde   || "";
-  document.getElementById('r_ops').value     = r.responsable_operations || "";
-  document.getElementById('r_cg').value      = r.chef_groupe      || "";
-  document.getElementById('r_cp').value      = r.chef_poste       || "";
-  document.getElementById('r_c1').value      = r.centraliste_1    || "";
-  document.getElementById('r_c2').value      = r.centraliste_2    || "";
-  document.getElementById('n_mat').value     = n.materiel || "";
-  document.getElementById('n_info').value    = n.infos    || "";
-}
-
-function renderTable(){
-  const tb = document.querySelector('#tbl tbody');
-  const list = sortVehsByAttribution(vehs);
-  if(!list.length){
-    tb.innerHTML = `<tr><td colspan="9" class="mut">Aucun véhicule configuré. Ouvre Paramétrages pour en ajouter.</td></tr>`;
-    return;
-  }
-  tb.innerHTML = "";
-  list.forEach(v=>{
-    const d = data[v.id] || {};
-    const statut = d.statut || "";
-    tb.insertAdjacentHTML('beforeend', `
-      <tr>
-        <td>
-          <b>${esc(v.name||v.id)}</b><br>
-          <span class="mut">${esc(v.plaque||"")}</span>
-        </td>
-        <td>
-          <select data-v="${esc(v.id)}" data-k="attribution">
-            ${ATTRS_ORDER.map(a=>`<option value="${a}" ${a===(d.attribution||v.attribution||"")?"selected":""}>${a||"—"}</option>`).join("")}
-          </select>
-        </td>
-        <td><input data-v="${esc(v.id)}" data-k="XO" value="${esc(d.XO||"")}" placeholder="Chauffeur"></td>
-        <td><input data-v="${esc(v.id)}" data-k="S"  value="${esc(d.S||"")}"  placeholder="Soins"></td>
-        <td><input data-v="${esc(v.id)}" data-k="PS" value="${esc(d.PS||"")}" placeholder="3e homme"></td>
-        <td><input data-v="${esc(v.id)}" data-k="km" value="${esc(d.km||"")}" inputmode="numeric" pattern="[0-9]*" placeholder="Km"></td>
-        <td>
-          <select data-v="${esc(v.id)}" data-k="statut" class="status-pill ${statusClass(statut)}">
-            ${["Disponible","Sorti","Réserve","Indisponible"].map(s=>`<option ${s===(statut||"")?"selected":""}>${s}</option>`).join("")}
-          </select>
-        </td>
-        <td><input data-v="${esc(v.id)}" data-k="commentaire" value="${esc(d.commentaire||"")}" placeholder="Remarque"></td>
-        <td><span class="mut">${esc(v.emplacement||"")}</span></td>
-      </tr>
-    `);
-  });
-
-  // Bind inputs (debounce + save partielle)
-  document.querySelectorAll('input[data-v],select[data-v]').forEach(el=>{
-    const vehId = el.dataset.v;
-    const key   = el.dataset.k;
-
-    // Couleur statut live
-    if(key==="statut"){
-      el.addEventListener('change', ()=>{
-        el.className = `status-pill ${statusClass(el.value)}`;
-      });
-    }
-
-    el.oninput = ()=>{
-      isEditing = true;
-      clearTimeout(typingTimer);
-      typingTimer = setTimeout(async ()=>{
-        let val = el.value;
-        if(key==="km"){ val = val.replace(/[^\d]/g,''); el.value = val; }
-        // Gestion des attributions uniques ici
-        if(key==="attribution"){
-          const ok = await handleAttributionChange(vehId, val);
-          if(!ok){ // revert
-            const cur = data[vehId]?.attribution || findVehById(vehId)?.attribution || "";
-            el.value = cur || "";
-            isEditing = false;
-            return;
-          }
-        }
-        await updateKey(DISPATCH_KEY, { [`${vehId}/${key}`]: val });
-        // conserve une copie locale merge
-        data[vehId] = { ...(data[vehId]||{}), [key]: val };
-        // si statut changé -> rien d’autre
-        isEditing = false;
-      }, 500);
-    };
-  });
-}
-
-function renderAll(){
-  renderRolesNotes();
-  renderTable();
-  document.getElementById('hint').textContent = `Véhicules: ${vehs.length}`;
-}
-
-/* ================== Attributions uniques LH* ================== */
-const LH_SET = new Set(["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8"]);
-let attr_ctx = null;
-
-async function handleAttributionChange(vehId, newAttr){
-  // Si vide, toujours OK
-  if(!newAttr){ return true; }
-  // Si non-LH*, OK (on laisse en doublon possible pour TMS/Prev/OFF/LOG si tu le souhaites)
-  if(!LH_SET.has(newAttr)) return true;
-
-  // Qui a déjà cette attribution ?
-  const holderId = vehs.map(v=>v.id).find(id=>{
-    const dv = data[id] || {};
-    const baseAttr = (dv.attribution || findVehById(id)?.attribution || "");
-    return baseAttr === newAttr && id !== vehId;
-  });
-  if(!holderId) return true;
-
-  // Ouvrir modal pour réassigner
-  openAttrModal(newAttr, vehId, holderId);
-  return false; // suspend l’écriture, on fera après confirmation
-}
-
-function openAttrModal(attr, toVeh, fromVeh){
-  attr_ctx = { attr, toVeh, fromVeh };
-  document.getElementById('attrText').innerHTML =
-    `L’attribution <b>${esc(attr)}</b> est déjà portée par <b>${esc(fromVeh)}</b>.<br>Voulez-vous la transférer à <b>${esc(toVeh)}</b> ?`;
-  const sel = document.getElementById('attrTarget');
-  sel.innerHTML = `
-    <option value="${esc(toVeh)}">${esc(toVeh)} (recevoir ${esc(attr)})</option>
-    <option value="${esc(fromVeh)}">${esc(fromVeh)} (garder ${esc(attr)})</option>
-  `;
-  document.getElementById('attrModal').style.display='flex';
-}
-function closeAttr(){
-  attr_ctx = null;
-  document.getElementById('attrModal').style.display='none';
-}
-async function confirmAttr(){
-  if(!attr_ctx) return closeAttr();
-  const choice = document.getElementById('attrTarget').value;
-  const { attr, toVeh, fromVeh } = attr_ctx;
-
-  if(choice === toVeh){
-    // Transfert : fromVeh perd l’attribution, toVeh la reçoit
-    const patch = {
-      [`${fromVeh}/attribution`]: "",
-      [`${toVeh}/attribution`]: attr
-    };
-    await updateKey(DISPATCH_KEY, patch);
-    data[fromVeh] = { ...(data[fromVeh]||{}), attribution:"" };
-    data[toVeh]   = { ...(data[toVeh]||{}), attribution:attr };
-  } // sinon pas de changement
-
-  closeAttr();
-  // Rafraîchir visuel (sans écraser saisie)
-  renderTable();
-}
-
-/* ================== Bind des champs rôles/notes ================== */
-bindRole('r_semaine', '_roles/officier_semaine');
-bindRole('r_garde',   '_roles/officier_garde');
-bindRole('r_ops',     '_roles/responsable_operations');
-bindRole('r_cg',      '_roles/chef_groupe');
-bindRole('r_cp',      '_roles/chef_poste');
-bindRole('r_c1',      '_roles/centraliste_1');
-bindRole('r_c2',      '_roles/centraliste_2');
-bindNote('n_mat',     '_notes/materiel');
-bindNote('n_info',    '_notes/infos');
-
-/* ================== Abonnement temps réel ================== */
-subscribeKey(DISPATCH_KEY, snap=>{
-  const incoming = snap || {};
-  // Merge non destructif pendant édition
-  if(isEditing){
-    // Ne pas remplacer les champs en cours de saisie; on garde seulement liste des vehs
-    vehs = Array.isArray(incoming?._settings?.vehs) ? incoming._settings.vehs : vehs;
-    return;
-  }
-  data = incoming;
-  vehs = Array.isArray(data?._settings?.vehs) ? data._settings.vehs : [];
-  renderAll();
-});
-
-/* ================== Boot ================== */
-loadAll();
-</script>
 </body>
 </html>
