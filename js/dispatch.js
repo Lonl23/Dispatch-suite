@@ -144,7 +144,6 @@
       const statut = d.statut || 'Disponible';
       const stDotClass =
         statut === 'Disponible' ? 'st-Dispo' :
-        statut === 'Sorti'      ? 'st-Sorti' :
         'st-Indispo';
 
       const tr = document.createElement('tr');
@@ -159,7 +158,7 @@
         <td>
           <span class="status-dot ${stDotClass}"></span>
           <select data-v="${id}" data-k="statut">
-            ${['Disponible','Sorti','Indisponible'].map(s =>
+            ${['Disponible','Indisponible'].map(s =>
               `<option ${s===(d.statut||'Disponible')?'selected':''}>${s}</option>`
             ).join('')}
           </select>
