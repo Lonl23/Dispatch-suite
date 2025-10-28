@@ -1,36 +1,35 @@
-<script>
-// Vérifie l’authentification et le mode avant d’autoriser la page
-(function(){
-  const current = location.pathname.split('/').pop(); // ex: dispatch.html
-  let s = null;
-  try {
-    s = JSON.parse(sessionStorage.getItem('auth_session') || 'null');
-  } catch(e){}
+// auth-guard.js — Protection des pages (redirige vers index si non connecté)
+// À inclure en haut de TOUTES les pages sensibles (dispatch, missions, tv-*, parametres)
 
-  // Si pas connecté → retour page login
-  if(!s || !s.username){
-    alert("Veuillez vous connecter avant d'accéder à cette page.");
-    location.replace("index.html");
+(function (global) {
+  'use strict';
+  if (!global.firebase?.auth) {
+    console.warn('[auth-guard] Firebase Auth non chargé (page publique ?)');
     return;
   }
 
-  // Vérifie le mode selon la page
-  const mode = s.mode;
-  const affichagePages = ["tv-grid.html", "tv-missions.html"];
-  const encodagePages = ["dispatch.html", "missions.html", "parametres.html"];
+  const auth = firebase.auth();
 
-  if (affichagePages.includes(current) && mode !== "affichage") {
-    alert("Cette page est réservée au mode AFFICHAGE. Retour à l’accueil.");
-    location.replace("index.html");
-    return;
-  }
-  if (encodagePages.includes(current) && mode !== "encodage") {
-    alert("Cette page est réservée au mode ENCODAGE. Retour à l’accueil.");
-    location.replace("index.html");
-    return;
+  // Appeler ceci au chargement de chaque page protégée
+  function ensureAuthOrRedirect() {
+    auth.onAuthStateChanged((user) => {
+      if (!user) {
+        // Redirection propre : on garde l’URL cible pour retour post-login si besoin
+        const target = encodeURIComponent(location.pathname.replace(/^\//,''));
+        location.replace(`index.html?next=${target}`);
+      }
+    });
   }
 
-  // Si tout est bon → autorise la page
-  console.log("✅ Accès autorisé :", current, "Mode:", mode);
-})();
-</script>
+  // Permet aussi de vérifier dans le code si besoin
+  function isAuthenticated() {
+    return !!auth.currentUser;
+  }
+
+  global.AuthGuard = {
+    ensureAuthOrRedirect,
+    isAuthenticated
+  };
+
+  console.log('[auth-guard] prêt');
+})(window);

@@ -1,61 +1,11 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Accueil – Dispatch</title>
-<style>
-  :root{--bg:#071022;--panel:#0f1724;--line:#213243;--txt:#eef3fb;--mut:#9fb3d0;--accent:#2f7bf6}
-  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Segoe UI,Inter,Arial,sans-serif}
-  .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-  .card{background:var(--panel);padding:22px;border-radius:14px;border:1px solid var(--line);box-shadow:0 6px 30px rgba(0,0,0,.5)}
-  h1{margin:0 0 12px;font-size:22px}
-  label{font-size:13px;color:var(--mut)}
-  input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);background:#081427;color:#fff;margin-top:6px;margin-bottom:12px}
-  button,.btn{display:inline-block;text-decoration:none;text-align:center;cursor:pointer;background:var(--accent);color:#fff;border:0;border-radius:10px;padding:10px 14px;font-weight:700}
-  .mut{color:var(--mut);font-size:13px}
-  .menu{display:grid;grid-template-columns:1fr;gap:14px;min-width:260px}
-  .hidden{display:none}
-  .topbar{position:fixed;top:0;left:0;right:0;background:#0b1426;border-bottom:1px solid var(--line);padding:8px 14px;display:flex;justify-content:space-between;align-items:center}
-  .logout{background:#b23b3b}
-</style>
-</head>
-<body>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accueil — ACSRS</title>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-
-<div id="topbar" class="topbar hidden">
-  <div><b>Dispatch</b> — connecté : <span id="who"></span></div>
-  <button class="btn logout" onclick="logout()">Déconnexion</button>
-</div>
-
-<div class="wrap">
-  <div id="loginCard" class="card" style="width:360px">
-    <h1>Connexion</h1>
-    <label>Email</label>
-    <input id="email" type="email" placeholder="centrale@acsrs.be" />
-    <label>Mot de passe</label>
-    <input id="password" type="password" placeholder="********" />
-    <button id="btnLogin">Se connecter</button>
-    <p id="msg" class="mut" style="margin-top:10px"></p>
-  </div>
-
-  <div id="menuCard" class="card hidden">
-    <h1>Choisir un mode</h1>
-    <div class="menu">
-      <a class="btn" href="dispatch.html" target="_blank">🛠️ Dispatch 🛠️ </a>
-      <a class="btn" href="parametres.html" target="_blank">⚙️ Paramétrages ⚙️ </a>
-      <a class="btn" href="tv-grid.html" target="_blank">📺 Tableau de garde 📺 </a>
-      <a class="btn" href="missions.html" target="_blank">📝 Encodage missions 📝 </a>
-      <a class="btn" href="tv-missions.html" target="_blank">🗺️ Missions en cours 🗺️ </a>
-
-    </div>
-  </div>
-</div>
-
-<script>
-/* Remplace par TA config Firebase */
+<!-- Fournis ta config Firebase ici (ou via window.FIREBASE_CONFIG avant les scripts) -->
 const firebaseConfig = {
   apiKey: "AIzaSyCP6ZClAectP8OPneAeoYGYdRYO0CvnbnQ",
   authDomain: "racs-dispatch.firebaseapp.com",
@@ -65,63 +15,98 @@ const firebaseConfig = {
   messagingSenderId: "589135271261",
   appId: "1:589135271261:web:d080a5da49a061929b84b4"
 };
-firebase.initializeApp(firebaseConfig);
-const auth = firebase.auth();
 
-const loginCard = document.getElementById('loginCard');
-const menuCard  = document.getElementById('menuCard');
-const msg       = document.getElementById('msg');
-const whoSpan   = document.getElementById('who');
-const topbar    = document.getElementById('topbar');
-
-document.getElementById('btnLogin').onclick = async ()=>{
-  msg.textContent = "Connexion…";
-  try{
-    const email = document.getElementById('email').value.trim();
-    const pass  = document.getElementById('password').value;
-    const res   = await auth.signInWithEmailAndPassword(email, pass);
-    const idTok = await res.user.getIdToken(true);
-    localStorage.setItem("dispatch_idToken", idTok);
-    localStorage.setItem("dispatch_uid", res.user.uid);
-    localStorage.setItem("dispatch_email", res.user.email || "");
-    showMenu(res.user);
-  }catch(e){
-    console.error(e);
-    msg.textContent = e.message || "Erreur de connexion";
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#121821; --line:#223044;
+    --text:#e8eef5; --muted:#93a7bf; --accent:#3a8bf2; --danger:#e74c3c;
   }
-};
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+  .wrap{max-width:880px;margin:0 auto;padding:16px}
+  h1{margin:8px 0 16px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:16px}
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+  input{width:100%;padding:10px;border-radius:8px;border:1px solid #2c3d52;background:#0f1520;color:#fff;box-sizing:border-box}
+  .btn{background:var(--accent);border:0;border-radius:8px;padding:10px 14px;color:#fff;font-weight:700;cursor:pointer}
+  .btn.ghost{background:#0f1520;border:1px solid #2c3d52}
+  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .menu{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:8px}
+  .tile{background:#0f1520;border:1px solid #2c3d52;border-radius:12px;padding:16px;cursor:pointer}
+  .tile:hover{border-color:#3a8bf2}
+  .mut{color:var(--muted)}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .err{color:#fff;background:var(--danger);border:1px solid #b93c30;padding:8px;border-radius:8px;margin-top:10px;display:none}
+</style>
+</head>
+<body>
 
-function showMenu(user){
-  whoSpan.textContent = user.email || user.uid;
-  topbar.classList.remove('hidden');
-  loginCard.classList.add('hidden');
-  menuCard.classList.remove('hidden');
-}
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-function showLogin(){
-  topbar.classList.add('hidden');
-  menuCard.classList.add('hidden');
-  loginCard.classList.remove('hidden');
-}
+<!-- Bridge & Auth -->
+<script src="store-bridge.js"></script>
+<script src="auth.js"></script>
+<script src="auth-guard.js"></script>
+<script src="index.js" defer></script>
 
-function logout(){
-  localStorage.removeItem("dispatch_idToken");
-  localStorage.removeItem("dispatch_uid");
-  localStorage.removeItem("dispatch_email");
-  auth.signOut().finally(()=>location.reload());
-}
+<div class="wrap">
+  <div class="topbar">
+    <h1>ACSRS — Accueil</h1>
+    <div id="userBox" class="mut">Non connecté</div>
+  </div>
 
-auth.onAuthStateChanged(async user=>{
-  if(user){
-    const t = await user.getIdToken();
-    localStorage.setItem("dispatch_idToken", t);
-    localStorage.setItem("dispatch_uid", user.uid);
-    localStorage.setItem("dispatch_email", user.email || "");
-    showMenu(user);
-  }else{
-    showLogin();
-  }
-});
-</script>
+  <!-- Bloc Login -->
+  <div id="loginCard" class="card">
+    <h2>Connexion</h2>
+    <div class="row">
+      <div>
+        <label>Email</label>
+        <input id="email" type="email" placeholder="centrale@acsrs.be" autocomplete="username" />
+      </div>
+      <div>
+        <label>Mot de passe</label>
+        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" />
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;align-items:center">
+      <button class="btn" id="btnLogin">Se connecter</button>
+      <button class="btn ghost" id="btnLoginDemo" title="Connexion rapide si compte de démo actif">Démo</button>
+    </div>
+    <div id="err" class="err"></div>
+    <p class="mut" style="margin-top:10px">Accès réservé. Si besoin d’un compte, contacte l’administrateur.</p>
+  </div>
+
+  <!-- Bloc Menu après login -->
+  <div id="menuCard" class="card" style="display:none">
+    <div class="topbar" style="margin:0 0 10px 0">
+      <h2>Que souhaites-tu faire ?</h2>
+      <button class="btn ghost" id="btnLogout">Déconnexion</button>
+    </div>
+    <div class="menu">
+      <div class="tile" data-href="parametres.html">
+        <h3>Paramètres</h3>
+        <p class="mut">Gérer les véhicules, plaques, attributions, emplacements (H1–H10, G1–G8, Extérieur), rôles et listes d’hôpitaux/CP.</p>
+      </div>
+      <div class="tile" data-href="dispatch.html">
+        <h3>Dispatch</h3>
+        <p class="mut">Encoder les équipages, statuts, km, notes (matériel, infos). Sauvegarde live Firebase.</p>
+      </div>
+      <div class="tile" data-href="tv-grid.html">
+        <h3>TV — Hall & Garage</h3>
+        <p class="mut">Affichage TV du hall des départs (H6→H10 | H5→H1) + Extérieur, garage, orphelins, bannière fluide.</p>
+      </div>
+      <div class="tile" data-href="missions.html">
+        <h3>Missions</h3>
+        <p class="mut">Créer/éditer les missions (numéro d’ordre, géocodage adresse exacte, renforts, statuts).</p>
+      </div>
+      <div class="tile" data-href="tv-missions.html">
+        <h3>TV — Missions</h3>
+        <p class="mut">Colonne missions + carte OSM (Leaflet), marqueurs colorés, numérotation persistante.</p>
+      </div>
+    </div>
+  </div>
+</div>
 </body>
 </html>
