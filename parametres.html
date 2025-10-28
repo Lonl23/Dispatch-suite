@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Paramètres — ACSRS</title>
+<title>Paramètres — Véhicules</title>
 <style>
 :root{--bg:#0b0f14;--panel:#121821;--line:#223044;--text:#e8eef5;--muted:#93a7bf;--accent:#3a8bf2;--danger:#e74c3c}
 html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
@@ -23,8 +23,10 @@ th{background:#182030}
 .small{color:var(--muted);font-size:12px}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 @media (max-width:900px){ .row{grid-template-columns:1fr} }
-.badge{display:inline-block;background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:4px 10px;margin-right:6px}
 .mut{color:var(--muted)}
+.badge{display:inline-block;background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:4px 10px;margin-right:6px}
+.ok{color:#9fe3b1}
+.err{color:#ffd1cf}
 </style>
 </head>
 <body>
@@ -42,7 +44,7 @@ th{background:#182030}
 
 <div class="wrap">
   <div class="topbar">
-    <h1>Paramètres</h1>
+    <h1>Paramètres — Véhicules</h1>
     <div>
       <button class="btn ghost" onclick="location.href='index.html'">Accueil</button>
       <button class="btn ghost" onclick="location.href='dispatch.html'">Dispatch</button>
@@ -52,74 +54,45 @@ th{background:#182030}
   </div>
 
   <div class="card">
-    <h2>Rôles de commandement</h2>
+    <h2>Ajouter / Éditer un véhicule</h2>
     <div class="grid">
-      <div><label>Officier de semaine</label><input id="r_off_sem" placeholder="Nom"></div>
-      <div><label>Officier de garde</label><input id="r_off_gar" placeholder="Nom"></div>
-      <div><label>Responsable opérations</label><input id="r_resp_ops" placeholder="Nom"></div>
-      <div><label>Chef de groupe</label><input id="r_chef_grp" placeholder="Nom"></div>
-      <div><label>Chef de poste</label><input id="r_chef_poste" placeholder="Nom"></div>
-      <div><label>1er centraliste</label><input id="r_cent1" placeholder="Nom"></div>
-      <div><label>2e centraliste</label><input id="r_cent2" placeholder="Nom"></div>
+      <div><label>Identifiant (ex: AS 55)</label><input id="v_id" placeholder="Unique"></div>
+      <div><label>Nom d’affichage (optionnel)</label><input id="v_name" placeholder="AS 55 La Hulpe"></div>
+      <div><label>Plaque</label><input id="v_plaque" placeholder="1-ABC-123"></div>
+      <div>
+        <label>Attribution</label>
+        <select id="v_attr">
+          <option value="">—</option>
+          <option>LH1</option><option>LH2</option><option>LH3</option><option>LH4</option>
+          <option>LH5</option><option>LH6</option><option>LH7</option><option>LH8</option>
+          <option>TMS</option><option>OFF</option><option>PREV</option>
+        </select>
+      </div>
+      <div>
+        <label>Emplacement</label>
+        <select id="v_slot">
+          <option value="">—</option>
+          <optgroup label="Hall H1–H10">
+            <option>H1</option><option>H2</option><option>H3</option><option>H4</option><option>H5</option>
+            <option>H6</option><option>H7</option><option>H8</option><option>H9</option><option>H10</option>
+          </optgroup>
+          <optgroup label="Garage G1–G8">
+            <option>G1</option><option>G2</option><option>G3</option><option>G4</option>
+            <option>G5</option><option>G6</option><option>G7</option><option>G8</option>
+          </optgroup>
+          <optgroup label="Extérieur"><option>Extérieur</option></optgroup>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:end">
+        <button class="btn" id="btnAddVeh">Ajouter</button>
+        <button class="btn ghost" id="btnResetVehForm">Réinitialiser</button>
+      </div>
     </div>
-    <div style="margin-top:12px">
-      <button class="btn" id="btnSaveRoles">Enregistrer les rôles</button>
-      <span class="small" id="rolesInfo"></span>
-    </div>
+    <div class="small" id="saveInfo"></div>
   </div>
 
   <div class="card">
-    <h2>Véhicules</h2>
-    <div class="row">
-      <div class="grid">
-        <div><label>Identifiant (ex: AS 55)</label><input id="v_id" placeholder="Unique"></div>
-        <div><label>Nom d’affichage (optionnel)</label><input id="v_name" placeholder="AS 55 La Hulpe"></div>
-        <div>
-          <label>Plaque</label>
-          <input id="v_plaque" placeholder="1-ABC-123">
-        </div>
-        <div>
-          <label>Attribution</label>
-          <select id="v_attr">
-            <option value="">—</option>
-            <option>LH1</option><option>LH2</option><option>LH3</option><option>LH4</option>
-            <option>LH5</option><option>LH6</option><option>LH7</option><option>LH8</option>
-            <option>TMS</option><option>OFF</option><option>PREV</option>
-          </select>
-        </div>
-        <div>
-          <label>Emplacement</label>
-          <select id="v_slot">
-            <option value="">—</option>
-            <optgroup label="Hall H1–H10">
-              <option>H1</option><option>H2</option><option>H3</option><option>H4</option><option>H5</option>
-              <option>H6</option><option>H7</option><option>H8</option><option>H9</option><option>H10</option>
-            </optgroup>
-            <optgroup label="Garage G1–G8">
-              <option>G1</option><option>G2</option><option>G3</option><option>G4</option>
-              <option>G5</option><option>G6</option><option>G7</option><option>G8</option>
-            </optgroup>
-            <optgroup label="Extérieur">
-              <option>Extérieur</option>
-            </optgroup>
-          </select>
-        </div>
-        <div style="display:flex;gap:8px;align-items:end">
-          <button class="btn" id="btnAddVeh">Ajouter</button>
-          <button class="btn ghost" id="btnResetVehForm">Réinitialiser</button>
-        </div>
-      </div>
-
-      <div>
-        <div class="small">Règles</div>
-        <ul class="small">
-          <li>Un <b>emplacement</b> ne peut être occupé que par <b>1 véhicule</b>.</li>
-          <li>Si un emplacement est déjà pris, on te propose d’<b>échanger</b> les deux.</li>
-          <li>Tu peux <b>éditer</b> un véhicule existant (nom, plaque, attribution, emplacement).</li>
-        </ul>
-      </div>
-    </div>
-
+    <h2>Véhicules enregistrés</h2>
     <div style="margin-top:12px;overflow:auto">
       <table class="table" id="vehTable">
         <thead>
@@ -131,15 +104,10 @@ th{background:#182030}
             <th>Actions</th>
           </tr>
         </thead>
-        <tbody><!-- rempli par JS --></tbody>
+        <tbody><!-- JS --></tbody>
       </table>
     </div>
-  </div>
-
-  <div class="card">
-    <h2>Infos</h2>
-    <p class="small">Les paramètres sont partagés avec Dispatch, TV Grid et Missions en temps réel.</p>
-    <div id="debug" class="small mut"></div>
+    <div class="small mut" id="debug"></div>
   </div>
 </div>
 </body>
