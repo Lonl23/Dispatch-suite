@@ -1,159 +1,198 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Tableau des missions</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TV — Missions en cours</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <style>
   :root{
-    --bg:#0a0f16;--panel:#121821;--line:#1f2c3e;
-    --text:#f1f5fa;
-    --muted:#9bb5d3;
-    --depart:#f0c000;--surplace:#ff9800;--route:#2196f3;
-    --hopital:#9c27b0;--retour:#2e7d32;
+    --bg:#0b0f14; --panel:#121821; --line:#223044;
+    --text:#e8eef5; --muted:#93a7bf;
+    --blue:#2e86ff; --green:#2ecc71; --red:#e74c3c;
+    --yellow:#ffd54f; --rose:#ff66b3; --orange:#ff8c42;
   }
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Segoe UI,Inter,system-ui,sans-serif;overflow:hidden;}
-  .layout{display:grid;grid-template-columns:1fr 2fr;height:100vh}
-  .missions{background:#0f1624;border-right:2px solid #223146;overflow-y:auto;padding:10px;}
-  .map{position:relative}
-  #map{height:100%;width:100%}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
+  .wrap{display:grid;grid-template-columns:1fr 2fr;gap:10px;height:100vh}
+  .left{display:flex;flex-direction:column;padding:10px}
+  .right{position:relative}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;display:flex;flex-direction:column;min-height:0}
+  .panel h2{margin:0;padding:10px;border-bottom:1px solid var(--line);font-size:18px;color:#cfe1ff}
+  .head{display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px}
+  .pill{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:4px 10px;color:#d9e7ff;font-weight:600}
+  .missions{flex:1;overflow:auto}
+  .list{padding:8px;display:flex;flex-direction:column;gap:8px}
+  .card{border:1px solid #2c3d52;border-radius:10px;padding:8px;background:#0f1624}
+  .line1{display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .num{background:#0f1520;border:1px solid #2c3d52;border-radius:8px;padding:2px 6px;font-weight:800}
+  .veh{font-weight:800}
+  .stat{font-size:13px;padding:2px 8px;border-radius:999px;border:1px solid #2c3d52;background:#0f1520}
+  .stat.red{background:var(--red);color:#fff;border-color:#b3392e}
+  .stat.blue{background:var(--blue);color:#fff;border-color:#2b6bd9}
+  .stat.yellow{background:var(--yellow);color:#222;border-color:#d1b12c}
+  .stat.rose{background:var(--rose);color:#222;border-color:#e255a6}
+  .stat.orange{background:var(--orange);color:#222;border-color:#d1732f}
+  .stat.green{background:var(--green);color:#fff;border-color:#1f8f57}
+  .blink{animation: blink 1s linear infinite}
+  @keyframes blink{0%,49%{filter:brightness(1)}50%,100%{filter:brightness(0.6)}}
+  .line2{display:flex;gap:8px;align-items:center;color:#cfe1ff;margin-top:4px;font-size:14px;flex-wrap:wrap}
+  .mut{color:#9fb2c9}
+  #map{position:absolute;inset:0}
+  .leaflet-container{background:#0a1020}
 
-  .mission{border:1px solid #223146;border-radius:8px;padding:8px;margin-bottom:8px;background:#121e31;display:flex;flex-direction:column;gap:4px;}
-  .mission .header{display:flex;justify-content:space-between;align-items:center;}
-  .mission .num{font-size:20px;font-weight:800;color:#cfe1ff;}
-  .mission .type{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
-  .mission .statut{font-size:13px;font-weight:700;}
-  .mission .loc{font-size:14px;color:#b8c9e0;}
-  .mission .equip{font-size:13px;color:#9bb5d3;}
-  .mission .time{font-size:12px;color:#8394aa;}
-  .mission.depart{border-left:4px solid var(--depart);}
-  .mission.surplace{border-left:4px solid var(--surplace);}
-  .mission.route{border-left:4px solid var(--route);}
-  .mission.hopital{border-left:4px solid var(--hopital);}
-  .mission.retour{border-left:4px solid var(--retour);}
+  .marker-badge{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:26px;height:26px;border-radius:50%;color:#fff;font-weight:800;border:2px solid #fff;
+    box-shadow:0 0 0 2px rgba(0,0,0,.25);
+  }
+  .m-red{background:var(--red)}
+  .m-blue{background:var(--blue)}
+  .m-yellow{background:var(--yellow);color:#222;border-color:#222}
+  .m-rose{background:var(--rose);color:#222;border-color:#222}
+  .m-orange{background:var(--orange);color:#222;border-color:#222}
+  .m-green{background:var(--green)}
+  .m-blink{animation: blink 1s linear infinite}
+
+  .missions::-webkit-scrollbar{height:8px;width:8px}
+  .missions::-webkit-scrollbar-thumb{background:#304059;border-radius:8px}
 </style>
 </head>
 <body>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="store-bridge.js"></script>
 
-<div class="layout">
-  <div class="missions" id="missionList">Chargement des missions…</div>
-  <div class="map"><div id="map"></div></div>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<div class="wrap">
+  <div class="left">
+    <div class="panel" style="min-height:0;flex:1">
+      <h2>Missions en cours</h2>
+      <div class="head">
+        <div class="pill" id="clock">--:--</div>
+        <div class="pill"><span id="count">0</span> mission(s)</div>
+      </div>
+      <div class="missions">
+        <div id="list" class="list"></div>
+      </div>
+    </div>
+  </div>
+  <div class="right">
+    <div id="map"></div>
+  </div>
 </div>
 
 <script>
-if(typeof readKey!=='function'){ alert("store-bridge.js manquant"); }
+const MISSIONS_CANON = "missions_canon";
+const MISSIONS_ACTIVE = "missions_actives";
+const MISSIONS_ORDER = "missions_order";
 
-const KEY="missions_actives";
-let map,baseMarker,markers={};
-const basePos=[50.730713,4.494666]; // Avenue René Soyer 3, 1310 La Hulpe
+const BASE = { lat: 50.7336, lon: 4.4857, label: "Base — Avenue René Soyer 3, 1310 La Hulpe" };
 
-// Initialisation carte
+let missions = {};
+let orders = {};
+let map, baseMarker, layerGroup;
+
+const esc = s => String(s??"").replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function tickClock(){ const d=new Date(), z=n=>String(n).padStart(2,'0'); clock.textContent=`${z(d.getDate())}/${z(d.getMonth()+1)}/${d.getFullYear()} — ${z(d.getHours())}:${z(d.getMinutes())}`;}
+setInterval(tickClock,1000); tickClock();
+
 function initMap(){
-  map=L.map('map',{zoomControl:false}).setView(basePos,12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom:18,attribution:'© OpenStreetMap'
-  }).addTo(map);
-  baseMarker=L.marker(basePos,{title:"Base – La Hulpe"}).addTo(map);
+  map = L.map('map',{ zoomControl:true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap'}).addTo(map);
+  baseMarker = L.marker([BASE.lat, BASE.lon]).addTo(map).bindPopup(BASE.label);
+  layerGroup = L.layerGroup().addTo(map);
+  map.setView([BASE.lat, BASE.lon], 11);
 }
 
-// Traduction statut -> classe couleur
-function statutClass(s){
-  switch(s){
-    case "Départ": return "depart";
-    case "Sur place": return "surplace";
-    case "En route vers l'hôpital": return "route";
-    case "À l'hôpital": return "hopital";
-    case "Retour disponible":
-    case "Retour indisponible": return "retour";
-    default: return "";
-  }
+function lastStatus(m){
+  const order = ["Appel","Départ","Sur place","PEC","En charge","Vers hôpital","Vers destination","Arrivé hôpital","À l'hôpital","À destination","Retour dispo","Rentré base","Retour au poste","Mise indispo","Indisponible","Annulé"];
+  let best="", idx=-1, t="";
+  const S=m.statuts||{};
+  Object.keys(S).forEach(k=>{ const i=order.indexOf(k); const tt=S[k]; if(i>idx || (i===idx && String(tt)>String(t))){best=k;idx=i;t=tt;}});
+  return {label:best||"", time:t||""};
+}
+function colorForStatus(st){
+  const s=(st||"").toLowerCase();
+  if (s.includes("indispo")) return { css:"red", marker:"m-red" };
+  if (s==="départ" || s.includes("depart")) return { css:"blue blink", marker:"m-blue m-blink" };
+  if (s.includes("sur place") || s==="pec") return { css:"yellow", marker:"m-yellow" };
+  if (s.includes("en charge") || s.includes("vers hôpital") || s.includes("vers destination")) return { css:"rose", marker:"m-rose" };
+  if (s.includes("hôpital") || s.includes("destination")) return { css:"orange", marker:"m-orange" };
+  return { css:"green", marker:"m-green" };
 }
 
-// Attribution des numéros fixes
-let nextNum=1;
-let numMap={}; // missionID -> numéro
-
-function assignNumbers(missions){
-  const used=new Set(Object.values(numMap));
-  missions.forEach(m=>{
-    if(!numMap[m.id]){
-      // cherche un numéro libre le plus petit
-      let n=1;while(used.has(n))n++;
-      numMap[m.id]=n;used.add(n);
-    }
-  });
-  // supprime les numéros des missions clôturées
-  const ids=new Set(missions.map(m=>m.id));
-  for(const id in numMap){
-    if(!ids.has(id)) delete numMap[id];
-  }
-}
-
-function renderMissions(data){
-  const list = Object.entries(data).filter(([id,m])=>!id.startsWith("_"))
-                .map(([id,m])=>({...m,id}));
-  assignNumbers(list);
-  // tri : plus récente en haut
-  list.sort((a,b)=> (b.timestamp||0) - (a.timestamp||0));
-
-  const container=document.getElementById("missionList");
-  if(list.length===0){ container.textContent="Aucune mission en cours."; return; }
-
-  container.innerHTML=list.map(m=>{
-    const c=statutClass(m.statut);
-    const loc=m.localite ? `${m.code_postal||''} ${m.localite}`.trim() : "—";
-    const equip=m.equipage||m.vehicule||"";
-    const h=new Date(m.timestamp||Date.now()).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-    return `<div class="mission ${c}">
-      <div class="header">
-        <div class="num">#${numMap[m.id]}</div>
-        <div class="type">${m.type||"Mission"}</div>
+function renderList(){
+  const box=document.getElementById('list');
+  const arr=Object.values(missions).filter(m=>!m.done);
+  arr.sort((a,b)=>{ const ta=lastStatus(a).time||a.updatedAt||a.id; const tb=lastStatus(b).time||b.updatedAt||b.id; return (tb>ta)?1:-1; });
+  count.textContent=arr.length; box.innerHTML="";
+  arr.forEach(m=>{
+    const ord = orders[m.id] || "?";
+    const {label,time}=lastStatus(m);
+    const cp = m?.adresse?.cp || m?.cp || "";
+    const ville = m?.adresse?.ville || m?.localite || "";
+    const loc = [cp,ville].filter(Boolean).join(" ");
+    const motif = m.motif || "—";
+    const veh = m.veh || m.vehicule || "—";
+    const color = colorForStatus(label);
+    const div=document.createElement('div'); div.className="card";
+    div.innerHTML = `
+      <div class="line1">
+        <div class="num">#${ord}</div>
+        <div class="veh">${esc(veh)}</div>
+        <div class="stat ${color.css}">${esc(label||"—")}</div>
       </div>
-      <div class="statut">${m.statut||"—"}</div>
-      <div class="loc">${loc}</div>
-      ${equip?`<div class="equip">${equip}</div>`:""}
-      <div class="time">${h}</div>
-    </div>`;
-  }).join("");
-
-  updateMap(list);
-}
-
-function updateMap(list){
-  // supprime anciens marqueurs
-  Object.values(markers).forEach(m=>map.removeLayer(m));
-  markers={};
-  list.forEach(m=>{
-    if(!m.lat||!m.lon) return;
-    const color = (()=>{
-      switch(m.statut){
-        case "Départ": return "gold";
-        case "Sur place": return "orange";
-        case "En route vers l'hôpital": return "deepskyblue";
-        case "À l'hôpital": return "violet";
-        case "Retour disponible":
-        case "Retour indisponible": return "limegreen";
-        default: return "red";
-      }
-    })();
-    const icon=L.divIcon({className:"",html:`<div style="background:${color};border:2px solid #fff;border-radius:50%;width:14px;height:14px"></div>`});
-    markers[m.id]=L.marker([m.lat,m.lon],{icon,title:`#${numMap[m.id]} ${m.type||''}`}).addTo(map);
+      <div class="line2">
+        <span class="mut">${esc(loc||"—")}</span>
+        <span>•</span>
+        <span>${esc(motif)}</span>
+        <span class="mut">• ${esc(time||"")}</span>
+      </div>`;
+    box.appendChild(div);
   });
 }
 
-async function refresh(){
-  try{
-    const data = await readKey(KEY)||{};
-    renderMissions(data);
-  }catch(e){ console.error(e); }
+function renderMap(){
+  layerGroup.clearLayers();
+  const arr=Object.values(missions).filter(m=>!m.done);
+  const bounds = L.latLngBounds(L.latLng(BASE.lat,BASE.lon), L.latLng(BASE.lat,BASE.lon));
+  arr.forEach(m=>{
+    const ord = orders[m.id] || "?";
+    const {label}=lastStatus(m);
+    const color=colorForStatus(label);
+    const veh=m.veh || m.vehicule || "—";
+    const motif=m.motif || "";
+    const cp=m?.adresse?.cp||"", ville=m?.adresse?.ville||"";
+    const loc=[cp,ville].filter(Boolean).join(" ");
+    const g=m.geo;
+    if(!g || typeof g.lat!=="number" || typeof g.lon!=="number") return;
+    const iconHtml = `<div class="marker-badge ${color.marker}">${ord}</div>`;
+    const icon = L.divIcon({ html:iconHtml, className:'', iconSize:[26,26], iconAnchor:[13,13] });
+    const mk = L.marker([g.lat,g.lon],{icon}).bindPopup(`<b>#${ord} — ${esc(veh)}</b><br>${esc(label)}<br>${esc(loc)}<br>${esc(motif)}`);
+    layerGroup.addLayer(mk); bounds.extend([g.lat,g.lon]);
+  });
+  if(arr.length) map.fitBounds(bounds.pad(0.2),{maxZoom:13}); else map.setView([BASE.lat,BASE.lon],11);
 }
 
-initMap();
-refresh();
-setInterval(refresh,5000);
+function mergeMissions(canon, active){
+  const out={};
+  Object.entries(canon||{}).forEach(([id,m])=> out[id]={...m,id});
+  Object.entries(active||{}).forEach(([id,m])=>{ out[id]=out[id]||{id}; Object.assign(out[id],m); });
+  return out;
+}
+
+let unsubCanon, unsubActive, unsubOrder;
+function subscribeAll(){
+  unsubCanon = subscribeKey(MISSIONS_CANON, c=>{ missions = mergeMissions(c, missions._activeMirror); missions._activeMirror = missions._activeMirror; renderList(); renderMap(); });
+  unsubActive = subscribeKey(MISSIONS_ACTIVE, a=>{ missions = mergeMissions(missions._canonMirror, a); missions._canonMirror = missions._canonMirror; missions._activeMirror=a; renderList(); renderMap(); });
+  unsubOrder = subscribeKey(MISSIONS_ORDER, o=>{ orders=o||{}; renderList(); renderMap(); });
+}
+setInterval(()=>{ renderList(); renderMap(); }, 5*60*1000);
+
+(function boot(){ initMap(); subscribeAll(); })();
 </script>
 </body>
 </html>

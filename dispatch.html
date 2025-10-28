@@ -1,283 +1,365 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Dispatch – Tableau de garde</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dispatch — Tableau de garde</title>
 <style>
-  :root{--bg:#071022;--panel:#0f1724;--line:#213243;--txt:#eef3fb;--mut:#9fb3d0}
-  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Segoe UI,Inter,Arial,sans-serif}
-  header{background:#111b2b;border-bottom:1px solid var(--line);padding:10px 16px;display:flex;align-items:center;justify-content:space-between}
-  header h1{margin:0;font-size:20px;color:#cfe1ff}
-  header .actions button{background:#2f7bf6;border:0;color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin:12px auto;width:92%;max-width:1200px}
-  h2{margin:0 0 10px;color:#cfe1ff;font-size:18px}
-  label{font-size:13px;color:var(--mut)}
-  input,select,textarea{width:100%;box-sizing:border-box;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:#081427;color:#fff}
-  textarea{min-height:80px;resize:vertical}
-  table{width:100%;border-collapse:collapse;margin-top:8px}
-  th,td{border:1px solid var(--line);padding:6px;text-align:center;vertical-align:top}
-  th{background:#13233b;color:#dbe7ff;font-size:13px}
-  .mut{color:var(--mut);font-size:12px}
-  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:10px}
-  .stat{background:#102030;border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center}
-  .warn{color:#ffcc66;font-size:13px;margin:0 12px}
+  :root{
+    --bg:#0b0f14; --panel:#121821; --line:#223044;
+    --text:#e8eef5; --muted:#9fb2c9; --accent:#3a8bf2;
+    --ok:#2ecc71; --warn:#f1c40f; --bad:#e74c3c; --info:#00bcd4;
+  }
+  html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+  .wrap{max-width:1200px;margin:0 auto;padding:16px}
+  h1{margin:0 0 10px}
+  .bar{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+  .btn{background:var(--accent);border:0;border-radius:8px;padding:8px 12px;color:#fff;font-weight:700;cursor:pointer}
+  .btn.ghost{background:#0f1520;border:1px solid #2c3d52}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  @media (max-width:1000px){ .grid{grid-template-columns:1fr} }
+  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+  input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #2c3d52;background:#0f1520;color:#fff;box-sizing:border-box}
+  textarea{min-height:60px;resize:vertical}
+  table{width:100%;border-collapse:collapse;margin-top:10px}
+  th,td{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:middle}
+  th{background:#162235;position:sticky;top:0;z-index:1}
+  .mut{color:#9fb2c9}
+  .status-pill{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #2c3d52;background:#0f1520;font-size:12px}
+  .stat-Disponible{background:#0f2416;border-color:#1e6b3a;color:#a8f5c4}
+  .stat-Sorti{background:#0f1d2a;border-color:#2a6fb3;color:#b8dcff}
+  .stat-Réserve{background:#27220f;border-color:#8a6f1e;color:#ffe7a8}
+  .stat-Indisponible{background:#2a1111;border-color:#a33;color:#ffc9c9}
+  .small{font-size:12px}
+
+  /* Modal d’attribution */
+  .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:100;align-items:center;justify-content:center}
+  .modal .box{background:#121821;border:1px solid #2c3d52;border-radius:12px;padding:16px;min-width:320px;max-width:520px}
+  .modal h3{margin:0 0 10px}
+  .row-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
 </style>
 </head>
 <body>
-
-<!-- Guard simple : nécessite d’être passé par index.html -->
-<script>
-(function(){
-  if(!localStorage.getItem("dispatch_idToken")) location.href="index.html";
-})();
-</script>
-
 <script src="store-bridge.js"></script>
 
-<header>
-  <h1>Tableau de garde – Dispatch</h1>
-  <div class="actions">
-    <button id="paramBtn" type="button">Paramétrages</button>
+<div class="wrap">
+  <h1>Dispatch — Tableau de garde</h1>
+  <div class="bar">
+    <button class="btn ghost" onclick="window.open('parametrages.html','_blank')">⚙️ Paramétrages (nouvelle fenêtre)</button>
   </div>
-</header>
 
-<p class="warn" id="roleWarn" style="display:none">
-  ⚠️ Vous êtes connecté en lecture seule (non <b>centrale@acsrs.be</b>). Les changements peuvent être refusés par la base.
-</p>
-
-<div class="card">
-  <h2>Rôles de commandement</h2>
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px">
-    <div><label>Officier de semaine</label><input data-role="officier_semaine"></div>
-    <div><label>Officier de garde</label><input data-role="officier_garde"></div>
-    <div><label>Responsable opérations</label><input data-role="responsable_operations"></div>
-    <div><label>Chef de groupe</label><input data-role="chef_groupe"></div>
-    <div><label>Chef de poste</label><input data-role="chef_poste"></div>
-    <div><label>1er centraliste</label><input data-role="centraliste_1"></div>
-    <div><label>2e centraliste</label><input data-role="centraliste_2"></div>
+  <!-- Rôles de commandement -->
+  <div class="panel">
+    <h3>Rôles de commandement</h3>
+    <div class="grid">
+      <div><label>Officier de semaine</label><input id="r_semaine"></div>
+      <div><label>Officier de garde</label><input id="r_garde"></div>
+      <div><label>Responsable opérations</label><input id="r_ops"></div>
+      <div><label>Chef de groupe</label><input id="r_cg"></div>
+      <div><label>Chef de poste</label><input id="r_cp"></div>
+      <div><label>1er centraliste</label><input id="r_c1"></div>
+      <div><label>2e centraliste</label><input id="r_c2"></div>
+    </div>
   </div>
-</div>
 
-<div class="card">
-  <h2>Notes globales</h2>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-    <div><label>🧰 Matériel à récupérer</label><textarea id="note_materiel"></textarea></div>
-    <div><label>ℹ️ Informations & remarques</label><textarea id="note_infos"></textarea></div>
+  <!-- Notes -->
+  <div class="panel">
+    <h3>Notes de garde</h3>
+    <div class="grid">
+      <div>
+        <label>Matériel à récupérer</label>
+        <textarea id="n_mat"></textarea>
+      </div>
+      <div>
+        <label>Informations / Remarques</label>
+        <textarea id="n_info"></textarea>
+      </div>
+      <div class="small">
+        Les notes et rôles sont sauvegardés automatiquement et utilisés par les affichages TV (bannière).
+      </div>
+    </div>
   </div>
-  <p class="mut">Ces notes s’affichent dans la bannière TV.</p>
-</div>
 
-<div class="card">
-  <h2>Véhicules</h2>
-  <div style="overflow:auto;max-height:60vh">
-    <table>
+  <!-- Tableau de garde -->
+  <div class="panel">
+    <h3>Véhicules</h3>
+    <table id="tbl">
       <thead>
         <tr>
           <th>Véhicule</th>
           <th>Attribution</th>
           <th>Chauffeur</th>
           <th>Soins</th>
-          <th>3ᵉ Homme</th>
+          <th>3ᵉ homme</th>
           <th>Km</th>
           <th>Statut</th>
           <th>Commentaire</th>
+          <th>Emplacement</th>
         </tr>
       </thead>
-      <tbody id="tbody"></tbody>
+      <tbody></tbody>
     </table>
+    <div class="small mut" id="hint">Chargement…</div>
   </div>
-  <div class="stats">
-    <div class="stat">Disponibles<br><b id="cDispo">0</b></div>
-    <div class="stat">Sortis<br><b id="cSorti">0</b></div>
-    <div class="stat">Réserve<br><b id="cReserve">0</b></div>
-    <div class="stat">Indisponibles<br><b id="cIndispo">0</b></div>
+</div>
+
+<!-- Modal de réassignation attribution LH* -->
+<div id="attrModal" class="modal">
+  <div class="box">
+    <h3>Réassigner l’attribution</h3>
+    <div id="attrText" class="mut" style="margin-bottom:8px"></div>
+    <label>Choisir le véhicule qui recevra l’attribution :</label>
+    <select id="attrTarget" style="width:100%;margin-top:6px"></select>
+    <div class="row-actions">
+      <button class="btn ghost" onclick="closeAttr()">Annuler</button>
+      <button class="btn" onclick="confirmAttr()">Confirmer</button>
+    </div>
   </div>
 </div>
 
 <script>
-/* ============ Config / état ============ */
-const STORAGE_KEY = "dispatch_parc_vehicules";
-const ATTRIBS = ["","LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","TMS","PREV","OFF"];
-const ORDER  = ["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","TMS","PREV","OFF"];
-const rankMap = Object.fromEntries(ORDER.map((k,i)=>[k,i]));
+/* ================== Clés ================== */
+const DISPATCH_KEY = "dispatch_parc_vehicules";
 
+/* ================== Etats ================== */
 let data = {};
-let pollTimer = null;
-let pollPaused = false;
+let vehs = [];            // _settings.vehs (liste)
+let isEditing = false;    // évite “éjection” lors de saisie
+let typingTimer = null;
 
-const isCentral = (localStorage.getItem("dispatch_email")||"").toLowerCase()==="centrale@acsrs.be";
-if(!isCentral) document.getElementById('roleWarn').style.display='block';
-
-const $ = id => document.getElementById(id);
-
-/* ============ Utils ============ */
-function attribRank(str){ const k=(str||"").toUpperCase(); return k in rankMap?rankMap[k]:999; }
-function sortVehsForDispatch(vehs){
-  return (vehs||[]).slice().sort((a,b)=>{
-    const da = data[a.id] || {};
-    const db = data[b.id] || {};
-    const aKey = (da.attribution || a.attrib || "").toUpperCase();
-    const bKey = (db.attribution || b.attrib || "").toUpperCase();
-    const ra = attribRank(aKey), rb = attribRank(bKey);
-    if(ra!==rb) return ra-rb;
+/* ================== Utils ================== */
+const esc = s => String(s??"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const ATTRS_ORDER = ["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8","TMS","Prev","OFF","LOG",""];
+function attrRank(a){
+  const i = ATTRS_ORDER.indexOf(a||"");
+  return i === -1 ? 999 : i;
+}
+function sortVehsByAttribution(list){
+  return [...list].sort((a,b)=>{
+    const ra = attrRank(a.attribution||"");
+    const rb = attrRank(b.attribution||"");
+    if(ra !== rb) return ra - rb;
     return (a.id||"").localeCompare(b.id||"");
   });
 }
-function ensure(){
-  if(!data || typeof data!=='object') data={};
-  if(!data._settings) data._settings = { vehs: [] };
-  if(!data._roles) data._roles = {
-    officier_semaine:"", officier_garde:"", responsable_operations:"",
-    chef_groupe:"", chef_poste:"", centraliste_1:"", centraliste_2:""
+function statusClass(s){
+  if(s==="Disponible") return "stat-Disponible";
+  if(s==="Sorti") return "stat-Sorti";
+  if(s==="Réserve") return "stat-Réserve";
+  if(s==="Indisponible") return "stat-Indisponible";
+  return "";
+}
+
+/* ================== Chargement initial ================== */
+async function loadAll(){
+  data = await readKey(DISPATCH_KEY) || {};
+  vehs = Array.isArray(data?._settings?.vehs) ? data._settings.vehs : [];
+  renderAll();
+}
+
+/* ================== Rôle + Notes (bind) ================== */
+function bindRole(id, path){
+  const el = document.getElementById(id);
+  el.oninput = () => {
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(async ()=>{
+      await updateKey(DISPATCH_KEY, { [path]: el.value.trim() });
+    }, 500);
   };
-  if(!data._notes) data._notes = { materiel:"", infos:"" };
-  (data._settings.vehs||[]).forEach(v=>{
-    if(!data[v.id]) data[v.id] = {
-      XO:"", S:"", PS:"", km:"", statut:"Disponible", commentaire:"",
-      attribution: v.attrib||"", plaque: v.plaque||"", name: v.name||v.id
-    };
-  });
 }
-function pausePolling(){ pollPaused = true; }
-function resumePolling(){ pollPaused = false; }
-function isEditingAField(){
-  const ae = document.activeElement;
-  return !!(ae && (ae.matches?.('input[data-v], select[data-v], textarea#note_materiel, textarea#note_infos, [data-role]')));
+function bindNote(id, path){
+  const el = document.getElementById(id);
+  el.oninput = () => {
+    clearTimeout(typingTimer);
+    typingTimer = setTimeout(async ()=>{
+      await updateKey(DISPATCH_KEY, { [path]: el.value });
+    }, 500);
+  };
 }
 
-/* ============ Rendu ============ */
-function renderAll(){ renderRoles(); renderNotes(); renderTable(); renderStats(); bindEditors(); }
-
-function renderRoles(){
-  document.querySelectorAll('[data-role]').forEach(inp=>{
-    const k = inp.dataset.role;
-    inp.value = data._roles[k] || "";
-  });
-}
-
-function renderNotes(){
-  $('note_materiel').value = data._notes.materiel || "";
-  $('note_infos').value    = data._notes.infos    || "";
+/* ================== Rendu ================== */
+function renderRolesNotes(){
+  const r = data._roles || {};
+  const n = data._notes || {};
+  document.getElementById('r_semaine').value = r.officier_semaine || "";
+  document.getElementById('r_garde').value   = r.officier_garde   || "";
+  document.getElementById('r_ops').value     = r.responsable_operations || "";
+  document.getElementById('r_cg').value      = r.chef_groupe      || "";
+  document.getElementById('r_cp').value      = r.chef_poste       || "";
+  document.getElementById('r_c1').value      = r.centraliste_1    || "";
+  document.getElementById('r_c2').value      = r.centraliste_2    || "";
+  document.getElementById('n_mat').value     = n.materiel || "";
+  document.getElementById('n_info').value    = n.infos    || "";
 }
 
 function renderTable(){
-  const tb = $('tbody'); tb.innerHTML="";
-  const vehsSorted = sortVehsForDispatch(data._settings.vehs || []);
-  vehsSorted.forEach(v=>{
-    const d = data[v.id];
-    tb.insertAdjacentHTML('beforeend',`
+  const tb = document.querySelector('#tbl tbody');
+  const list = sortVehsByAttribution(vehs);
+  if(!list.length){
+    tb.innerHTML = `<tr><td colspan="9" class="mut">Aucun véhicule configuré. Ouvre Paramétrages pour en ajouter.</td></tr>`;
+    return;
+  }
+  tb.innerHTML = "";
+  list.forEach(v=>{
+    const d = data[v.id] || {};
+    const statut = d.statut || "";
+    tb.insertAdjacentHTML('beforeend', `
       <tr>
-        <td><b>${d.name||v.id}</b><br><span class="mut">${d.plaque||""}</span></td>
         <td>
-          <select data-v="${v.id}" data-k="attribution">
-            ${ATTRIBS.map(a=>`<option ${a===(d.attribution||"")?"selected":""}>${a}</option>`).join("")}
+          <b>${esc(v.name||v.id)}</b><br>
+          <span class="mut">${esc(v.plaque||"")}</span>
+        </td>
+        <td>
+          <select data-v="${esc(v.id)}" data-k="attribution">
+            ${ATTRS_ORDER.map(a=>`<option value="${a}" ${a===(d.attribution||v.attribution||"")?"selected":""}>${a||"—"}</option>`).join("")}
           </select>
         </td>
-        <td><input data-v="${v.id}" data-k="XO" value="${d.XO||""}" placeholder="Chauffeur"></td>
-        <td><input data-v="${v.id}" data-k="S" value="${d.S||""}" placeholder="Soins"></td>
-        <td><input data-v="${v.id}" data-k="PS" value="${d.PS||""}" placeholder="3e"></td>
-        <td><input data-v="${v.id}" data-k="km" value="${d.km||""}" inputmode="numeric" placeholder="Km"></td>
+        <td><input data-v="${esc(v.id)}" data-k="XO" value="${esc(d.XO||"")}" placeholder="Chauffeur"></td>
+        <td><input data-v="${esc(v.id)}" data-k="S"  value="${esc(d.S||"")}"  placeholder="Soins"></td>
+        <td><input data-v="${esc(v.id)}" data-k="PS" value="${esc(d.PS||"")}" placeholder="3e homme"></td>
+        <td><input data-v="${esc(v.id)}" data-k="km" value="${esc(d.km||"")}" inputmode="numeric" pattern="[0-9]*" placeholder="Km"></td>
         <td>
-          <select data-v="${v.id}" data-k="statut">
-            ${["Disponible","Sorti","Réserve","Indisponible"].map(s=>`<option ${s===(d.statut||"")?"selected":""}>${s}</option>`).join("")}
+          <select data-v="${esc(v.id)}" data-k="statut" class="status-pill ${statusClass(statut)}">
+            ${["Disponible","Sorti","Réserve","Indisponible"].map(s=>`<option ${s===(statut||"")?"selected":""}>${s}</option>`).join("")}
           </select>
         </td>
-        <td><input data-v="${v.id}" data-k="commentaire" value="${d.commentaire||""}" placeholder="Remarque"></td>
+        <td><input data-v="${esc(v.id)}" data-k="commentaire" value="${esc(d.commentaire||"")}" placeholder="Remarque"></td>
+        <td><span class="mut">${esc(v.emplacement||"")}</span></td>
       </tr>
     `);
   });
-}
 
-/* ============ Bindings anti-éjection ============ */
-function bindEditors(){
-  // Véhicules
+  // Bind inputs (debounce + save partielle)
   document.querySelectorAll('input[data-v],select[data-v]').forEach(el=>{
-    el.onfocus = () => pausePolling();
+    const vehId = el.dataset.v;
+    const key   = el.dataset.k;
 
-    el.oninput = async ()=>{
-      const id = el.dataset.v, k = el.dataset.k;
-      if(k==="km") el.value = el.value.replace(/[^\d]/g,'');
-      if(!data[id]) data[id]={};
-      data[id][k] = el.value;
-      try{ await saveKey(STORAGE_KEY, data); }catch(e){ console.warn("Save refusée/erreur:", e); }
+    // Couleur statut live
+    if(key==="statut"){
+      el.addEventListener('change', ()=>{
+        el.className = `status-pill ${statusClass(el.value)}`;
+      });
+    }
 
-      if(k !== "statut" && k !== "attribution"){
-        renderStats(); // maj légère uniquement
-      }
+    el.oninput = ()=>{
+      isEditing = true;
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(async ()=>{
+        let val = el.value;
+        if(key==="km"){ val = val.replace(/[^\d]/g,''); el.value = val; }
+        // Gestion des attributions uniques ici
+        if(key==="attribution"){
+          const ok = await handleAttributionChange(vehId, val);
+          if(!ok){ // revert
+            const cur = data[vehId]?.attribution || findVehById(vehId)?.attribution || "";
+            el.value = cur || "";
+            isEditing = false;
+            return;
+          }
+        }
+        await updateKey(DISPATCH_KEY, { [`${vehId}/${key}`]: val });
+        // conserve une copie locale merge
+        data[vehId] = { ...(data[vehId]||{}), [key]: val };
+        // si statut changé -> rien d’autre
+        isEditing = false;
+      }, 500);
     };
-
-    el.onblur = ()=>{
-      renderStats();
-      // Si tri potentiellement affecté, on rerend la table ici (pas pendant la frappe)
-      const k = el.dataset.k;
-      if(k==="statut" || k==="attribution"){
-        renderTable();
-        // rebinder car on a réinjecté le DOM de la table
-        bindEditors();
-      }
-      setTimeout(()=>resumePolling(), 300);
-    };
-  });
-
-  // Rôles
-  document.querySelectorAll('[data-role]').forEach(inp=>{
-    inp.onfocus = pausePolling;
-    inp.oninput = async e=>{
-      const k = inp.dataset.role;
-      if(!data._roles) data._roles = {};
-      data._roles[k] = e.target.value;
-      try{ await saveKey(STORAGE_KEY, data); }catch(e){ console.warn("Save refusée/erreur:", e); }
-    };
-    inp.onblur = ()=> setTimeout(()=>resumePolling(), 300);
-  });
-
-  // Notes
-  ['note_materiel','note_infos'].forEach(id=>{
-    const t = document.getElementById(id);
-    if(!t) return;
-    t.onfocus = pausePolling;
-    t.oninput = async e=>{
-      if(!data._notes) data._notes = {};
-      data._notes[id==='note_materiel'?'materiel':'infos'] = e.target.value;
-      try{ await saveKey(STORAGE_KEY, data); }catch(e){ console.warn("Save refusée/erreur:", e); }
-    };
-    t.onblur = ()=> setTimeout(()=>resumePolling(), 300);
   });
 }
 
-/* ============ Stats ============ */
-function renderStats(){
-  const list = (data._settings.vehs||[]).map(v=>data[v.id]);
-  $('cDispo').textContent   = list.filter(x=>x.statut==="Disponible").length;
-  $('cSorti').textContent   = list.filter(x=>x.statut==="Sorti").length;
-  $('cReserve').textContent = list.filter(x=>x.statut==="Réserve").length;
-  $('cIndispo').textContent = list.filter(x=>x.statut==="Indisponible").length;
+function renderAll(){
+  renderRolesNotes();
+  renderTable();
+  document.getElementById('hint').textContent = `Véhicules: ${vehs.length}`;
 }
 
-/* ============ Polling “safe” ============ */
-async function safePoll(){
-  if(pollPaused || isEditingAField()) return;
-  const fresh = await readKey(STORAGE_KEY) || {};
-  if(JSON.stringify(fresh)!==JSON.stringify(data)){
-    data = fresh; ensure(); renderAll();
+/* ================== Attributions uniques LH* ================== */
+const LH_SET = new Set(["LH1","LH2","LH3","LH4","LH5","LH6","LH7","LH8"]);
+let attr_ctx = null;
+
+async function handleAttributionChange(vehId, newAttr){
+  // Si vide, toujours OK
+  if(!newAttr){ return true; }
+  // Si non-LH*, OK (on laisse en doublon possible pour TMS/Prev/OFF/LOG si tu le souhaites)
+  if(!LH_SET.has(newAttr)) return true;
+
+  // Qui a déjà cette attribution ?
+  const holderId = vehs.map(v=>v.id).find(id=>{
+    const dv = data[id] || {};
+    const baseAttr = (dv.attribution || findVehById(id)?.attribution || "");
+    return baseAttr === newAttr && id !== vehId;
+  });
+  if(!holderId) return true;
+
+  // Ouvrir modal pour réassigner
+  openAttrModal(newAttr, vehId, holderId);
+  return false; // suspend l’écriture, on fera après confirmation
+}
+
+function openAttrModal(attr, toVeh, fromVeh){
+  attr_ctx = { attr, toVeh, fromVeh };
+  document.getElementById('attrText').innerHTML =
+    `L’attribution <b>${esc(attr)}</b> est déjà portée par <b>${esc(fromVeh)}</b>.<br>Voulez-vous la transférer à <b>${esc(toVeh)}</b> ?`;
+  const sel = document.getElementById('attrTarget');
+  sel.innerHTML = `
+    <option value="${esc(toVeh)}">${esc(toVeh)} (recevoir ${esc(attr)})</option>
+    <option value="${esc(fromVeh)}">${esc(fromVeh)} (garder ${esc(attr)})</option>
+  `;
+  document.getElementById('attrModal').style.display='flex';
+}
+function closeAttr(){
+  attr_ctx = null;
+  document.getElementById('attrModal').style.display='none';
+}
+async function confirmAttr(){
+  if(!attr_ctx) return closeAttr();
+  const choice = document.getElementById('attrTarget').value;
+  const { attr, toVeh, fromVeh } = attr_ctx;
+
+  if(choice === toVeh){
+    // Transfert : fromVeh perd l’attribution, toVeh la reçoit
+    const patch = {
+      [`${fromVeh}/attribution`]: "",
+      [`${toVeh}/attribution`]: attr
+    };
+    await updateKey(DISPATCH_KEY, patch);
+    data[fromVeh] = { ...(data[fromVeh]||{}), attribution:"" };
+    data[toVeh]   = { ...(data[toVeh]||{}), attribution:attr };
+  } // sinon pas de changement
+
+  closeAttr();
+  // Rafraîchir visuel (sans écraser saisie)
+  renderTable();
+}
+
+/* ================== Bind des champs rôles/notes ================== */
+bindRole('r_semaine', '_roles/officier_semaine');
+bindRole('r_garde',   '_roles/officier_garde');
+bindRole('r_ops',     '_roles/responsable_operations');
+bindRole('r_cg',      '_roles/chef_groupe');
+bindRole('r_cp',      '_roles/chef_poste');
+bindRole('r_c1',      '_roles/centraliste_1');
+bindRole('r_c2',      '_roles/centraliste_2');
+bindNote('n_mat',     '_notes/materiel');
+bindNote('n_info',    '_notes/infos');
+
+/* ================== Abonnement temps réel ================== */
+subscribeKey(DISPATCH_KEY, snap=>{
+  const incoming = snap || {};
+  // Merge non destructif pendant édition
+  if(isEditing){
+    // Ne pas remplacer les champs en cours de saisie; on garde seulement liste des vehs
+    vehs = Array.isArray(incoming?._settings?.vehs) ? incoming._settings.vehs : vehs;
+    return;
   }
-}
-function startPolling(){
-  if(pollTimer) clearInterval(pollTimer);
-  pollTimer = setInterval(safePoll, 5000);
-}
+  data = incoming;
+  vehs = Array.isArray(data?._settings?.vehs) ? data._settings.vehs : [];
+  renderAll();
+});
 
-/* ============ Boot ============ */
-async function boot(){
-  if(typeof readKey!=='function'){ alert("store-bridge.js manquant"); return; }
-  data = await readKey(STORAGE_KEY) || {};
-  ensure(); renderAll(); startPolling();
-}
-boot();
-
-/* ============ Actions ============ */
-document.getElementById("paramBtn").onclick = ()=> window.open("parametres.html","_blank");
+/* ================== Boot ================== */
+loadAll();
 </script>
 </body>
 </html>

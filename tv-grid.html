@@ -1,374 +1,311 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Tableau de garde – TV</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Tableau de garde — TV</title>
 <style>
   :root{
-    --bg:#0a0f16; --panel:#121821; --line:#1f2c3e;
-    --text:#f1f5fa; --muted:#9bb5d3;
-    /* couleurs bloc entier par statut */
-    --dispo-bg:#15351c;  --dispo-bd:#2e7d32;   /* Disponible */
-    --indispo-bg:#3a1212;--indispo-bd:#e74c3c; /* Indisponible */
-    --depart-bg:#7a6200; --depart-bd:#f0c000;  /* Départ */
-    --surplace-bg:#7a3f00;--surplace-bd:#ff9800;/* Sur place */
-    --route-bg:#00416a;  --route-bd:#2196f3;   /* En route hôpital */
-    --hopital-bg:#3a006e;--hopital-bd:#9c27b0; /* À l'hôpital */
-    --ticker-bg:#a00020; --ticker-fg:#fff;
+    --bg:#0a0f16; --panel:#111826; --line:#1e2a3d;
+    --text:#eaf1fb; --muted:#9bb2cd; --accent:#3a8bf2;
+    --ok:#1b5e20; --ok-fg:#c8facc;
+    --busy:#0d47a1; --busy-fg:#d7e9ff; /* mission active */
+    --bad:#7f1d1d; --bad-fg:#ffd6d6;   /* indisponible */
+    --empty:#2a3446; --empty-fg:#cbd5e1; /* emplacement vide */
+    --ticker-bg:#a40000; --ticker-fg:#fff;
   }
-
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
-    font-family:Segoe UI,Inter,system-ui,sans-serif;overflow:hidden}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
 
   /* Header */
-  .header{display:flex;justify-content:space-between;align-items:center;
-    padding:8px 16px;background:#0d1523;border-bottom:2px solid var(--line)}
-  .header h1{margin:0;font-size:24px;color:#cfe1ff}
-  .head-right{display:flex;gap:12px;align-items:center}
-  .pill{background:#0f1624;border:1px solid #223146;border-radius:999px;
-    padding:4px 10px;font-weight:600;font-size:14px}
+  .header{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:#0e1522;border-bottom:1px solid var(--line)}
+  .title{font-size:26px;font-weight:800;color:#cfe1ff}
+  .meta{display:flex;gap:14px;align-items:center}
+  .pill{background:#0f1520;border:1px solid #2b3a50;border-radius:999px;padding:6px 12px;color:#d9e7ff;font-weight:600}
 
   /* Roles */
-  .roles{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;
-    padding:6px 10px;background:#101a2a;border-bottom:1px solid #223146}
-  .role{background:#142035;border:1px solid #223146;border-radius:8px;
-    padding:4px 8px;min-width:140px;text-align:center;font-size:14px}
-  .role span{display:block;color:#9bb5d3;font-size:11px}
+  .roles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:8px 12px;background:#0f1626;border-bottom:1px solid var(--line)}
+  .role{background:#0f1520;border:1px solid #2b3a50;border-radius:10px;padding:6px 10px;min-width:160px;text-align:center}
+  .role span{display:block;color:#9bb2cd;font-size:12px}
 
-  /* Legend */
-  .legend{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;
-    padding:6px 10px;border-bottom:1px solid #223146;background:#0f1624}
-  .legend .item{display:flex;align-items:center;gap:8px;color:#cfe1ff;font-size:13px}
-  .chip{width:18px;height:12px;border:2px solid;border-radius:3px}
-  .chip.dispo  {background:var(--dispo-bg);  border-color:var(--dispo-bd)}
-  .chip.indispo{background:var(--indispo-bg);border-color:var(--indispo-bd)}
-  .chip.depart {background:var(--depart-bg); border-color:var(--depart-bd)}
-  .chip.surplace{background:var(--surplace-bg);border-color:var(--surplace-bd)}
-  .chip.route  {background:var(--route-bg);  border-color:var(--route-bd)}
-  .chip.hopital{background:var(--hopital-bg);border-color:var(--hopital-bd)}
+  /* Main grids container */
+  .main{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px;height:calc(100vh - 48px - 44px - 48px); /* header + roles + ticker */}
+  @media (max-width:1400px){ .main{grid-template-columns:1fr} }
 
-  /* Main split: left hall / right garage */
-  .main{display:grid;grid-template-columns:1fr 1fr;gap:10px;
-    height:calc(100vh - 180px);padding:10px;box-sizing:border-box;overflow:hidden}
-  .pane{background:#0f1624;border:1px solid #223146;border-radius:12px;
-    padding:8px;overflow:auto}
-  .section-title{margin:0 0 6px 0;color:#cfe1ff;font-size:16px;text-align:center}
-  .frame{border:2px solid #33465f;border-radius:10px;padding:10px}
+  /* Hall des départs */
+  .section{background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;min-height:0}
+  .section h2{margin:0;padding:10px 12px;border-bottom:1px solid var(--line);font-size:18px;color:#cfe1ff}
+  .hall{display:grid;grid-template-columns:repeat(6, 1fr);gap:8px;padding:10px;overflow:auto}
+  @media (max-width:1400px){ .hall{grid-template-columns:repeat(4,1fr);} }
 
-  /* Generic slot */
-  .slot{
-    background:#121e31;border:2px solid #425672;border-radius:10px;
-    padding:6px 10px;min-height:96px;
-    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center
+  /* Garage */
+  .garage{display:grid;grid-template-columns:repeat(4,1fr);grid-auto-rows:1fr;gap:8px;padding:10px;overflow:auto}
+  /* Approche “plan” : on ajuste les hauteurs pour verticaux/horizontaux */
+  .spot{border-radius:12px;border:1px solid #2a3a56;padding:8px;display:flex;flex-direction:column;justify-content:center}
+  .spot.vertical{grid-row:span 2;}   /* G1, G6, G7, G8 */
+  .spot.horizontal{grid-column:span 1;} /* G2–G5 */
+  .label{font-size:11px;color:#9bb2cd;margin-bottom:4px}
+
+  /* Vehicle card inside a spot */
+  .veh{
+    border-radius:10px;padding:8px;
+    display:flex;flex-direction:column;gap:3px;
+    min-height:72px;
   }
-  .slot .veh{font-size:16px;font-weight:800}
-  .slot .sub{font-size:12px;color:#cfe1ff;opacity:.9;margin-top:2px}
-  .slot .crew{font-size:12px;color:#b8c9e0;margin-top:2px}
-  .slot .km{font-size:12px;color:#9bb5d3;margin-top:2px}
+  .veh .l1{font-weight:800}
+  .veh .l2,.veh .l3{font-size:13px;color:#e7eefc}
+  .empty{background:var(--empty);color:var(--empty-fg);text-align:center}
+  .ok{background:var(--ok);color:var(--ok-fg)}
+  .busy{background:var(--busy);color:var(--busy-fg)}
+  .bad{background:var(--bad);color:var(--bad-fg)}
 
-  .slot.dispo{background:var(--dispo-bg);border-color:var(--dispo-bd)}
-  .slot.indispo{background:var(--indispo-bg);border-color:var(--indispo-bd)}
-  .slot.depart{background:var(--depart-bg);border-color:var(--depart-bd)}
-  .slot.surplace{background:var(--surplace-bg);border-color:var(--surplace-bd)}
-  .slot.route{background:var(--route-bg);border-color:var(--route-bd)}
-  .slot.hopital{background:var(--hopital-bg);border-color:var(--hopital-bd)}
+  /* Banner */
+  .ticker{height:48px;background:var(--ticker-bg);color:var(--ticker-fg);display:flex;align-items:center;overflow:hidden;border-top:1px solid #7a0016}
+  .marquee{white-space:nowrap;display:flex;gap:64px}
+  .scroll{display:inline-block;will-change:transform}
+  .scroll .chunk{display:inline-flex;gap:12px;align-items:center;margin-right:64px}
+  .tag{background:#7a0016;border:1px solid #ffccd5;padding:2px 8px;border-radius:6px;font-weight:700}
 
-  /* Hall layout (gauche) */
-  .ext-row{display:flex;justify-content:center;margin-bottom:10px}
-  .slot.ext{width:92%}
-  .hall-grid{display:grid;grid-template-columns:1fr 1fr;column-gap:12px;row-gap:10px}
-  .stack{display:flex;flex-direction:column;gap:10px}
-
-  /* Garage – disposition selon tes consignes précédentes */
-  .garage{
-    display:grid;gap:10px;
-    grid-template-columns: 1.05fr 1fr 1.15fr;  /* gauche / centre / droite */
-    grid-template-rows: auto auto auto auto 6px auto; /* 4 rangées haut + sep + bas */
-    grid-template-areas:
-      "g1    e1   g2"
-      "g1    g8   g3"
-      "e2    g8   g4"
-      "e3    e4   g5"
-      "sep   sep  sep"
-      "e5    g6   g7";
-  }
-  .g1{grid-area:g1} .g8{grid-area:g8}
-  .g2{grid-area:g2} .g3{grid-area:g3} .g4{grid-area:g4} .g5{grid-area:g5}
-  .g6{grid-area:g6} .g7{grid-area:g7}
-  .e1{grid-area:e1} .e2{grid-area:e2} .e3{grid-area:e3} .e4{grid-area:e4} .e5{grid-area:e5}
-  .sep-wide{grid-area:sep;height:3px;background:#33465f;border-radius:2px}
-
-  .tall{min-height:220px}   /* G1, G8, G6, G7 */
-  .horiz{min-height:70px}   /* G2..G5 horizontaux */
-
-  /* Bannière – une seule ligne continue */
-  .banner{position:absolute;left:0;right:0;bottom:0;height:42px;background:var(--ticker-bg);
-    color:var(--ticker-fg);display:flex;align-items:center;overflow:hidden;border-top:1px solid #7a0016}
-  .line{white-space:nowrap;display:inline-block;padding-left:100%}
-  @keyframes slide {
+  /* Smooth infinite loop: two identical tracks */
+  @keyframes loop {
     from { transform: translateX(0); }
-    to   { transform: translateX(-50%); } /* on défile d’une demi-longueur, contenu répété >= 2× */
+    to { transform: translateX(-50%); }
   }
+  .track{
+    display:inline-block;
+    animation: loop 60s linear infinite;
+  }
+  .marquee:hover .track{ animation-play-state: paused; }
 </style>
 </head>
 <body>
 
+<!-- Firebase bridge -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="store-bridge.js"></script>
 
-<!-- Header -->
 <div class="header">
-  <h1>Tableau de garde</h1>
-  <div class="head-right">
-    <div id="meteo" class="pill">🌦 — °C</div>
-    <div id="datetime" class="pill">--:--</div>
+  <div class="title">Tableau de garde</div>
+  <div class="meta">
+    <div class="pill" id="meteo">—</div>
+    <div class="pill" id="clock">--:--</div>
   </div>
 </div>
 
-<!-- Roles -->
 <div id="roles" class="roles">Chargement des rôles…</div>
 
-<!-- Legend -->
-<div class="legend" id="legend">
-  <div class="item"><span class="chip dispo"></span> Disponible</div>
-  <div class="item"><span class="chip indispo"></span> Indisponible</div>
-  <div class="item"><span class="chip depart"></span> Départ</div>
-  <div class="item"><span class="chip surplace"></span> Sur place</div>
-  <div class="item"><span class="chip route"></span> En route hôpital</div>
-  <div class="item"><span class="chip hopital"></span> À l’hôpital</div>
-</div>
-
-<!-- Main: Hall + Garage -->
 <div class="main">
-  <!-- Hall des départs -->
-  <div class="pane">
-    <h2 class="section-title">Hall des départs</h2>
-    <div class="frame">
-      <div class="ext-row">
-        <div class="slot ext" id="slot-EXT">
-          <div class="veh" style="opacity:.85">—</div>
-          <div class="sub"></div><div class="crew"></div><div class="km"></div>
-        </div>
-      </div>
-      <div class="hall-grid">
-        <div class="stack">
-          <div class="slot" id="slot-H6"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div>
-          <div class="slot" id="slot-H7"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div>
-          <div class="slot" id="slot-H8"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div>
-          <div class="slot" id="slot-H9"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div>
-          <div class="slot" id="slot-H10"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div>
-        </div>
-        <div class="stack">
-          <div class="slot" id="slot-H5"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div>
-          <div class="slot" id="slot-H4"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div>
-          <div class="slot" id="slot-H3"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div>
-          <div class="slot" id="slot-H2"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div>
-          <div class="slot" id="slot-H1"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div>
-        </div>
-      </div>
-    </div>
+  <div class="section">
+    <h2>Hall des départs</h2>
+    <div id="hall" class="hall"></div>
   </div>
 
-  <!-- Garage -->
-  <div class="pane">
-    <h2 class="section-title">Garage</h2>
-    <div class="frame">
-      <div class="garage">
-        <!-- 4 rangées haut -->
-        <div class="g1"><div id="slot-G1" class="slot tall"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div></div>
-        <div class="e1"></div>
-        <div class="g2"><div id="slot-G2" class="slot horiz"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div></div>
-
-        <div class="g1"></div>
-        <div class="g8"><div id="slot-G8" class="slot tall"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div></div>
-        <div class="g3"><div id="slot-G3" class="slot horiz"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div></div>
-
-        <div class="e2"></div>
-        <div class="g8"></div>
-        <div class="g4"><div id="slot-G4" class="slot horiz"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div></div>
-
-        <div class="e3"></div>
-        <div class="e4"></div>
-        <div class="g5"><div id="slot-G5" class="slot horiz"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div></div>
-
-        <!-- Séparateur -->
-        <div class="sep-wide"></div>
-
-        <!-- Bas -->
-        <div class="e5"></div>
-        <div class="g6"><div id="slot-G6" class="slot tall"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div></div>
-        <div class="g7"><div id="slot-G7" class="slot tall"><div class="veh">—</div><div class="sub"></div><div class="crew"></div><div class="km"></div></div></div>
-      </div>
-    </div>
+  <div class="section">
+    <h2>Garage</h2>
+    <div id="garage" class="garage"></div>
   </div>
 </div>
 
-<!-- Bannière (une ligne continue) -->
-<div class="banner"><div id="ticker" class="line"></div></div>
+<div class="ticker">
+  <div class="marquee">
+    <div id="band1" class="track"></div>
+    <div id="band2" class="track" aria-hidden="true"></div>
+  </div>
+</div>
 
 <script>
-if(typeof readKey!=='function'){ alert("store-bridge.js manquant"); }
+/* ====== Keys ====== */
+const DISPATCH_KEY = "dispatch_parc_vehicules";
+const MISSIONS_KEY = "missions_actives";
 
-const KEY="dispatch_parc_vehicules";
-let data={};
+/* ====== State ====== */
+let dispatchData = {};
+let vehList = [];            // _settings.vehs
+let missionsByVeh = {};      // veh -> mission active payload(s)
+let bannerText = "";
 
-const $ = s => document.querySelector(s);
-const esc = s => String(s??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+/* ====== Slots ====== */
+const HALL_SLOTS = ["H1","H2","H3","H4","H5","H6","H7","H8","H9","H10","Extérieur"];
+const GARAGE_SLOTS = ["G1","G2","G3","G4","G5","G6","G7","G8"]; // supporte G1..G8
 
-/* Date + heure */
-function tick(){
+/* ====== UI helpers ====== */
+const esc = s => String(s??"").replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+function z2(n){ return String(n).padStart(2,'0'); }
+
+/* Header: clock + meteo */
+function tickClock(){
   const d=new Date();
-  const jours=["Dimanche","Lundi","Mardi","Mercredi","Jeudi","Vendredi","Samedi"];
-  const mois=["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
-  $('#datetime').textContent=`${jours[d.getDay()]} ${String(d.getDate()).padStart(2,'0')} ${mois[d.getMonth()]} ${d.getFullYear()} — ${d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}`;
+  const jours=["Dim","Lun","Mar","Mer","Jeu","Ven","Sam"];
+  const mois=["janv","févr","mars","avr","mai","juin","juil","août","sept","oct","nov","déc"];
+  document.getElementById("clock").textContent =
+    `${jours[d.getDay()]} ${z2(d.getDate())} ${mois[d.getMonth()]} ${d.getFullYear()} — ${z2(d.getHours())}:${z2(d.getMinutes())}`;
 }
-setInterval(tick,1000); tick();
-
-/* Météo La Hulpe */
-async function meteo(){
+setInterval(tickClock, 1000); tickClock();
+async function loadMeteo(){
   try{
-    const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=50.73&longitude=4.48&current=temperature_2m,weather_code&timezone=Europe/Brussels",{cache:"no-store"});
+    const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=50.73&longitude=4.48&current=temperature_2m,weather_code&timezone=Europe/Brussels");
     const j=await r.json();
-    const t=j.current?.temperature_2m; const c=j.current?.weather_code;
-    const map={0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",53:"🌦️",61:"🌧️",63:"🌧️",65:"🌧️",71:"❄️",95:"⛈️"};
-    $('#meteo').textContent=`${map[c]||"🌤️"} ${t}°C La Hulpe`;
-  }catch{}
+    const t=j.current.temperature_2m, c=j.current.weather_code;
+    const ico = ({0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",95:"⛈️"})[c]||"☁️";
+    document.getElementById("meteo").textContent = `${ico} ${t}°C La Hulpe`;
+  }catch(e){ console.warn("Météo fail",e); }
 }
-meteo(); setInterval(meteo, 10*60*1000);
+loadMeteo(); setInterval(loadMeteo, 10*60*1000);
 
-/* Rôles */
-const roleLabels={
-  officier_semaine:"Officier de semaine",
-  officier_garde:"Officier de garde",
-  responsable_operations:"Resp. opérations",
-  chef_groupe:"Chef de groupe",
-  chef_poste:"Chef de poste",
-  centraliste_1:"1er centraliste",
-  centraliste_2:"2e centraliste"
-};
-function renderRoles(){
-  const r=data._roles||{};
-  $('#roles').innerHTML = Object.entries(roleLabels)
-    .map(([k,l])=>`<div class="role"><span>${l}</span>${esc(r[k]||"-")}</div>`).join("");
-}
+/* ====== Data to UI ====== */
 
-/* mapping couleurs par statut */
-function slotClassForStatus(s){
-  switch(s){
-    case "Disponible": return "dispo";
-    case "Indisponible": return "indispo";
-    case "Départ": return "depart";
-    case "Sur place": return "surplace";
-    case "En route vers hôpital": return "route";
-    case "À l'hôpital": return "hopital";
-    case "Retour disponible": return "dispo";
-    case "Retour indisponible": return "indispo";
-    default: return "";
-  }
-}
-
-/* Reset helper for a list of slots */
-function resetSlots(ids){
-  ids.forEach(id=>{
-    const el = document.getElementById('slot-'+id);
-    if(!el) return;
-    el.className = 'slot' + (id==='EXT' ? ' ext':'');
-    el.querySelector('.veh').textContent = '—';
-    el.querySelector('.sub').textContent = '';
-    el.querySelector('.crew').textContent = '';
-    el.querySelector('.km').textContent = '';
+/* Build index: emplacement => vehId */
+function buildSlotMap(){
+  const map = {};
+  (vehList||[]).forEach(v=>{
+    const id = v.id;
+    const live = dispatchData[id]||{};
+    const slot = v.emplacement || live.emplacement || "";
+    if(slot) map[slot] = id;
   });
+  return map;
 }
 
-/* Helpers pour afficher les infos d’un véhicule dans un slot */
-function fillSlot(box, d, v){
-  const cl = slotClassForStatus(d.statut||"");
-  if(cl) box.classList.add(cl);
-  box.querySelector('.veh').textContent = d.name || v.id;
-  // attribution + plaque
-  const sub = [];
-  if (d.attribution) sub.push(`[${d.attribution}]`);
-  if (d.plaque) sub.push(d.plaque);
-  box.querySelector('.sub').textContent = sub.join(' · ');
-  // équipage
-  const crew = [d.XO, d.S, d.PS].filter(Boolean).join(' / ');
-  box.querySelector('.crew').textContent = crew ? crew : '';
-  // km
-  box.querySelector('.km').textContent = d.km ? `${d.km} km` : '';
+/* Mission-aware color */
+function colorClassForVeh(id){
+  // Mission active ?
+  if (missionsByVeh[id]) return "busy";
+  // Indisponible ?
+  const st = (dispatchData[id]?.statut)||"";
+  if (st==="Indisponible") return "bad";
+  // sinon disponible (ou autre) => vert
+  return "ok";
 }
 
-/* Hall renderer */
+/* Render a vehicle block for a spot */
+function vehBlock(id){
+  if(!id) return `<div class="veh empty"><div>(vide)</div></div>`;
+  const def = (vehList||[]).find(v=>v.id===id) || {};
+  const live = dispatchData[id] || {};
+  const name = def.name || id;
+  const attr = live.attribution || def.attribution || "";
+  const plaque = def.plaque || "";
+  const l1 = `${name}${attr?` (${esc(attr)})`:""}${plaque?` — ${esc(plaque)}`:""}`;
+  const crew = [live.XO, live.S, live.PS].filter(Boolean).join(" / ") || "—";
+  const km = live.km ? `${esc(live.km)} km` : "—";
+  const cls = colorClassForVeh(id);
+  return `
+    <div class="veh ${cls}">
+      <div class="l1">${esc(l1)}</div>
+      <div class="l2">${esc(crew)}</div>
+      <div class="l3">${esc(km)}</div>
+    </div>`;
+}
+
+/* Render hall */
 function renderHall(){
-  resetSlots(["EXT","H1","H2","H3","H4","H5","H6","H7","H8","H9","H10"]);
-  const list=(data._settings?.vehs)||[];
-  list.forEach(v=>{
-    const d=data[v.id]||{};
-    const emp=(v.emplacement||"").trim();
-    if(!/^H\d+|ext/i.test(emp)) return;
-    const target = /ext/i.test(emp) ? 'slot-EXT' : 'slot-'+emp;
-    const box = document.getElementById(target); if(!box) return;
-    fillSlot(box, d, v);
+  const slotMap = buildSlotMap();
+  const box = document.getElementById("hall");
+  box.innerHTML = "";
+  HALL_SLOTS.forEach(s=>{
+    const id = slotMap[s] || null;
+    const spot = document.createElement('div');
+    spot.className = "spot";
+    spot.innerHTML = `
+      <div class="label">${esc(s)}</div>
+      ${vehBlock(id)}
+    `;
+    box.appendChild(spot);
   });
 }
 
-/* Garage renderer */
+/* Render garage */
 function renderGarage(){
-  resetSlots(["G1","G2","G3","G4","G5","G6","G7","G8"]);
-  const list=(data._settings?.vehs)||[];
-  list.forEach(v=>{
-    const d=data[v.id]||{};
-    const emp=(v.emplacement||"").trim().toUpperCase();
-    if(!/^G[1-8]$/.test(emp)) return;
-    const box = document.getElementById('slot-'+emp);
-    if(!box) return;
-    fillSlot(box, d, v);
+  const slotMap = buildSlotMap();
+  const box = document.getElementById("garage");
+  box.innerHTML = "";
+
+  // Placement : G1,G6,G7,G8 en "vertical", G2–G5 en "horizontal"
+  GARAGE_SLOTS.forEach(s=>{
+    const id = slotMap[s] || null;
+    const div = document.createElement('div');
+    const vertical = (s==="G1"||s==="G6"||s==="G7"||s==="G8");
+    div.className = `spot ${vertical?'vertical':'horizontal'}`;
+    div.innerHTML = `
+      <div class="label">${esc(s)}</div>
+      ${vehBlock(id)}
+    `;
+    box.appendChild(div);
   });
 }
 
-/* Bannière — construit une phrase unique et la répète pour un défilement sans arrêt */
-function buildBanner(){
-  const notes=data._notes||{};
-  const parts=[];
-  // OUT
-  const outs=[];
-  (data._settings?.vehs||[]).forEach(v=>{
-    const d=data[v.id]; if(d?.statut==="Indisponible"){
-      let t=(d.name||v.id);
-      if(d.attribution) t+=` [${d.attribution}]`;
-      if(d.commentaire) t+=` — ${d.commentaire}`;
+/* Roles */
+function renderRoles(){
+  const r = dispatchData._roles || {};
+  const roleMap = [
+    ["Officier de semaine", r.officier_semaine],
+    ["Officier de garde", r.officier_garde],
+    ["Resp. opérations", r.responsable_operations],
+    ["Chef de groupe", r.chef_groupe],
+    ["Chef de poste", r.chef_poste],
+    ["1er centraliste", r.centraliste_1],
+    ["2e centraliste", r.centraliste_2],
+  ];
+  document.getElementById("roles").innerHTML =
+    roleMap.map(([lbl,val])=>`<div class="role"><span>${esc(lbl)}</span>${esc(val||"-")}</div>`).join("");
+}
+
+/* Banner (one-line infinite) */
+function renderBanner(){
+  const notes = dispatchData._notes || {};
+  // OUT vehicles
+  const outs = [];
+  (vehList||[]).forEach(v=>{
+    const d = dispatchData[v.id];
+    if(d?.statut==="Indisponible"){
+      let t = (v.name||v.id);
+      if (d.attribution) t+=` [${d.attribution}]`;
+      if (d.commentaire) t+=` — ${d.commentaire}`;
       outs.push(t);
     }
   });
-  if(outs.length) parts.push(`🚑 Véhicules OUT : ${outs.join(" • ")}`);
-  if((notes.materiel||"").trim()) parts.push(`⚠️ Matériel : ${notes.materiel.replace(/\s+/g,' ').trim()}`);
-  if((notes.infos||"").trim()) parts.push(`ℹ️ Infos : ${notes.infos.replace(/\s+/g,' ').trim()}`);
 
-  const base = parts.length ? parts.join("   |   ") : "Aucune information";
-  const ticker = document.getElementById('ticker');
-  // Répète le contenu jusqu’à dépasser 2× la largeur de l’écran pour une boucle parfaite
-  const repeatTimes = 6; // suffisant pour 1080p
-  ticker.textContent = Array(repeatTimes).fill(base).join("     ");
-  // Calcule la durée selon la largeur pour une vitesse constante
-  requestAnimationFrame(()=>{
-    const SPEED = 120; // px/s
-    const total = ticker.scrollWidth;
-    const dur = (total/2) / SPEED; // on défile 50% de la ligne
-    ticker.style.animation = `slide ${dur.toFixed(2)}s linear infinite`;
+  const chunks = [];
+  if (outs.length) chunks.push(`<span class="tag">VÉHICULE OUT</span><span>${esc(outs.join(" • "))}</span>`);
+  if ((notes.materiel||"").trim()) chunks.push(`<span class="tag">MATÉRIEL</span><span>${esc(notes.materiel.replace(/\s+/g,' ').trim())}</span>`);
+  if ((notes.infos||"").trim()) chunks.push(`<span class="tag">INFOS</span><span>${esc(notes.infos.replace(/\s+/g,' ').trim())}</span>`);
+
+  const content = chunks.length ? chunks.map(c=>`<span class="chunk">${c}</span>`).join("") : `<span class="chunk"><span>Aucune information</span></span>`;
+
+  const track = content + content + content; // triple pour éviter tout “blanc” perçu
+  document.getElementById('band1').innerHTML = track;
+  document.getElementById('band2').innerHTML = track;
+}
+
+/* ====== Subscriptions ====== */
+subscribeKey(DISPATCH_KEY, snap=>{
+  dispatchData = snap || {};
+  vehList = Array.isArray(dispatchData?._settings?.vehs) ? dispatchData._settings.vehs : [];
+  renderRoles();
+  renderHall();
+  renderGarage();
+  renderBanner();
+});
+
+subscribeKey(MISSIONS_KEY, snap=>{
+  missionsByVeh = {};
+  Object.entries(snap||{}).forEach(([id, m])=>{
+    if(!m || typeof m!=="object") return;
+    const veh = m.vehicule || m.veh || "";
+    if(!veh) return;
+    missionsByVeh[veh] = m; // on note la dernière mission par véhicule
   });
-}
+  // Re-coloriser les blocs
+  renderHall();
+  renderGarage();
+});
 
-/* Full refresh */
-async function refresh(){
-  try{
-    data = await readKey(KEY) || {};
-    renderRoles();
-    renderHall();
-    renderGarage();
-    buildBanner();
-  }catch(e){ console.error(e); }
-}
-refresh(); setInterval(refresh, 5000);
-window.addEventListener('storage', e=>{ if(e.key===KEY) refresh(); });
+/* First render placeholders */
+renderRoles();
+renderHall();
+renderGarage();
+renderBanner();
 </script>
 </body>
 </html>
