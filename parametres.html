@@ -27,6 +27,7 @@ th{background:#182030}
 .badge{display:inline-block;background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:4px 10px;margin-right:6px}
 .ok{color:#9fe3b1}
 .err{color:#ffd1cf}
+.toast{margin-top:8px;font-size:13px}
 </style>
 </head>
 <body>
@@ -46,10 +47,10 @@ th{background:#182030}
   <div class="topbar">
     <h1>Paramètres — Véhicules</h1>
     <div>
-      <button class="btn ghost" onclick="location.href='index.html'">Accueil</button>
-      <button class="btn ghost" onclick="location.href='dispatch.html'">Dispatch</button>
-      <button class="btn ghost" onclick="location.href='tv-grid.html'">TV Grid</button>
-      <button class="btn ghost" onclick="location.href='missions.html'">Missions</button>
+      <button class="btn ghost" type="button" onclick="location.href='index.html'">Accueil</button>
+      <button class="btn ghost" type="button" onclick="location.href='dispatch.html'">Dispatch</button>
+      <button class="btn ghost" type="button" onclick="location.href='tv-grid.html'">TV Grid</button>
+      <button class="btn ghost" type="button" onclick="location.href='missions.html'">Missions</button>
     </div>
   </div>
 
@@ -84,11 +85,11 @@ th{background:#182030}
         </select>
       </div>
       <div style="display:flex;gap:8px;align-items:end">
-        <button class="btn" id="btnAddVeh">Ajouter</button>
-        <button class="btn ghost" id="btnResetVehForm">Réinitialiser</button>
+        <button class="btn" id="btnAddVeh" type="button">Ajouter</button>
+        <button class="btn ghost" id="btnResetVehForm" type="button">Réinitialiser</button>
       </div>
     </div>
-    <div class="small" id="saveInfo"></div>
+    <div class="small toast" id="saveInfo"></div>
   </div>
 
   <div class="card">
