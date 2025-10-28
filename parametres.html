@@ -3,297 +3,144 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Paramétrages — Parc véhicules</title>
+<title>Paramètres — ACSRS</title>
 <style>
-  :root{ --bg:#0b0f14; --panel:#121821; --line:#223044; --txt:#e8eef5; --mut:#93a7bf; --accent:#3a8bf2; }
-  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Inter,Segoe UI,Arial,sans-serif}
-  header{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#0d131c;border-bottom:1px solid var(--line)}
-  header h1{margin:0;font-size:20px;color:#cfe1ff}
-  header .right{display:flex;gap:8px}
-  .btn{background:var(--accent);border:0;color:#fff;border-radius:8px;padding:8px 12px;cursor:pointer;font-weight:600}
-  .btn.ghost{background:#0f1520;border:1px solid #2c3d52}
-  .wrap{padding:16px}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px}
-  table{width:100%;border-collapse:collapse}
-  th,td{border:1px solid var(--line);padding:8px;text-align:left}
-  th{background:#182030}
-  .mut{color:var(--mut);font-size:12px}
-  .tag{display:inline-block;padding:2px 8px;border-radius:999px;border:1px solid #2c3d52;font-size:12px}
-  .actions{display:flex;gap:8px}
-  dialog{border:1px solid #2c3d52;border-radius:12px;background:#0f1520;color:#fff;padding:16px;max-width:520px}
-  dialog::backdrop{background:rgba(0,0,0,.5)}
-  label{font-size:12px;color:#9fb2c9;display:block;margin-top:10px}
-  input,select{width:100%;padding:8px;border-radius:8px;border:1px solid #2c3d52;background:#0b1626;color:#fff;box-sizing:border-box}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  @media (max-width:800px){ .row{grid-template-columns:1fr} }
+:root{--bg:#0b0f14;--panel:#121821;--line:#223044;--text:#e8eef5;--muted:#93a7bf;--accent:#3a8bf2;--danger:#e74c3c}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+.wrap{max-width:1200px;margin:0 auto;padding:16px}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+h1{margin:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px}
+input,select{width:100%;padding:10px;border-radius:8px;border:1px solid #2c3d52;background:#0f1520;color:#fff;box-sizing:border-box}
+.btn{background:var(--accent);border:0;border-radius:8px;padding:10px 14px;color:#fff;font-weight:700;cursor:pointer}
+.btn.ghost{background:#0f1520;border:1px solid #2c3d52}
+.btn.danger{background:var(--danger)}
+.table{width:100%;border-collapse:collapse}
+th,td{border:1px solid var(--line);padding:8px;text-align:left;vertical-align:top}
+th{background:#182030}
+.small{color:var(--muted);font-size:12px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:900px){ .row{grid-template-columns:1fr} }
+.badge{display:inline-block;background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:4px 10px;margin-right:6px}
+.mut{color:var(--muted)}
 </style>
 </head>
 <body>
 
-<!-- Auth (désactive si non utilisé) -->
-<script>
-  // if(!localStorage.getItem("dispatch_idToken")) location.href = "index.html";
-</script>
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<script src="store-bridge.js"></script>
-
-<header>
-  <h1>Paramétrages — Parc véhicules</h1>
-  <div class="right">
-    <button class="btn ghost" onclick="window.open('dispatch.html','_blank')">↩️ Dispatch</button>
-    <button class="btn ghost" onclick="window.open('tv-grid.html','_blank')">📺 TV Grid</button>
-    <button class="btn" id="btnAdd">➕ Nouveau véhicule</button>
-  </div>
-</header>
+<!-- Bridge + Guard + JS de la page -->
+<script src="js/store-bridge.js"></script>
+<script src="js/auth-guard.js"></script>
+<script>AuthGuard.ensureAuthOrRedirect();</script>
+<script src="js/parametres.js" defer></script>
 
 <div class="wrap">
+  <div class="topbar">
+    <h1>Paramètres</h1>
+    <div>
+      <button class="btn ghost" onclick="location.href='index.html'">Accueil</button>
+      <button class="btn ghost" onclick="location.href='dispatch.html'">Dispatch</button>
+      <button class="btn ghost" onclick="location.href='tv-grid.html'">TV Grid</button>
+      <button class="btn ghost" onclick="location.href='missions.html'">Missions</button>
+    </div>
+  </div>
+
   <div class="card">
-    <div class="mut" id="status">Chargement…</div>
-    <table style="margin-top:10px">
-      <thead>
-        <tr>
-          <th>Véhicule</th>
-          <th>Plaque</th>
-          <th>Attribution</th>
-          <th>Emplacement</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody id="tbody"></tbody>
-    </table>
+    <h2>Rôles de commandement</h2>
+    <div class="grid">
+      <div><label>Officier de semaine</label><input id="r_off_sem" placeholder="Nom"></div>
+      <div><label>Officier de garde</label><input id="r_off_gar" placeholder="Nom"></div>
+      <div><label>Responsable opérations</label><input id="r_resp_ops" placeholder="Nom"></div>
+      <div><label>Chef de groupe</label><input id="r_chef_grp" placeholder="Nom"></div>
+      <div><label>Chef de poste</label><input id="r_chef_poste" placeholder="Nom"></div>
+      <div><label>1er centraliste</label><input id="r_cent1" placeholder="Nom"></div>
+      <div><label>2e centraliste</label><input id="r_cent2" placeholder="Nom"></div>
+    </div>
+    <div style="margin-top:12px">
+      <button class="btn" id="btnSaveRoles">Enregistrer les rôles</button>
+      <span class="small" id="rolesInfo"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Véhicules</h2>
+    <div class="row">
+      <div class="grid">
+        <div><label>Identifiant (ex: AS 55)</label><input id="v_id" placeholder="Unique"></div>
+        <div><label>Nom d’affichage (optionnel)</label><input id="v_name" placeholder="AS 55 La Hulpe"></div>
+        <div>
+          <label>Plaque</label>
+          <input id="v_plaque" placeholder="1-ABC-123">
+        </div>
+        <div>
+          <label>Attribution</label>
+          <select id="v_attr">
+            <option value="">—</option>
+            <option>LH1</option><option>LH2</option><option>LH3</option><option>LH4</option>
+            <option>LH5</option><option>LH6</option><option>LH7</option><option>LH8</option>
+            <option>TMS</option><option>OFF</option><option>PREV</option>
+          </select>
+        </div>
+        <div>
+          <label>Emplacement</label>
+          <select id="v_slot">
+            <option value="">—</option>
+            <optgroup label="Hall H1–H10">
+              <option>H1</option><option>H2</option><option>H3</option><option>H4</option><option>H5</option>
+              <option>H6</option><option>H7</option><option>H8</option><option>H9</option><option>H10</option>
+            </optgroup>
+            <optgroup label="Garage G1–G8">
+              <option>G1</option><option>G2</option><option>G3</option><option>G4</option>
+              <option>G5</option><option>G6</option><option>G7</option><option>G8</option>
+            </optgroup>
+            <optgroup label="Extérieur">
+              <option>Extérieur</option>
+            </optgroup>
+          </select>
+        </div>
+        <div style="display:flex;gap:8px;align-items:end">
+          <button class="btn" id="btnAddVeh">Ajouter</button>
+          <button class="btn ghost" id="btnResetVehForm">Réinitialiser</button>
+        </div>
+      </div>
+
+      <div>
+        <div class="small">Règles</div>
+        <ul class="small">
+          <li>Un <b>emplacement</b> ne peut être occupé que par <b>1 véhicule</b>.</li>
+          <li>Si un emplacement est déjà pris, on te propose d’<b>échanger</b> les deux.</li>
+          <li>Tu peux <b>éditer</b> un véhicule existant (nom, plaque, attribution, emplacement).</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="margin-top:12px;overflow:auto">
+      <table class="table" id="vehTable">
+        <thead>
+          <tr>
+            <th>Véhicule</th>
+            <th>Plaque</th>
+            <th>Attribution</th>
+            <th>Emplacement</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody><!-- rempli par JS --></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Infos</h2>
+    <p class="small">Les paramètres sont partagés avec Dispatch, TV Grid et Missions en temps réel.</p>
+    <div id="debug" class="small mut"></div>
   </div>
 </div>
-
-<!-- Modal add/edit -->
-<dialog id="vehDialog">
-  <form id="vehForm" method="dialog">
-    <h3 id="dlgTitle" style="margin:0 0 8px 0">Nouveau véhicule</h3>
-    <div class="row">
-      <div>
-        <label>Nom / ID du véhicule (ex: AS 55)</label>
-        <input id="f_id" placeholder="AS 55" required>
-      </div>
-      <div>
-        <label>Plaque</label>
-        <input id="f_plaque" placeholder="1-ABC-123">
-      </div>
-    </div>
-    <div class="row">
-      <div>
-        <label>Attribution</label>
-        <select id="f_attr">
-          <option value="">—</option>
-          <option>LH1</option><option>LH2</option><option>LH3</option><option>LH4</option>
-          <option>LH5</option><option>LH6</option><option>LH7</option><option>LH8</option>
-          <option>TMS</option><option>PREV</option><option>OFF</option>
-        </select>
-      </div>
-      <div>
-        <label>Emplacement</label>
-        <select id="f_place"></select>
-      </div>
-    </div>
-
-    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">
-      <button class="btn ghost" type="button" onclick="vehDialog.close()">Annuler</button>
-      <button class="btn" type="submit">Enregistrer</button>
-    </div>
-    <input type="hidden" id="f_mode" value="add">
-    <input type="hidden" id="f_origId" value="">
-    <input type="hidden" id="f_origEmp" value="">
-  </form>
-</dialog>
-
-<script>
-/* ======== Constantes ======== */
-const DISPATCH_KEY = "dispatch_parc_vehicules";
-
-/* ======== État ======== */
-let state = {};          // document complet
-let vehs  = [];          // state._settings.vehs : [{id, plaque, attribution, emplacement}]
-const $ = sel => document.querySelector(sel);
-
-/* ======== Helpers ======== */
-function ensureSettings(){
-  state._settings = state._settings || {};
-  state._settings.vehs = state._settings.vehs || [];
-  vehs = state._settings.vehs;
-}
-function setStatus(msg){ $('#status').textContent = msg; }
-function emplacementOptions(){
-  const opts = [];
-  for(let i=1;i<=10;i++) opts.push(`H${i}`);
-  for(let i=1;i<=8;i++) opts.push(`G${i}`);
-  opts.push('Extérieur');
-  return opts;
-}
-function fillEmplacementSelect(selectEl, value){
-  selectEl.innerHTML = `<option value="">—</option>` + emplacementOptions().map(v=>`<option ${v===value?'selected':''}>${v}</option>`).join("");
-}
-function escapeHTML(s){ return String(s??"").replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function findVehById(id){ return vehs.find(x=>x.id===id) || null; }
-function findVehByEmplacement(emp, exceptId=null){
-  if(!emp) return null;
-  const e = emp.trim();
-  return vehs.find(v => (v.emplacement||"").trim()===e && v.id!==exceptId) || null;
-}
-
-/* ======== Chargement ======== */
-async function loadAll(){
-  if(typeof readKey!=='function'){ alert("store-bridge.js manquant ou incomplet."); return; }
-  try{
-    state = await readKey(DISPATCH_KEY) || {};
-    ensureSettings();
-    renderTable();
-    setStatus(`Chargé — ${vehs.length} véhicule(s)`);
-  }catch(e){
-    console.error(e);
-    setStatus("Erreur de lecture.");
-  }
-}
-
-/* ======== Rendu ======== */
-function renderTable(){
-  const tb = $('#tbody'); tb.innerHTML = "";
-  vehs.forEach(v=>{
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td><span class="tag">${escapeHTML(v.id)}</span></td>
-      <td>${escapeHTML(v.plaque||"")}</td>
-      <td>${escapeHTML(v.attribution||"")}</td>
-      <td>${escapeHTML(v.emplacement||"")}</td>
-      <td class="actions">
-        <button class="btn ghost" onclick="onEdit('${encodeURIComponent(v.id)}')">Éditer</button>
-        <button class="btn ghost" onclick="onRemove('${encodeURIComponent(v.id)}')">Supprimer</button>
-      </td>
-    `;
-    tb.appendChild(tr);
-  });
-}
-
-/* ======== Actions ======== */
-function onAdd(){
-  $('#dlgTitle').textContent = "Nouveau véhicule";
-  $('#f_mode').value = "add";
-  $('#f_origId').value = "";
-  $('#f_origEmp').value = "";
-  $('#f_id').value = "";
-  $('#f_plaque').value = "";
-  $('#f_attr').value = "";
-  fillEmplacementSelect($('#f_place'), "");
-  vehDialog.showModal();
-}
-
-function onEdit(encId){
-  const id = decodeURIComponent(encId);
-  const v = findVehById(id); if(!v) return;
-  $('#dlgTitle').textContent = "Éditer le véhicule";
-  $('#f_mode').value = "edit";
-  $('#f_origId').value = v.id;
-  $('#f_origEmp').value = v.emplacement || "";
-  $('#f_id').value = v.id;
-  $('#f_plaque').value = v.plaque||"";
-  $('#f_attr').value = v.attribution||"";
-  fillEmplacementSelect($('#f_place'), v.emplacement||"");
-  vehDialog.showModal();
-}
-
-async function onRemove(encId){
-  const id = decodeURIComponent(encId);
-  if(!confirm(`Supprimer ${id} ?`)) return;
-  const idx = vehs.findIndex(x=>x.id===id);
-  if(idx>=0) vehs.splice(idx,1);
-  await saveAll();
-  renderTable();
-}
-
-/* ======== Soumission (avec unicité & échange) ======== */
-$('#vehForm').addEventListener('submit', async (e)=>{
-  e.preventDefault();
-  const mode = $('#f_mode').value;
-  const origId = $('#f_origId').value;
-  const origEmp = $('#f_origEmp').value || "";
-  const obj = {
-    id: $('#f_id').value.trim(),
-    plaque: $('#f_plaque').value.trim(),
-    attribution: $('#f_attr').value || "",
-    emplacement: $('#f_place').value || ""
-  };
-  if(!obj.id){ alert("Nom / ID requis"); return; }
-
-  // Unicité de l'ID
-  if(mode==="add" && vehs.some(v=>v.id===obj.id)){
-    alert("Un véhicule avec ce nom existe déjà."); return;
-  }
-  if(mode==="edit" && obj.id!==origId && vehs.some(v=>v.id===obj.id)){
-    alert("Un véhicule avec ce nom existe déjà."); return;
-  }
-
-  // Unicité de l'emplacement + logique d'échange
-  const conflict = findVehByEmplacement(obj.emplacement, mode==="edit" ? origId : null);
-  if(conflict && obj.emplacement){
-    if(mode==="edit"){
-      const wantSwap = confirm(`L'emplacement ${obj.emplacement} est déjà attribué à ${conflict.id}.\n\nSouhaitez-vous ÉCHANGER les emplacements entre ${origId} et ${conflict.id} ?`);
-      if(!wantSwap) return; // abandon
-      // Échange : conflict prend l'ancien emplacement de ce véhicule
-      const conflictIdx = vehs.findIndex(v=>v.id===conflict.id);
-      if(conflictIdx>=0) vehs[conflictIdx].emplacement = origEmp || "";
-      // Le véhicule édité prendra obj.emplacement (voir plus bas)
-    }else{ // add
-      const takeOver = confirm(`L'emplacement ${obj.emplacement} est déjà attribué à ${conflict.id}.\n\nSouhaitez-vous le retirer de ${conflict.id} et l'attribuer à ce nouveau véhicule ?`);
-      if(!takeOver) return;
-      // Nouveau véhicule prend l'emplacement ; l'autre est libéré
-      const conflictIdx = vehs.findIndex(v=>v.id===conflict.id);
-      if(conflictIdx>=0) vehs[conflictIdx].emplacement = "";
-    }
-  }
-
-  if(mode==="add"){
-    vehs.push(obj);
-  }else{
-    const i = vehs.findIndex(v=>v.id===origId);
-    if(i<0){ alert("Véhicule introuvable."); return; }
-    // si renommage, migrer l’état courant (state[vehId])
-    if(state[origId] && obj.id!==origId){
-      state[obj.id] = state[origId];
-      delete state[origId];
-    }
-    vehs[i] = obj;
-  }
-
-  await saveAll();
-  vehDialog.close();
-  renderTable();
-});
-
-/* ======== Sauvegarde ======== */
-async function saveAll(){
-  ensureSettings();
-  state._settings.vehs = vehs;
-  setStatus("Sauvegarde…");
-  try{
-    if(typeof writeKey==='function'){
-      await writeKey(DISPATCH_KEY, state);
-    }else if(typeof patchKey==='function'){
-      await patchKey(DISPATCH_KEY, state);
-    }else{
-      localStorage.setItem(DISPATCH_KEY, JSON.stringify(state));
-    }
-    setStatus("Sauvegardé ✔︎");
-  }catch(e){
-    console.error(e);
-    setStatus("Erreur de sauvegarde.");
-  }
-}
-
-/* ======== Sync & Boot ======== */
-document.getElementById('btnAdd').addEventListener('click', onAdd);
-window.addEventListener('storage', (e)=>{
-  if(e.key===DISPATCH_KEY){
-    try{ state = JSON.parse(e.newValue||"{}"); ensureSettings(); renderTable(); setStatus(`Synchro — ${vehs.length} véhicule(s)`); }catch{}
-  }
-});
-loadAll();
-</script>
 </body>
 </html>
