@@ -3,318 +3,216 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Encodage Missions</title>
+<title>Missions — ACSRS</title>
+<link rel="preconnect" href="https://www.gstatic.com">
 <style>
-  :root{ --bg:#0b0f14; --panel:#121821; --line:#223044; --text:#e8eef5; --muted:#93a7bf; --accent:#3a8bf2; }
-  html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
-  .wrap{max-width:1100px;margin:0 auto;padding:16px}
-  h1{margin:0 0 12px}
-  .btn{background:var(--accent);border:0;border-radius:8px;padding:8px 12px;color:#fff;font-weight:700;cursor:pointer}
-  .btn.ghost{background:#0f1520;border:1px solid #2c3d52}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;margin-top:12px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  @media(max-width:900px){ .grid{grid-template-columns:1fr} }
-  label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
-  input,select,textarea{width:100%;padding:8px;border-radius:8px;border:1px solid #2c3d52;background:#0f1520;color:#fff;box-sizing:border-box}
-  .tabs{display:flex;gap:8px;margin-top:8px}
-  .tab{padding:6px 10px;border-radius:8px;border:1px solid #2c3d52;background:#0f1520;cursor:pointer}
-  .tab.active{background:#162235}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .actions{display:flex;gap:10px;justify-content:flex-end;margin-top:12px}
-  .list{margin-top:10px}
-  table{width:100%;border-collapse:collapse}
-  th,td{border:1px solid #2c3d52;padding:8px;text-align:left}
-  th{background:#162235}
+:root{
+  --bg:#0b0f14; --panel:#121821; --line:#223044; --text:#e8eef5; --muted:#9fb2c9; --accent:#3a8bf2;
+  --ok:#2ecc71; --warn:#f1c40f; --bad:#e74c3c; --info:#00c2ff; --rose:#ff5db1; --orange:#ffa447;
+}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif}
+.wrap{max-width:1400px;margin:0 auto;padding:16px}
+.topbar{display:flex;justify-content:space-between;align-items:center}
+h1{margin:0}
+.btn{background:var(--accent);border:0;border-radius:8px;padding:10px 14px;color:#fff;font-weight:700;cursor:pointer}
+.btn.ghost{background:#0f1520;border:1px solid #2c3d52}
+.btn.warn{background:var(--warn);color:#000}
+.btn.bad{background:var(--bad)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:12px}
+label{display:block;font-size:12px;color:var(--muted);margin:6px 0}
+input,select,textarea{width:100%;padding:9px;border-radius:8px;border:1px solid #2c3d52;background:#0f1520;color:#fff;box-sizing:border-box}
+textarea{min-height:70px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.table{width:100%;border-collapse:collapse}
+th,td{border:1px solid var(--line);padding:8px;vertical-align:top}
+th{background:#182030}
+.small{font-size:12px;color:var(--muted)}
+.badge{display:inline-block;background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:2px 8px;font-size:12px;margin-left:6px}
+.kp{display:inline-flex;gap:6px;flex-wrap:wrap}
+.kp button{background:#0f1520;border:1px solid #2c3d52;border-radius:8px;padding:6px 10px;color:#e8eef5;cursor:pointer}
+.kp button.active{background:var(--accent)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:1000px){ .row{grid-template-columns:1fr} }
+
+/* Modal (wizard) */
+.modal-back{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;z-index:1000}
+.modal{width:min(980px,96vw);max-height:92vh;overflow:auto;background:#0f1520;border:1px solid #2c3d52;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #223044}
+.mh h2{margin:0}
+.mc{padding:16px}
+.mf{display:flex;justify-content:space-between;gap:8px;padding:12px 16px;border-top:1px solid #223044}
+.stepper{display:flex;gap:8px;margin-bottom:12px}
+.step{padding:6px 10px;border-radius:999px;border:1px solid #2c3d52;background:#111a27;font-size:12px;color:#cfe1ff}
+.step.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.toast{margin-left:8px}
+
+/* Pills statut renfort */
+.rstat{display:inline-block;border:1px solid #2c3d52;border-radius:999px;padding:2px 8px;font-size:12px;margin-left:6px}
+.r-ok{background:#122b19;border-color:#2ecc71;color:#bdf2cd}
+.r-warn{background:#2b2712;border-color:#f1c40f;color:#ffec9a}
 </style>
 </head>
 <body>
 
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="store-bridge.js"></script>
+
+<!-- Bridge + Guard + Page JS -->
+<script src="js/store-bridge.js"></script>
+<script src="js/auth-guard.js"></script>
+<script>AuthGuard.ensureAuthOrRedirect();</script>
+<script src="js/missions.js" defer></script>
 
 <div class="wrap">
-  <h1>Encodage des missions</h1>
-  <button class="btn" onclick="openNew()">➕ Nouvelle mission</button>
+  <div class="topbar">
+    <h1>Missions</h1>
+    <div>
+      <button class="btn" id="btnNew">➕ Nouvelle mission</button>
+      <button class="btn ghost" onclick="location.href='dispatch.html'">Dispatch</button>
+      <button class="btn ghost" onclick="location.href='tv-missions.html'">TV Missions</button>
+    </div>
+  </div>
 
-  <div class="panel list">
-    <h3>Missions en cours</h3>
-    <table>
+  <div class="card">
+    <h2>Missions en cours</h2>
+    <table class="table" id="tblActive">
       <thead>
-        <tr><th>#</th><th>Véhicule</th><th>Type</th><th>Motif</th><th>CP/Ville</th><th>Dernier statut</th><th>Heure</th></tr>
+        <tr>
+          <th style="width:70px">#</th>
+          <th>Véhicule</th>
+          <th>Motif</th>
+          <th>Lieu PEC</th>
+          <th>Renforts</th>
+          <th>Statuts</th>
+          <th>Km</th>
+          <th>Actions</th>
+        </tr>
       </thead>
-      <tbody id="tb"></tbody>
+      <tbody><!-- JS --></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="row" style="align-items:center">
+      <h2 style="margin:0">Missions du jour (clôturées)</h2>
+      <div style="text-align:right">
+        <button class="btn warn" id="btnDeleteDone">🗑 Supprimer la sélection (Admin)</button>
+      </div>
+    </div>
+    <table class="table" id="tblDone">
+      <thead>
+        <tr>
+          <th style="width:32px"></th>
+          <th>Véhicule</th>
+          <th>Type</th>
+          <th>Motif</th>
+          <th>Δ km</th>
+          <th>Heures</th>
+        </tr>
+      </thead>
+      <tbody><!-- JS --></tbody>
     </table>
   </div>
 </div>
 
-<!-- Modal new mission -->
-<div id="modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;z-index:1000">
-  <div style="background:#121821;border:1px solid #2c3d52;border-radius:12px;padding:14px;min-width:320px;max-width:720px;width:90%">
-    <h3>Nouvelle mission</h3>
+<!-- Modal (wizard) -->
+<div class="modal-back" id="modalBack" aria-hidden="true">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wizTitle">
+    <div class="mh">
+      <h2 id="wizTitle">Nouvelle mission</h2>
+      <button class="btn bad" id="wizClose" type="button">Fermer</button>
+    </div>
+    <div class="mc">
+      <div class="stepper" id="stepper">
+        <div class="step" data-step="1">1. Type & véhicule</div>
+        <div class="step" data-step="2">2. Motif & lieu PEC</div>
+        <div class="step" data-step="3">3. 112 / Renforts</div>
+        <div class="step" data-step="4">4. Récap & création</div>
+      </div>
 
-    <div class="grid">
+      <!-- Étape 1 -->
+      <div class="grid wiz" data-step="1">
+        <div>
+          <label>Type</label>
+          <select id="w_type">
+            <option value="">—</option>
+            <option>112</option>
+            <option>TMS</option>
+            <option>Prévention</option>
+            <option>Logistique</option>
+          </select>
+        </div>
+        <div>
+          <label>Véhicule</label>
+          <select id="w_veh"></select>
+        </div>
+        <div>
+          <label>Attribution (auto)</label>
+          <input id="w_attr" readonly>
+        </div>
+      </div>
+
+      <!-- Étape 2 -->
+      <div class="grid wiz" data-step="2" style="display:none">
+        <div>
+          <label>Motif</label>
+          <input id="w_motif" placeholder="Ex: Malaise, transfert…">
+        </div>
+        <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:12px">
+          <div><label>Rue</label><input id="w_rue"></div>
+          <div><label>N° / Boîte</label><input id="w_num"></div>
+          <div><label>Code postal</label><input id="w_cp" maxlength="4"></div>
+          <div><label>Localité</label><input id="w_ville" placeholder="Auto si CP connu"></div>
+        </div>
+      </div>
+
+      <!-- Étape 3 -->
+      <div class="grid wiz" data-step="3" style="display:none">
+        <div id="blk112" style="display:none">
+          <label>Centrale 112</label>
+          <select id="w_centrale">
+            <option value="">—</option>
+            <option>Mons</option><option>Namur</option><option>Arlon</option>
+            <option>Liège</option><option>Leuven</option><option>Bruxelles</option><option>Autres</option>
+          </select>
+          <label>Numéro mission (4 derniers)</label>
+          <input id="w_num112" maxlength="4" placeholder="xxxx">
+          <label>Départ</label>
+          <select id="w_depart112"><option>Normal</option><option>Médical</option></select>
+        </div>
+
+        <div>
+          <label>Renforts à prévoir</label>
+          <div class="kp">
+            <label><input type="checkbox" id="rf_pompiers"> Pompiers</label>
+            <label><input type="checkbox" id="rf_police"> Police</label>
+            <label><input type="checkbox" id="rf_smur"> SMUR</label>
+            <label><input type="checkbox" id="rf_ambu112"> Ambu 112</label>
+            <label><input type="checkbox" id="rf_racs"> RACS</label>
+          </div>
+          <div class="small">Le statut “Appel” sera posé sur les renforts cochés au moment de la création (même heure que l’appel mission). Vous pourrez compléter “Sur place” et commenter ensuite.</div>
+        </div>
+      </div>
+
+      <!-- Étape 4 -->
+      <div class="wiz" data-step="4" style="display:none">
+        <div class="card" style="margin:0">
+          <div id="w_recap">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="mf">
+      <div class="small" id="wizMsg"></div>
       <div>
-        <label>Véhicule</label>
-        <select id="mVeh"></select>
+        <button class="btn ghost" id="wizPrev" type="button">◀ Précédent</button>
+        <button class="btn" id="wizNext" type="button">Suivant ▶</button>
+        <button class="btn" id="wizCreate" type="button" style="display:none">Créer la mission</button>
       </div>
-      <div>
-        <label>Type</label>
-        <select id="mType"><option value="">—</option><option>TMS</option><option>112</option><option>Prévention</option><option>Logistique</option></select>
-      </div>
-      <div><label>Motif</label><input id="mMotif" placeholder="Ex: Malaise, transfert…"></div>
-    </div>
-
-    <div class="tabs">
-      <div id="tab-addr" class="tab active" onclick="switchTab('addr')">Adresse</div>
-      <div id="tab-hosp" class="tab" onclick="switchTab('hosp')">Recherche hôpital</div>
-    </div>
-
-    <!-- Onglet Adresse -->
-    <div id="pane-addr" style="margin-top:8px">
-      <div class="grid">
-        <div><label>Rue</label><input id="mRue"></div>
-        <div><label>Numéro</label><input id="mNum"></div>
-        <div><label>Code postal</label><input id="mCP" maxlength="4" oninput="autoVilleByCP()"></div>
-        <div><label>Localité</label><input id="mVille"></div>
-      </div>
-    </div>
-
-    <!-- Onglet Hôpital -->
-    <div id="pane-hosp" style="display:none;margin-top:8px">
-      <label>Rechercher un hôpital</label>
-      <input id="hospSearch" list="hospList" placeholder="Tape le nom de l’hôpital">
-      <datalist id="hospList"></datalist>
-      <div class="grid" style="margin-top:8px">
-        <div><label>Rue</label><input id="hRue"></div>
-        <div><label>Numéro</label><input id="hNum"></div>
-        <div><label>CP</label><input id="hCP" maxlength="4" oninput="autoHospVilleByCP()"></div>
-        <div><label>Localité</label><input id="hVille"></div>
-      </div>
-      <div class="actions" style="justify-content:flex-start">
-        <button class="btn ghost" onclick="applyHospToAddr()">Utiliser comme adresse de mission</button>
-      </div>
-    </div>
-
-    <div class="actions">
-      <button class="btn ghost" onclick="closeNew()">Annuler</button>
-      <button class="btn" onclick="createMission()">Valider la mission</button>
     </div>
   </div>
 </div>
 
-<script>
-const DISPATCH_KEY   = "dispatch_parc_vehicules";
-const MISSIONS_CANON = "missions_canon";
-const MISSIONS_ACTIVE= "missions_actives";
-const MISSIONS_ORDER = "missions_order";
-
-let dispatchData={}, vehs=[], missions={}, orders={}, postalMap={}, hospitals=[];
-
-function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]) );}
-
-/* Chargements référentiels (local JSON) */
-async function loadRefs(){
-  try{ const r=await fetch('postal-be.json'); if(r.ok){ postalMap=await r.json(); } }catch{}
-  try{ const r=await fetch('hospitals-be.json'); if(r.ok){ hospitals=await r.json(); } }catch{}
-  // remplir datalist hôpitaux
-  const dl=document.getElementById('hospList');
-  if (Array.isArray(hospitals) && hospitals.length){
-    dl.innerHTML = hospitals.map(h=>`<option value="${esc(h.name)}">${esc(h.name)}</option>`).join('');
-  }
-}
-loadRefs();
-
-/* Abonnements */
-subscribeKey(DISPATCH_KEY, d=>{
-  dispatchData=d||{}; vehs=Array.isArray(d?._settings?.vehs)? d._settings.vehs : [];
-  const sel=document.getElementById('mVeh'); sel.innerHTML="<option value=''>—</option>";
-  vehs.forEach(v=> sel.insertAdjacentHTML("beforeend", `<option>${esc(v.id)}</option>`));
-});
-subscribeKey(MISSIONS_CANON, c=>{ missions=c||{}; renderList(); });
-subscribeKey(MISSIONS_ORDER, o=>{ orders=o||{}; renderList(); });
-
-/* UI list */
-function lastStatus(m){
-  const order = ["Appel","Départ","Sur place","PEC","En charge","Vers hôpital","Vers destination","Arrivé hôpital","À l'hôpital","À destination","Retour dispo","Rentré base","Retour au poste","Mise indispo","Indisponible","Annulé"];
-  let best="", idx=-1, t=""; const S=m.statuts||{};
-  Object.keys(S).forEach(k=>{const i=order.indexOf(k), tt=S[k]; if(i>idx || (i===idx && String(tt)>String(t))){best=k; idx=i; t=tt;}});
-  return {label:best,time:t};
-}
-function renderList(){
-  const tb=document.getElementById('tb'); tb.innerHTML="";
-  const arr=Object.values(missions).filter(m=>!m.done);
-  arr.sort((a,b)=>{const ta=lastStatus(a).time||a.updatedAt||a.id; const tb_=lastStatus(b).time||b.updatedAt||b.id; return (tb_>ta)?1:-1;});
-  arr.forEach(m=>{
-    const ord=orders[m.id]||"";
-    const {label,time}=lastStatus(m);
-    const cp=m?.adresse?.cp||"", ville=m?.adresse?.ville||"";
-    tb.insertAdjacentHTML('beforeend',`
-      <tr>
-        <td>${esc(ord)}</td>
-        <td>${esc(m.veh||"—")}</td>
-        <td>${esc(m.type||"—")}</td>
-        <td>${esc(m.motif||"—")}</td>
-        <td>${esc([cp,ville].filter(Boolean).join(' ')||"—")}</td>
-        <td>${esc(label||"—")}</td>
-        <td>${esc(time||"")}</td>
-      </tr>
-    `);
-  });
-}
-
-/* Modal controls */
-function openNew(){ document.getElementById('modal').style.display='flex'; switchTab('addr'); }
-function closeNew(){ document.getElementById('modal').style.display='none'; }
-function switchTab(which){
-  document.getElementById('pane-addr').style.display = (which==='addr')?'block':'none';
-  document.getElementById('pane-hosp').style.display = (which==='hosp')?'block':'none';
-  document.getElementById('tab-addr').classList.toggle('active', which==='addr');
-  document.getElementById('tab-hosp').classList.toggle('active', which==='hosp');
-}
-
-/* Auto localité par CP (référentiel local) */
-function autoVilleByCP(){
-  const cp=(document.getElementById('mCP').value||"").trim();
-  if (postalMap[cp]) document.getElementById('mVille').value = postalMap[cp];
-}
-function autoHospVilleByCP(){
-  const cp=(document.getElementById('hCP').value||"").trim();
-  if (postalMap[cp]) document.getElementById('hVille').value = postalMap[cp];
-}
-
-/* Hôpital : appliquer à l’adresse */
-function applyHospToAddr(){
-  document.getElementById('mRue').value  = document.getElementById('hRue').value;
-  document.getElementById('mNum').value  = document.getElementById('hNum').value;
-  document.getElementById('mCP').value   = document.getElementById('hCP').value;
-  document.getElementById('mVille').value= document.getElementById('hVille').value;
-  switchTab('addr');
-}
-
-/* Recherche hôpital : selection depuis liste locale + secours Nominatim */
-document.getElementById('hospSearch').addEventListener('change', async (e)=>{
-  const name=(e.target.value||"").trim();
-  if (!name) return;
-  // 1) liste locale
-  let found=hospitals.find(h=> (h.name||"").toLowerCase()===name.toLowerCase());
-  if (found){
-    document.getElementById('hRue').value = found.rue||"";
-    document.getElementById('hNum').value = found.num||"";
-    document.getElementById('hCP').value = found.cp||"";
-    document.getElementById('hVille').value = found.ville||"";
-    return;
-  }
-  // 2) secours Nominatim
-  try{
-    const url=new URL('https://nominatim.openstreetmap.org/search');
-    url.searchParams.set('q', `${name} Belgium`);
-    url.searchParams.set('format','json'); url.searchParams.set('addressdetails','1'); url.searchParams.set('limit','1');
-    const r=await fetch(url.toString(),{headers:{'Accept-Language':'fr'}});
-    const j=await r.json();
-    if (Array.isArray(j) && j.length){
-      const a=j[0].address||{};
-      document.getElementById('hRue').value  = a.road || a.pedestrian || a.suburb || "";
-      document.getElementById('hNum').value  = a.house_number || "";
-      document.getElementById('hCP').value   = a.postcode || "";
-      document.getElementById('hVille').value= a.city || a.town || a.village || a.municipality || "";
-    }
-  }catch(err){ console.warn("Nominatim hopital fail", err); }
-});
-
-/* Géocodage exact sur adresse complète (Nominatim) */
-async function geocodeAddress(rue,num,cp,ville){
-  const q = `${rue||""} ${num||""}, ${cp||""} ${ville||""}, Belgium`.trim();
-  const url=new URL('https://nominatim.openstreetmap.org/search');
-  url.searchParams.set('q', q);
-  url.searchParams.set('format','json');
-  url.searchParams.set('limit','1');
-  try{
-    const r=await fetch(url.toString(),{headers:{'Accept-Language':'fr'}});
-    const j=await r.json();
-    if (Array.isArray(j) && j.length){
-      return { lat:parseFloat(j[0].lat), lon:parseFloat(j[0].lon), display_name:j[0].display_name };
-    }
-  }catch(e){ console.warn("Geocode fail", e); }
-  return null;
-}
-
-/* Numérotation: plus petit numéro libre — côté Missions */
-async function allocateOrder(missionId){
-  // premier arrivé — on lit l’état courant, on choisit le plus petit libre, on tente d’écrire
-  for (let attempt=0; attempt<3; attempt++){
-    const cur = await readKey(MISSIONS_ORDER);
-    const used = new Set(Object.values(cur||{}));
-    let n=1; while(used.has(n)) n++;
-    // tentative
-    await updateKey(MISSIONS_ORDER, { [missionId]: n });
-    // relecture pour vérifier
-    const after = await readKey(MISSIONS_ORDER);
-    if (after && after[missionId]===n) return n;
-    // sinon, une autre page a pris ce numéro, on retente
-  }
-  // fallback: temps
-  const fallback = Math.floor(Date.now()/1000)%10000;
-  await updateKey(MISSIONS_ORDER, { [missionId]: fallback });
-  return fallback;
-}
-
-function nowHHMM(){ const d=new Date(), z=n=>String(n).padStart(2,'0'); return `${z(d.getHours())}:${z(d.getMinutes())}`; }
-
-/* Création */
-async function createMission(){
-  const veh = document.getElementById('mVeh').value;
-  const type= document.getElementById('mType').value;
-  const motif=document.getElementById('mMotif').value.trim();
-
-  // adresse (onglet actif ou via hôpital)
-  const rue = document.getElementById('mRue').value||"";
-  const num = document.getElementById('mNum').value||"";
-  const cp  = document.getElementById('mCP').value||"";
-  const ville=document.getElementById('mVille').value||"";
-
-  if(!veh){ alert("Choisis un véhicule."); return; }
-  if(!motif){ alert("Motif requis."); return; }
-  if(!rue || !cp || !ville){ alert("Adresse incomplète (rue, CP, ville)."); return; }
-
-  const geo = await geocodeAddress(rue,num,cp,ville);
-  if(!geo){ alert("Géocodage impossible pour cette adresse."); return; }
-
-  const id = String(Date.now());
-  const ordre = await allocateOrder(id);
-
-  const mission = {
-    id,
-    veh,
-    type,
-    motif,
-    adresse:{ rue, num, cp, ville },
-    geo, // {lat,lon,display_name}
-    statuts: { "Appel": nowHHMM() },
-    done:false,
-    updatedAt: Date.now()
-  };
-
-  // canon + active summary
-  const tv = {
-    id, veh, motif,
-    adresse:{cp,ville},
-    geo:{ lat:geo.lat, lon:geo.lon },
-    statuts: mission.statuts,
-    done:false,
-    updatedAt: mission.updatedAt
-  };
-
-  await updateKey(MISSIONS_CANON,  { [id]: mission });
-  await updateKey(MISSIONS_ACTIVE, { [id]: tv });
-
-  closeNew();
-  alert(`Mission #${ordre} créée.`);
-}
-
-/* Onglet par défaut + boot */
-function z(n){return String(n).padStart(2,'0');}
-</script>
 </body>
 </html>
