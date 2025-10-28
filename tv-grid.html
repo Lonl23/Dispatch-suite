@@ -1,320 +1,136 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Tableau de garde – TV</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<style>
-  :root{
-    --bg:#0a0f16; --panel:#111826; --line:#1f2c3e;
-    --text:#eaf1fb; --muted:#9bb2cd;
-    --green:#2ecc71; --red:#e74c3c; --blue:#2e86ff;
-    --yellow:#ffd54f; --rose:#ff66b3; --orange:#ff8c42;
-    --ticker-bg:#a40000; --ticker-fg:#fff;
-  }
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
-
-  /* Header */
-  .header{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:#0e1522;border-bottom:1px solid var(--line)}
-  .title{font-size:26px;font-weight:800;color:#cfe1ff}
-  .meta{display:flex;gap:14px;align-items:center}
-  .pill{background:#0f1520;border:1px solid #2b3a50;border-radius:999px;padding:6px 12px;color:#d9e7ff;font-weight:600}
-
-  /* Roles */
-  .roles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:8px 12px;background:#0f1626;border-bottom:1px solid var(--line)}
-  .role{background:#0f1520;border:1px solid #2b3a50;border-radius:10px;padding:6px 10px;min-width:160px;text-align:center}
-  .role span{display:block;color:#9bb2cd;font-size:12px}
-
-  /* Main grid: Left = Hall, Right = Garage + listes */
-  .main{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:12px;height:calc(100vh - 48px - 44px - 48px)}
-  @media (max-width:1500px){ .main{grid-template-columns:1fr} }
-
-  .section{background:var(--panel);border:1px solid var(--line);border-radius:14px;display:flex;flex-direction:column;min-height:0}
-  .section h2{margin:0;padding:10px 12px;border-bottom:1px solid var(--line);font-size:18px;color:#cfe1ff}
-
-  /* HALL exact comme la photo */
-  .hall-wrap{padding:10px;display:flex;flex-direction:column;gap:10px;overflow:auto}
-  .hall-ext{border:2px solid #34455f;border-radius:8px;padding:6px;height:76px;display:flex;align-items:center;justify-content:center}
-  .hall-ext .slot{flex:1;height:100%;border:2px solid #34455f;border-radius:6px;display:flex;align-items:center;justify-content:center;padding:6px}
-
-  .hall-columns{border:2px solid #34455f;border-radius:8px;padding:12px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .hall-col{display:flex;flex-direction:column;gap:26px;justify-content:space-between}
-
-  .slot{border:2px solid #34455f;border-radius:6px;min-height:72px;display:flex;align-items:center;justify-content:center;padding:6px}
-  .card{width:100%;height:100%;border:2px solid #34455f;border-radius:6px;display:flex;flex-direction:column;gap:2px;justify-content:center;align-items:flex-start;padding:8px;font-size:14px}
-  .libre{display:flex;align-items:center;justify-content:center;width:100%;height:100%;color:#9bb2cd;font-weight:700;letter-spacing:.5px}
-
-  /* Status colors (fond plein) */
-  .c-green{background:var(--green);color:#06240e}
-  .c-red{background:var(--red);color:#fff}
-  .c-blue{background:var(--blue);color:#fff}
-  .c-yellow{background:var(--yellow);color:#111}
-  .c-rose{background:var(--rose);color:#111}
-  .c-orange{background:var(--orange);color:#111}
-  .blink{animation: blink 1s linear infinite}
-  @keyframes blink{0%,49%{filter:brightness(1)}50%,100%{filter:brightness(.7)}}
-
-  .l1{font-weight:800}
-  .l2,.l3{font-size:13px}
-
-  /* Garage (plan simple 2x2 + 4 horizontaux) – ajustable si besoin */
-  .garage{padding:10px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;overflow:auto}
-  .garage .slot{height:90px}
-
-  /* Orphelins (sans emplacement) */
-  .orph{padding:10px;display:flex;flex-wrap:wrap;gap:8px;overflow:auto}
-  .pill2{border:1px solid #2b3a50;border-radius:999px;padding:6px 10px;background:#0f1520;color:#d9e7ff}
-
-  /* Banner smooth */
-  .ticker{height:48px;background:var(--ticker-bg);color:var(--ticker-fg);display:flex;align-items:center;overflow:hidden;border-top:1px solid #7a0016}
-  .marquee{white-space:nowrap;display:flex;gap:64px}
-  .track{display:inline-block;animation: loop 60s linear infinite}
-  @keyframes loop{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-  .chunk{display:inline-flex;gap:12px;align-items:center;margin-right:64px}
-  .tag{background:#7a0016;border:1px solid #ffccd5;padding:2px 8px;border-radius:6px;font-weight:700}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TV – Tableau de garde</title>
+  <link rel="preconnect" href="https://www.gstatic.com" />
+  <style>
+    :root{
+      --bg:#0b0f14; --panel:#121821; --line:#223044; --text:#e8eef5; --muted:#9fb2c9; --accent:#3a8bf2;
+      --green:#2ecc71; --red:#e74c3c; --blue:#3a8bf2; --yellow:#f1c40f; --pink:#ff5db1; --orange:#ffa447;
+      --tile:#0f1520;
+    }
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
+    .header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#0d131c;border-bottom:1px solid var(--line)}
+    .title{font-size:22px;font-weight:800}
+    .meta{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:14px}
+    .pill{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:6px 10px;color:#cfe1ff}
+    .roles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:8px 12px;background:#101826;border-bottom:1px solid var(--line)}
+    .role{background:#0f1520;border:1px solid #2c3d52;border-radius:10px;padding:6px 10px;font-size:14px}
+    .legend{display:flex;gap:12px;justify-content:center;align-items:center;padding:6px 12px;border-bottom:1px solid var(--line);background:#0f1520}
+    .leg{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+    .sw{width:18px;height:14px;border-radius:4px;border:1px solid #2c3d52}
+    .main{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:8px;height:calc(100vh - 160px);box-sizing:border-box}
+    .column{background:#0f1520;border:1px solid var(--line);border-radius:12px;position:relative;padding:8px;overflow:auto}
+    .hall{display:grid;grid-template-rows:auto 1fr;gap:8px}
+    .exterieur{height:64px;border:1px solid #2c3d52;border-radius:10px;background:var(--tile);display:flex;align-items:center;justify-content:center}
+    .hgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start}
+    .hcol{display:flex;flex-direction:column;gap:12px}
+    .hslot{height:80px;border-radius:10px;border:1px solid #2c3d52;background:#162030;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:6px;text-align:center}
+    .garage{display:grid;grid-template-rows:auto 1fr auto;gap:8px;height:100%}
+    .gtop{display:grid;grid-template-columns:220px 220px 1fr;gap:16px;align-items:start}
+    .g1,.g8{height:340px;border:1px solid #2c3d52;border-radius:10px;background:#162030;display:flex;justify-content:center;align-items:center}
+    .gstack{border:1px solid #2c3d52;border-radius:10px;padding:10px;background:#0f1520;display:flex;flex-direction:column;gap:12px}
+    .gH{height:80px;border:1px solid #2c3d52;border-radius:10px;background:#162030;display:flex;justify-content:center;align-items:center}
+    .gmid{display:grid;grid-template-columns:1fr;gap:8px}
+    .g5{height:110px;border:1px solid #2c3d52;border-radius:10px;background:#162030;display:flex;justify-content:center;align-items:center}
+    .gbottom{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+    .g6,.g7{height:300px;border:1px solid #2c3d52;border-radius:10px;background:#162030;display:flex;justify-content:center;align-items:center}
+    .vtile{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px 6px;border-radius:10px;box-sizing:border-box}
+    .line1{font-weight:800;font-size:16px}
+    .line2{font-size:14px;color:#cfe1ff;margin-top:3px}
+    .line3{font-size:13px;color:#9fb2c9;margin-top:2px}
+    .st-dispo{background:var(--green)}
+    .st-indispo{background:var(--red)}
+    .st-depart{background:var(--blue);animation:blink 1.4s linear infinite}
+    .st-surplace{background:var(--yellow)}
+    .st-encharge{background:var(--pink)}
+    .st-hopital{background:var(--orange)}
+    @keyframes blink{0%,49%{filter:brightness(1)}50%,100%{filter:brightness(1.45)}}
+    .ticker{position:fixed;left:0;right:0;bottom:0;height:44px;background:#9b001c;color:#fff;border-top:1px solid #5e0011;display:flex;align-items:center;overflow:hidden}
+    .track{white-space:nowrap;display:flex;gap:56px}
+    .scroll{display:flex;gap:56px;will-change:transform;animation:marq 40s linear infinite}
+    @keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+    .sepchar{opacity:.9;margin:0 16px}
+  </style>
 </head>
 <body>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<!-- Firebase bridge -->
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="store-bridge.js"></script>
+  <script src="js/store-bridge.js"></script>
+  <script src="js/auth-guard.js"></script>
+  <script>AuthGuard.ensureAuthOrRedirect();</script>
 
-<div class="header">
-  <div class="title">Tableau de garde</div>
-  <div class="meta">
-    <div class="pill" id="meteo">—</div>
-    <div class="pill" id="clock">--:--</div>
+  <div class="header">
+    <div class="title" id="dateTxt">—</div>
+    <div class="meta">
+      <div class="pill" id="meteo">🌦️ …</div>
+      <div class="pill" id="clock">--:--</div>
+    </div>
   </div>
-</div>
 
-<div id="roles" class="roles">Chargement des rôles…</div>
+  <div class="roles" id="roles">Chargement des rôles…</div>
 
-<div class="main">
-  <!-- HALL -->
-  <div class="section">
-    <h2>Hall des départs</h2>
-    <div class="hall-wrap">
-      <!-- Extérieur -->
-      <div class="hall-ext">
-        <div id="H-Exterieur" class="slot"></div>
+  <div class="legend">
+    <div class="leg"><span class="sw" style="background:#2ecc71"></span>Disponible</div>
+    <div class="leg"><span class="sw" style="background:#e74c3c"></span>Indisponible</div>
+    <div class="leg"><span class="sw" style="background:#3a8bf2"></span>Départ</div>
+    <div class="leg"><span class="sw" style="background:#f1c40f"></span>Sur place</div>
+    <div class="leg"><span class="sw" style="background:#ff5db1"></span>En charge</div>
+    <div class="leg"><span class="sw" style="background:#ffa447"></span>À l’hôpital</div>
+  </div>
+
+  <div class="main">
+    <div class="column hall">
+      <div class="exterieur" id="slot-Ext"></div>
+      <div class="hgrid">
+        <div class="hcol">
+          <div class="hslot" id="slot-H6"></div>
+          <div class="hslot" id="slot-H7"></div>
+          <div class="hslot" id="slot-H8"></div>
+          <div class="hslot" id="slot-H9"></div>
+          <div class="hslot" id="slot-H10"></div>
+        </div>
+        <div class="hcol">
+          <div class="hslot" id="slot-H5"></div>
+          <div class="hslot" id="slot-H4"></div>
+          <div class="hslot" id="slot-H3"></div>
+          <div class="hslot" id="slot-H2"></div>
+          <div class="hslot" id="slot-H1"></div>
+        </div>
       </div>
+    </div>
 
-      <!-- Deux colonnes comme sur la photo -->
-      <div class="hall-columns">
-        <!-- Colonne gauche : H6, H7, H8, H9, H10 -->
-        <div class="hall-col" id="col-left">
-          <div id="H6" class="slot"></div>
-          <div id="H7" class="slot"></div>
-          <div id="H8" class="slot"></div>
-          <div id="H9" class="slot"></div>
-          <div id="H10" class="slot"></div>
+    <div class="column garage">
+      <div class="gtop">
+        <div class="g1" id="slot-G1"></div>
+        <div class="g8" id="slot-G8"></div>
+        <div class="gstack">
+          <div class="gH" id="slot-G2"></div>
+          <div class="gH" id="slot-G3"></div>
+          <div class="gH" id="slot-G4"></div>
         </div>
-        <!-- Colonne droite : H5, H4, H3, H2, H1 -->
-        <div class="hall-col" id="col-right">
-          <div id="H5" class="slot"></div>
-          <div id="H4" class="slot"></div>
-          <div id="H3" class="slot"></div>
-          <div id="H2" class="slot"></div>
-          <div id="H1" class="slot"></div>
-        </div>
+      </div>
+      <div class="gmid">
+        <div class="g5" id="slot-G5"></div>
+      </div>
+      <div class="gbottom">
+        <div class="g6" id="slot-G6"></div>
+        <div class="g7" id="slot-G7"></div>
       </div>
     </div>
   </div>
 
-  <!-- GARAGE + orphelins -->
-  <div class="section">
-    <h2>Garage & autres</h2>
-    <div id="garage" class="garage"></div>
-    <div class="section" style="margin:10px;border:none">
-      <h2 style="border:none;padding:6px 0 0 0">Sans emplacement</h2>
-      <div id="orph" class="orph"></div>
+  <div class="ticker">
+    <div class="track">
+      <div id="band1" class="scroll"></div>
+      <div id="band2" class="scroll" aria-hidden="true"></div>
     </div>
   </div>
-</div>
 
-<!-- Bannière -->
-<div class="ticker">
-  <div class="marquee">
-    <div id="band1" class="track"></div>
-    <div id="band2" class="track" aria-hidden="true"></div>
-  </div>
-</div>
-
-<script>
-/* KEYS */
-const DISPATCH_KEY = "dispatch_parc_vehicules";
-const MISSIONS_KEY = "missions_actives";
-
-/* STATE */
-let dispatchData={}, vehs=[], missionsByVeh={};
-
-/* HELPERS */
-const esc=s=>String(s??"").replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-function z2(n){return String(n).padStart(2,'0');}
-
-/* Clock + Météo */
-function tick(){const d=new Date();const months=["janv","févr","mars","avr","mai","juin","juil","août","sept","oct","nov","déc"];document.getElementById('clock').textContent=`${z2(d.getDate())} ${months[d.getMonth()]} ${d.getFullYear()} — ${z2(d.getHours())}:${z2(d.getMinutes())}`;}
-setInterval(tick,1000); tick();
-async function meteo(){
-  try{const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=50.73&longitude=4.48&current=temperature_2m,weather_code&timezone=Europe/Brussels");const j=await r.json();const t=j.current.temperature_2m,c=j.current.weather_code;const ico=({0:"☀️",1:"🌤️",2:"⛅",3:"☁️",45:"🌫️",48:"🌫️",51:"🌦️",61:"🌧️",63:"🌧️",65:"🌧️",71:"🌨️",95:"⛈️"})[c]||"☁️";document.getElementById('meteo').textContent=`${ico} ${t}°C La Hulpe`;}catch(e){}}
-meteo(); setInterval(meteo, 10*60*1000);
-
-/* ROLES */
-function renderRoles(){
-  const r=dispatchData._roles||{};
-  const map=[
-    ["Officier de semaine",r.officier_semaine],
-    ["Officier de garde",r.officier_garde],
-    ["Resp. opérations",r.responsable_operations],
-    ["Chef de groupe",r.chef_groupe],
-    ["Chef de poste",r.chef_poste],
-    ["1er centraliste",r.centraliste_1],
-    ["2e centraliste",r.centraliste_2],
-  ];
-  document.getElementById('roles').innerHTML =
-    map.map(([l,v])=>`<div class="role"><span>${esc(l)}</span>${esc(v||"-")}</div>`).join("");
-}
-
-/* STATUS COLOR from missions/indispo/available */
-function colorClassForVeh(id){
-  const m=missionsByVeh[id];
-  if(m){ // mission active → couleur selon dernier statut
-    const st = (m.last||m.status||m.etat||"").toLowerCase();
-    if (st.includes("départ")||st.includes("depart")) return "c-blue blink";
-    if (st.includes("sur place")||st==="pec") return "c-yellow";
-    if (st.includes("en charge")||st.includes("vers hôpital")||st.includes("vers destination")) return "c-rose";
-    if (st.includes("hôpital")||st.includes("destination")) return "c-orange";
-    // si mission mais pas de mapping → bleu
-    return "c-blue";
-  }
-  const stDisp=(dispatchData[id]?.statut)||"";
-  if(stDisp==="Indisponible") return "c-red";
-  return "c-green"; // disponible par défaut
-}
-
-/* VEHICLE CARD */
-function cardForVeh(id){
-  if(!id) return `<div class="libre">LIBRE</div>`;
-  const def = (vehs||[]).find(v=>v.id===id) || {};
-  const live = dispatchData[id] || {};
-  const name = def.name||id;
-  const attr = live.attribution || def.attribution || "";
-  const plaque = def.plaque || "";
-  const l1 = `${esc(name)}${attr?` (${esc(attr)})`:""}${plaque?` — ${esc(plaque)}`:""}`;
-  const crew = [live.XO,live.S,live.PS].filter(Boolean).join(" / ") || "—";
-  const km = live.km ? `${esc(live.km)} km` : "—";
-  const cls = colorClassForVeh(id);
-  return `<div class="card ${cls}"><div class="l1">${l1}</div><div class="l2">${esc(crew)}</div><div class="l3">${esc(km)}</div></div>`;
-}
-
-/* BUILD map emplacement -> veh */
-function buildSlotMap(){
-  const map={};
-  (vehs||[]).forEach(v=>{
-    const id=v.id;
-    const slot = v.emplacement || (dispatchData[id]?.emplacement) || "";
-    if(slot) map[slot]=id;
-  });
-  return map;
-}
-
-/* RENDER HALL exactly like photo */
-function renderHall(){
-  const s=buildSlotMap();
-  // Extérieur
-  document.getElementById('H-Exterieur').innerHTML = cardForVeh(s["Extérieur"]||s["Exterieur"]||null);
-  // Colonnes
-  ["H6","H7","H8","H9","H10","H5","H4","H3","H2","H1"].forEach(h=>{
-    const el=document.getElementById(h);
-    if(el) el.innerHTML = cardForVeh(s[h]||null);
-  });
-}
-
-/* GARAGE: on affiche G1..G8 si fournis */
-function renderGarage(){
-  const s=buildSlotMap();
-  const g=document.getElementById('garage'); g.innerHTML="";
-  const GORDER=["G1","G2","G3","G4","G5","G6","G7","G8"];
-  GORDER.forEach(key=>{
-    const div=document.createElement('div'); div.className="slot";
-    div.innerHTML = cardForVeh(s[key]||null);
-    g.appendChild(div);
-  });
-}
-
-/* ORPHANS: véhicules sans emplacement */
-function renderOrphans(){
-  const s=buildSlotMap(), used=new Set(Object.values(s));
-  const box=document.getElementById('orph'); box.innerHTML="";
-  (vehs||[]).forEach(v=>{
-    if(!used.has(v.id)){
-      const d=dispatchData[v.id]||{};
-      const attr=d.attribution||v.attribution||"";
-      const txt = `${v.id}${attr?` (${attr})`:''}`;
-      const pill=document.createElement('div');
-      pill.className="pill2"; pill.textContent = txt;
-      box.appendChild(pill);
-    }
-  });
-}
-
-/* BANNIÈRE */
-function renderBanner(){
-  const notes=dispatchData._notes||{};
-  const outs=[];
-  (vehs||[]).forEach(v=>{
-    const d=dispatchData[v.id];
-    if(d?.statut==="Indisponible"){
-      let t=(v.name||v.id);
-      if(d.attribution) t+=` [${d.attribution}]`;
-      if(d.commentaire) t+=` — ${d.commentaire}`;
-      outs.push(t);
-    }
-  });
-  const chunks=[];
-  if(outs.length) chunks.push(`<span class="chunk"><span class="tag">VÉHICULE OUT</span><span>${esc(outs.join(" • "))}</span></span>`);
-  if((notes.materiel||"").trim()) chunks.push(`<span class="chunk"><span class="tag">MATÉRIEL</span><span>${esc(notes.materiel.replace(/\s+/g,' ').trim())}</span></span>`);
-  if((notes.infos||"").trim()) chunks.push(`<span class="chunk"><span class="tag">INFOS</span><span>${esc(notes.infos.replace(/\s+/g,' ').trim())}</span></span>`);
-  const content = chunks.length? chunks.join("") : `<span class="chunk"><span>Aucune information</span></span>`;
-  const track = content + content + content; // triple pour boucle sans “trou”
-  document.getElementById('band1').innerHTML=track;
-  document.getElementById('band2').innerHTML=track;
-}
-
-/* MISSIONS → map veh -> statut dernier */
-function reduceMissions(snap){
-  const byVeh={};
-  Object.values(snap||{}).forEach(m=>{
-    const id=(m.veh||m.vehicule||"").trim(); if(!id) return;
-    // on essaye de prendre le dernier statut textuel si dispo
-    let last="";
-    if(m.statuts){
-      const order=["Appel","Départ","Sur place","PEC","En charge","Vers hôpital","Vers destination","Arrivé hôpital","À l'hôpital","À destination","Retour dispo","Rentré base","Retour au poste","Mise indispo","Indisponible","Annulé"];
-      let bestIdx=-1;
-      for(const k in m.statuts){ const idx=order.indexOf(k); if(idx>bestIdx){bestIdx=idx; last=k;}}
-    }
-    byVeh[id]={ status:last||m.status||"" , last:last };
-  });
-  return byVeh;
-}
-
-/* SUBSCRIPTIONS */
-subscribeKey(DISPATCH_KEY, d=>{
-  dispatchData=d||{};
-  vehs = Array.isArray(d?._settings?.vehs)? d._settings.vehs : [];
-  renderRoles(); renderHall(); renderGarage(); renderOrphans(); renderBanner();
-});
-subscribeKey(MISSIONS_KEY, m=>{
-  missionsByVeh = reduceMissions(m||{});
-  renderHall(); // recolorise
-});
-
-/* First draw */
-renderRoles(); renderHall(); renderGarage(); renderOrphans(); renderBanner();
-</script>
+  <script src="js/tv-grid.js"></script>
 </body>
 </html>
