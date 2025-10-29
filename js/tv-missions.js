@@ -3,14 +3,19 @@
 const MISSIONS_KEY = "dispatch_missions";
 const DISPATCH_KEY = "dispatch_parc_vehicules";
 
-// Base fournie (La Hulpe)
+// Base (La Hulpe)
 const BASE = { lat: 50.730716, lon: 4.494684, label: "Base ACSRS" };
 
 let missions = {};
 let dispatch = {};
 let map, missionLayer, baseMarker;
 
-/* ============== Fallback de persistance (si writeKey manquant) ============== */
+/* ============== Réglages Annonce vocale ============== */
+const TTS_RATE   = 0.88;  // <1 = plus lent
+const TTS_PITCH  = 0.95;
+const TTS_VOLUME = 1.0;
+
+/* ============== Fallback persistance (si writeKey manquant) ============== */
 function persistKey(key, value){
   if (typeof window.writeKey === 'function') {
     return window.writeKey(key, value);
@@ -276,6 +281,7 @@ function renderTicker(){
 }
 
 /* ========================= Annonces vocales départ 112 ========================= */
+// Audio / TTS
 let audioCtx;
 function ensureAudio() {
   if (!audioCtx) {
@@ -283,47 +289,46 @@ function ensureAudio() {
     document.addEventListener('click', ()=>audioCtx.resume(), {once:true});
   }
 }
-function beep(freq=650, durMs=250, vol=0.4) {
-  ensureAudio();
-  if (!audioCtx) return Promise.resolve();
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.type = 'sine';
-  osc.frequency.value = freq;
-  gain.gain.value = vol;
-  osc.connect(gain).connect(audioCtx.destination);
-  const t0 = audioCtx.currentTime;
-  osc.start(t0);
-  osc.stop(t0 + durMs/1000);
-  return new Promise(r=> osc.onended = r);
+// BIP LONG (≈3,5 sec)
+async function tonePatternLong(){
+  const duration = 3500; // ms
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.frequency.value = 820;      // tonalité d’alerte
+    osc.type = "sine";
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+
+    osc.start();
+    setTimeout(()=>{ osc.stop(); ctx.close(); }, duration);
+  }catch(e){}
+  await new Promise(r=>setTimeout(r, duration+150));
 }
-async function tonePattern(kind){
-  switch(kind){
-    case 'critical':
-      await beep(1000,250,0.5); await beep(700,250,0.5);
-      await beep(1000,250,0.5); await beep(700,250,0.5);
-      break;
-    case 'avp':
-      await beep(600,180,0.45); await beep(800,180,0.45); await beep(1000,220,0.5);
-      break;
-    case 'trauma':
-      await beep(850,400,0.45); break;
-    case 'noResponse':
-      await beep(550,220,0.4); await new Promise(r=>setTimeout(r,150)); await beep(550,220,0.4); await new Promise(r=>setTimeout(r,150)); await beep(550,220,0.4);
-      break;
-    case 'pmd':
-      await beep(700,350,0.4); break;
-    case 'assist':
-      await beep(500,300,0.35); break;
-    default:
-      await beep(650,250,0.35);
-  }
+// BIP COURT (avant 2e annonce)
+async function toneShort(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.frequency.value = 880;
+    osc.type = "sine";
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    gain.gain.setValueAtTime(0.35, ctx.currentTime);
+    osc.start();
+    setTimeout(()=>{ osc.stop(); ctx.close(); }, 350);
+  }catch(e){}
+  await new Promise(r=>setTimeout(r, 380));
 }
 function pickFrenchVoice() {
   const vs = speechSynthesis.getVoices();
   return vs.find(v=>/fr.*(BE)/i.test(v.lang)) || vs.find(v=>/fr/i.test(v.lang)) || vs[0];
 }
-function speakFr(text, rate=1.02, pitch=1, volume=1){
+function speakFr(text, rate=TTS_RATE, pitch=TTS_PITCH, volume=TTS_VOLUME){
   try{
     const u = new SpeechSynthesisUtterance(text);
     u.lang = 'fr-BE';
@@ -364,6 +369,24 @@ function buildAnnouncement(m){
   if (motif) parts.push(motif);
   return parts.join(', ') + '.';
 }
+
+// Lance l’annonce: bip long + message, puis à +10s bip court + message
+async function announceMission(m){
+  ensureAudio();
+  const kind = motifCategory(m.motif);
+  // pour l’instant, un bip long unique quel que soit le motif (tonalité uniforme)
+  await tonePatternLong();
+  const msg = buildAnnouncement(m);
+  speakFr(msg);
+
+  // Répétition à +10 s avec bip court avant
+  setTimeout(async ()=>{
+    await toneShort();
+    speakFr(msg);
+  }, 10000);
+}
+
+/* ========================= Détection annonces 112 ========================= */
 const ANNOUNCED_KEY = 'tv_112_announced_ids';
 function getAnnounced(){ try{ return new Set(JSON.parse(localStorage.getItem(ANNOUNCED_KEY)||'[]')); }catch{ return new Set(); } }
 function setAnnounced(set){ try{ localStorage.setItem(ANNOUNCED_KEY, JSON.stringify(Array.from(set))); }catch{} }
@@ -383,12 +406,10 @@ async function maybeAnnounceNew112(prev, curr){
     const isNew = !was;
     const departJustSet = (!hadDepartBefore && hasDepartNow);
 
+    // Déclenche: à la création OU dès que "Départ" apparaît
     if ((isNew || departJustSet) && !announcedSet.has(id)){
       announcedSet.add(id); setAnnounced(announcedSet);
-      const kind = motifCategory(m.motif);
-      try { await tonePattern(kind); } catch {}
-      const msg = buildAnnouncement(m);
-      speakFr(msg, 1.02, 1, 1);
+      announceMission(m);
     }
   }
   for (const oldId of Object.keys(prev)){
