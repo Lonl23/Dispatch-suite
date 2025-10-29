@@ -3,14 +3,14 @@ const MISSIONS_KEY = "dispatch_missions";
 const DISPATCH_KEY = "dispatch_parc_vehicules";
 
 // Base (La Hulpe — Avenue René Soyer 3)
-const BASE = { lat: 50.7303, lon: 4.4860, label: "Base ACSRS" };
+const BASE = { lat: 50.730716, lon: 4.494684, label: "Base ACSRS" };
 
 let missions = {};
 let dispatch = {};
 let map, baseMarker, missionLayer;
 
 function z2(n){ return String(n).padStart(2,'0'); }
-function nowHHMM(){ const d=new Date(); return `${z2(d.getHours())}:${z2(d.getMinutes())}`; }
+function nowHHMM(){ const d=new Date(); return `${z2(d.getHours())}:${z2(d.getMinutes())}:${z2(d.getSeconds())}`; }
 function esc(s){ return String(s??"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
 function norm(s){
   return String(s||"").toLowerCase()
