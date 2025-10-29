@@ -1,4 +1,6 @@
 // tv-missions.js — Colonne missions + Carte OSM + Ticker (aligné TV-Grid)
+// Corrige "writeKey is not defined" en ajoutant persistKey fallback.
+
 const MISSIONS_KEY = "dispatch_missions";
 const DISPATCH_KEY = "dispatch_parc_vehicules";
 
@@ -8,6 +10,27 @@ const BASE = { lat: 50.730716, lon: 4.494684, label: "Base ACSRS" };
 let missions = {};
 let dispatch = {};
 let map, missionLayer, baseMarker;
+
+/* ==== Fallback de persistance (évite writeKey manquant) ==== */
+function persistKey(key, value){
+  // 1) Si store-bridge fournit writeKey, on l'utilise
+  if (typeof window.writeKey === 'function') {
+    return window.writeKey(key, value);
+  }
+  // 2) Sinon si Firebase est dispo, on écrit direct en RTDB
+  try{
+    if (window.firebase && firebase.apps && firebase.apps.length && firebase.database){
+      return firebase.database().ref(key).set(value);
+    }
+  }catch(e){
+    console.warn('[tv-missions] persist via firebase échoué', e);
+  }
+  // 3) Sinon fallback localStorage (meilleur que rien)
+  try{
+    localStorage.setItem(key, JSON.stringify(value||{}));
+  }catch{}
+  return Promise.resolve();
+}
 
 /* Utils */
 const z2 = n => String(n).padStart(2,'0');
@@ -88,7 +111,9 @@ async function ensureOrderNumbers(){
       m.ordre = next(); used.add(m.ordre); changed=true;
     }
   }
-  if (changed){ await writeKey(MISSIONS_KEY, missions); }
+  if (changed){
+    await persistKey(MISSIONS_KEY, missions);
+  }
 }
 
 /* Liste missions (colonne gauche) */
@@ -118,7 +143,7 @@ function renderList(){
       <div class="order">${esc(m.ordre)}</div>
       <div class="info">
         <div class="line"><strong>${esc(veh)}${esc(attr)}</strong> <span class="badge">${esc(m.type||"")}</span></div>
-        <div class="line"><span class="label">Motif:</span> ${esc(m.motif||"—")}</div>
+        <div class="line"><span class="label">Motif:</span> ${esc(motif)}</div>
         <div class="line"><span class="label">Lieu:</span> ${esc(cpVille||"—")}</div>
         <div class="line"><span class="st ${cls}">${esc(labelFor(st.key))}</span> <span class="label">${esc(st.time||"")}</span></div>
       </div>
