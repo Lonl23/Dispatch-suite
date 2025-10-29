@@ -118,7 +118,7 @@ function renderList(){
       <div class="order">${esc(m.ordre)}</div>
       <div class="info">
         <div class="line"><strong>${esc(veh)}${esc(attr)}</strong> <span class="badge">${esc(m.type||"")}</span></div>
-        <div class="line"><span class="label">Motif:</span> ${esc(motif)}</div>
+        <div class="line"><span class="label">Motif:</span> ${esc(m.motif||"—")}</div>
         <div class="line"><span class="label">Lieu:</span> ${esc(cpVille||"—")}</div>
         <div class="line"><span class="st ${cls}">${esc(labelFor(st.key))}</span> <span class="label">${esc(st.time||"")}</span></div>
       </div>
@@ -181,13 +181,13 @@ function renderTicker(){
 
   const parts=[];
   if ((notes.infos||'').trim()){
-    parts.push(`INFOS: ${esc(notes.infos.replace(/\s+/g,' ').trim())}`);
+    parts.push(`INFOS: ${String(notes.infos).replace(/\s+/g,' ').trim()}`);
   }
   if (outs.length){
-    parts.push(`VÉHICULE OUT: ${esc(outs.join(' • '))}`);
+    parts.push(`VÉHICULE OUT: ${outs.join(' • ')}`);
   }
   if ((notes.materiel||'').trim()){
-    parts.push(`MATÉRIEL: ${esc(notes.materiel.replace(/\s+/g,' ').trim())}`);
+    parts.push(`MATÉRIEL: ${String(notes.materiel).replace(/\s+/g,' ').trim()}`);
   }
 
   const html = parts.length ? parts.join(`<span class="sepchar">|</span>`) : `Aucune information`;
@@ -199,13 +199,13 @@ function renderTicker(){
   }
 }
 
-/* Chargement initial (important pour afficher tout de suite) */
+/* Chargement initial (après auth & store-bridge injectés) */
 (async function initialLoad(){
   try{
     const [dSnap, mSnap] = await Promise.all([readKey(DISPATCH_KEY), readKey(MISSIONS_KEY)]);
     dispatch = dSnap || {};
     missions = mSnap || {};
-  }catch{ /* ignore */ }
+  }catch{/* ignore */}
   await ensureOrderNumbers();
   renderList();
   renderMap();
