@@ -1,4 +1,4 @@
-// tv-grid.js — TV Grid (Hall + Garage), rôles, météo, bannière
+// tv-grid.js — rendu TV (Hall, Garage style "comme le hall", Rôles, Bannière)
 
 const DISPATCH_KEY = 'dispatch_parc_vehicules';
 const MISSIONS_KEY = 'dispatch_missions';
@@ -7,7 +7,76 @@ let dispatch = {};
 let missions = {};
 let vehSettings = [];
 
-/* ======= Horloge & Date ======= */
+/* ================== Injection CSS (sans changer le HTML) ================== */
+(function injectStyles(){
+  const css = `
+  /* Rôles plus grands */
+  .roles { display:flex; flex-wrap:wrap; gap:16px; padding:8px 0; }
+  .roles .role{
+    font-size:22px; font-weight:800;
+    background:#0f1520; border:1px solid #2c3d52;
+    border-radius:12px; padding:8px 12px; color:#cfe1ff;
+  }
+
+  /* Bannière + gros espacement entre blocs */
+  .ticker{ height:56px; background:#b00020; color:#fff; display:flex; align-items:center; overflow:hidden; border-top:1px solid #7a0016; font-size:24px; }
+  .marquee{ white-space:nowrap; display:flex; gap:96px; width:100%; }
+  .scroll{ display:flex; gap:96px; will-change:transform; animation:scroll 40s linear infinite; }
+  @keyframes scroll{ from{transform:translateX(0)} to{transform:translateX(-50%)} }
+  .sepchar{ display:inline-block; padding:0 36px; color:#ffdede; opacity:.9; }
+
+  /* Tuiles communes Hall + Garage */
+  .vtile{
+    width:100%; border-radius:14px;
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,.22), 0 8px 16px rgba(0,0,0,.5);
+    padding:10px 12px; display:flex; flex-direction:column; justify-content:center; text-align:center; line-height:1.3;
+  }
+  .vtile .line1{ font-weight:800; font-size:16px; letter-spacing:.2px; }
+  .vtile .line2{ margin-top:4px; font-size:14px; opacity:.95; }
+  .vtile .line3{ margin-top:3px; font-size:13px; opacity:.9; }
+
+  /* Slot vide (gris neutre) et statuts avec contraste texte */
+  .st-empty{ background:#d3d3d3; color:#000; border:2px solid #c6c6c6; }
+  .st-dispo{ background:#00a032; color:#fff; }
+  .st-indispo{ background:#c00000; color:#fff; }
+  @keyframes blinkDepart{ 0%,49%{background:#005DFF} 50%,100%{background:#003EAD} }
+  .st-depart{ animation:blinkDepart 1.2s linear infinite; color:#fff; }
+  .st-surplace{ background:#ffd500; color:#000; }
+  .st-encharge{ background:#ff75a0; color:#000; }
+  .st-hopital{ background:#ff7f00; color:#000; }
+
+  /* ==== GARAGE "comme le hall" (grille uniforme) ==== */
+  /* On applique cette classe au parent commun des slots G1..G8 */
+  .garage-like-hall{
+    display:grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap:16px;
+    background:#0f1520;
+    border:1px solid #2c3d52;
+    border-radius:14px;
+    padding:16px;
+    box-shadow:0 20px 40px rgba(0,0,0,.4) inset;
+    margin-top:8px;
+  }
+  /* Chaque slot G* prend la même taille visuelle (comme une tuile du hall) */
+  .garage-like-hall > div[id^="slot-G"]{
+    min-height:180px; /* uniforme */
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+
+  /* Option: si besoin, adapter hauteur sur écrans plus petits */
+  @media (max-height:1000px){
+    .garage-like-hall > div[id^="slot-G"]{ min-height:150px; }
+  }
+  `;
+  const style = document.createElement('style');
+  style.textContent = css;
+  document.head.appendChild(style);
+})();
+
+/* ================== Horloge & Date ================== */
 function updateClock(){
   const d = new Date();
   const z = n => String(n).padStart(2,'0');
@@ -23,7 +92,7 @@ function updateClock(){
 setInterval(updateClock, 1000);
 updateClock();
 
-/* ======= Météo (La Hulpe) ======= */
+/* ================== Météo (La Hulpe) ================== */
 async function loadMeteo(){
   try{
     const r = await fetch("https://api.open-meteo.com/v1/forecast?latitude=50.73&longitude=4.48&current=temperature_2m,weather_code&timezone=Europe/Brussels");
@@ -38,7 +107,7 @@ async function loadMeteo(){
 loadMeteo();
 setInterval(loadMeteo, 10*60*1000);
 
-/* ======= Helpers ======= */
+/* ================== Utils ================== */
 function esc(s){
   return String(s??'').replace(/[&<>"']/g, m => ({
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
@@ -53,7 +122,7 @@ function norm(s){
     .trim();
 }
 
-/* ======= Rôles ======= */
+/* ================== Rôles ================== */
 function renderRoles(){
   const r = dispatch._roles || {};
   const parts = [
@@ -72,7 +141,7 @@ function renderRoles(){
     : '<div class="role">Aucun rôle encodé</div>';
 }
 
-/* ======= Statut affiché (missions > dispatch) ======= */
+/* ================== Statut affiché (missions > dispatch) ================== */
 function statusClass(key){
   switch(key){
     case 'indispo':  return 'st-indispo';
@@ -119,10 +188,9 @@ function computeVehStatus(vehId){
   return "dispo";
 }
 
-/* ======= Tuile véhicule ======= */
+/* ================== Tuile ================== */
 function makeTile(info, statKey){
   if (!info){
-    // Slot libre → gris neutre
     return `<div class="vtile st-empty"><div class="line1">LIBRE</div></div>`;
   }
   const cls = statusClass(statKey);
@@ -135,16 +203,35 @@ function makeTile(info, statKey){
   </div>`;
 }
 
-/* ======= Rendu grilles ======= */
+/* ================== Garage style "comme le hall" (sans toucher HTML) ================== */
+function applyGarageLikeHall(){
+  // Trouve un parent commun pour G1..G8
+  const gids = ["slot-G1","slot-G2","slot-G3","slot-G4","slot-G5","slot-G6","slot-G7","slot-G8"];
+  const nodes = gids.map(id=>document.getElementById(id)).filter(Boolean);
+  if (!nodes.length) return;
+
+  // On prend le parent du premier slot G* comme conteneur garage
+  const parent = nodes[0].parentElement;
+  if (!parent) return;
+
+  // Si un ancien layout "enhanced" existe, on ne l'utilise plus
+  const old = document.querySelector('.garage-enhanced');
+  if (old && old.parentNode) old.parentNode.removeChild(old);
+
+  // Applique la classe grille uniforme (comme hall)
+  parent.classList.add('garage-like-hall');
+}
+
+/* ================== Rendu Hall + Garage ================== */
 function renderGrid(){
+  // Réinitialise
   const slots = ["Ext","H1","H2","H3","H4","H5","H6","H7","H8","H9","H10","G1","G2","G3","G4","G5","G6","G7","G8"];
-  // reset
   slots.forEach(s=>{
     const el = document.getElementById('slot-'+s);
     if (el) el.innerHTML = makeTile(null, 'dispo');
   });
 
-  // place vehicles from settings
+  // Place véhicules
   (vehSettings||[]).forEach(v=>{
     const raw = v.emplacement || '';
     const slot = raw.replace('Extérieur','Ext');
@@ -163,7 +250,7 @@ function renderGrid(){
   });
 }
 
-/* ======= Bannière ======= */
+/* ================== Bannière ================== */
 function renderBanner(){
   const notes = dispatch._notes || {};
   const outs = [];
@@ -194,21 +281,22 @@ function renderBanner(){
   const b1 = document.getElementById('band1');
   const b2 = document.getElementById('band2');
   if (b1 && b2){
-    b1.innerHTML = html + html; // doublage = défilement sans couture
+    b1.innerHTML = html + html; // doublé = défilement sans couture
     b2.innerHTML = b1.innerHTML;
   }
 }
 
-/* ======= Subscriptions (store-bridge.js) ======= */
+/* ================== Subscriptions (store-bridge.js) ================== */
 subscribeKey(DISPATCH_KEY, snap=>{
   dispatch = snap || {};
   vehSettings = Array.isArray(dispatch._settings?.vehs) ? dispatch._settings.vehs : [];
   renderRoles();
+  applyGarageLikeHall();   // <- style garage comme hall (grille uniforme)
   renderGrid();
   renderBanner();
 },{ mode:'poll', intervalMs:3000 });
 
 subscribeKey(MISSIONS_KEY, snap=>{
   missions = snap || {};
-  renderGrid(); // MAJ couleurs selon statuts mission
+  renderGrid(); // met à jour les couleurs selon statuts mission
 },{ mode:'poll', intervalMs:4000 });

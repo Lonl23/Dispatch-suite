@@ -1,129 +1,136 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Tableau de garde — TV</title>
-<style>
-  :root{
-    --bg:#0a0f16; --panel:#101824; --line:#233149;
-    --text:#eaf1fb; --muted:#9fb2c9; --badge:#0f1520;
-    --ticker-bg:#b00020; --ticker-fg:#ffffff;
-  }
-  html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
-
-  /* Header */
-  .header{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;background:#0d1521;border-bottom:1px solid var(--line)}
-  .title{font-size:28px;font-weight:800;color:#cfe1ff}
-  .right{display:flex;gap:16px;align-items:center}
-  .pill{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:6px 12px;color:#cfe1ff}
-
-  /* Roles */
-  .roles{display:flex;flex-wrap:wrap;gap:14px;padding:10px 18px}
-  .roles .role{font-size:20px;font-weight:800;background:#0f1520;border:1px solid #2c3d52;border-radius:12px;padding:8px 12px;color:#cfe1ff}
-
-  /* Legend */
-  .legend{display:flex;gap:10px;align-items:center;padding:6px 18px 0 18px;color:var(--muted);font-size:14px}
-  .chip{display:inline-flex;align-items:center;gap:8px;background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:4px 10px}
-  .dot{width:14px;height:14px;border-radius:50%}
-
-  /* Content split */
-  .content{display:grid;grid-template-columns:1fr 1fr;gap:16px;padding:12px 18px;height:calc(100vh - 56px - 62px - 90px);box-sizing:border-box;overflow:auto}
-  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
-  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-  @media (max-width:1500px){ .grid{grid-template-columns:repeat(2,1fr)} }
-  .slot{min-height:140px;display:flex;align-items:center;justify-content:center}
-
-  /* Vehicle tile + status colors */
-  .vtile{width:100%;border-radius:14px;box-shadow:inset 0 0 0 2px rgba(0,0,0,.22),0 8px 16px rgba(0,0,0,.5);padding:10px 12px;text-align:center;line-height:1.3}
-  .vtile .line1{font-weight:800;font-size:16px;letter-spacing:.2px}
-  .vtile .line2{margin-top:4px;font-size:14px;opacity:.95}
-  .vtile .line3{margin-top:3px;font-size:13px;opacity:.9}
-
-  .st-empty{background:#d3d3d3;color:#000;border:2px solid #c6c6c6}
-  .st-dispo{background:#00a032;color:#fff}
-  .st-indispo{background:#c00000;color:#fff}
-  @keyframes blinkDepart{0%,49%{background:#005DFF}50%,100%{background:#003EAD}}
-  .st-depart{animation:blinkDepart 1.2s linear infinite;color:#fff}
-  .st-surplace{background:#ffd500;color:#000}
-  .st-encharge{background:#ff75a0;color:#000}
-  .st-hopital{background:#ff7f00;color:#000}
-
-  /* Ticker */
-  .ticker{height:56px;background:var(--ticker-bg);color:var(--ticker-fg);display:flex;align-items:center;overflow:hidden;border-top:1px solid #7a0016}
-  .marquee{white-space:nowrap;display:flex;gap:96px;width:100%}
-  .scroll{display:flex;gap:96px;will-change:transform;animation:scroll 40s linear infinite}
-  @keyframes scroll{from{transform:translateX(0)} to{transform:translateX(-50%)}}
-  .sepchar{display:inline-block;padding:0 36px;color:#ffdede;opacity:.9}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TV – Tableau de garde</title>
+  <link rel="preconnect" href="https://www.gstatic.com" />
+  <style>
+    :root{
+      --bg:#0b0f14; --panel:#121821; --line:#223044; --text:#e8eef5; --muted:#9fb2c9; --accent:#3a8bf2;
+      --green:#2ecc71; --red:#e74c3c; --blue:#3a8bf2; --yellow:#f1c40f; --pink:#ff5db1; --orange:#ffa447;
+      --tile:#0f1520;
+    }
+    html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-family:Inter,Segoe UI,Arial,sans-serif;overflow:hidden}
+    .header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:#0d131c;border-bottom:1px solid var(--line)}
+    .title{font-size:22px;font-weight:800}
+    .meta{display:flex;gap:12px;align-items:center;color:var(--muted);font-size:14px}
+    .pill{background:#0f1520;border:1px solid #2c3d52;border-radius:999px;padding:6px 10px;color:#cfe1ff}
+    .roles{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;padding:8px 12px;background:#101826;border-bottom:1px solid var(--line)}
+    .role{background:#0f1520;border:1px solid #2c3d52;border-radius:10px;padding:6px 10px;font-size:14px}
+    .legend{display:flex;gap:12px;justify-content:center;align-items:center;padding:6px 12px;border-bottom:1px solid var(--line);background:#0f1520}
+    .leg{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--muted)}
+    .sw{width:18px;height:14px;border-radius:4px;border:1px solid #2c3d52}
+    .main{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:8px;height:calc(100vh - 160px);box-sizing:border-box}
+    .column{background:#0f1520;border:1px solid var(--line);border-radius:12px;position:relative;padding:8px;overflow:auto}
+    .hall{display:grid;grid-template-rows:auto 1fr;gap:8px}
+    .exterieur{height:64px;border:1px solid #2c3d52;border-radius:10px;background:var(--tile);display:flex;align-items:center;justify-content:center}
+    .hgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-content:start}
+    .hcol{display:flex;flex-direction:column;gap:12px}
+    .hslot{height:80px;border-radius:10px;border:1px solid #2c3d52;background:#162030;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:6px;text-align:center}
+    .garage{display:grid;grid-template-rows:auto 1fr auto;gap:8px;height:100%}
+    .gtop{display:grid;grid-template-columns:220px 220px 1fr;gap:16px;align-items:start}
+    .g1,.g8{height:340px;border:1px solid #2c3d52;border-radius:10px;background:#162030;display:flex;justify-content:center;align-items:center}
+    .gstack{border:1px solid #2c3d52;border-radius:10px;padding:10px;background:#0f1520;display:flex;flex-direction:column;gap:12px}
+    .gH{height:80px;border:1px solid #2c3d52;border-radius:10px;background:#162030;display:flex;justify-content:center;align-items:center}
+    .gmid{display:grid;grid-template-columns:1fr;gap:8px}
+    .g5{height:110px;border:1px solid #2c3d52;border-radius:10px;background:#162030;display:flex;justify-content:center;align-items:center}
+    .gbottom{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+    .g6,.g7{height:300px;border:1px solid #2c3d52;border-radius:10px;background:#162030;display:flex;justify-content:center;align-items:center}
+    .vtile{width:100%;height:100%;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:4px 6px;border-radius:10px;box-sizing:border-box}
+    .line1{font-weight:800;font-size:16px}
+    .line2{font-size:14px;color:#cfe1ff;margin-top:3px}
+    .line3{font-size:13px;color:#9fb2c9;margin-top:2px}
+    .st-dispo{background:var(--green)}
+    .st-indispo{background:var(--red)}
+    .st-depart{background:var(--blue);animation:blink 1.4s linear infinite}
+    .st-surplace{background:var(--yellow)}
+    .st-encharge{background:var(--pink)}
+    .st-hopital{background:var(--orange)}
+    @keyframes blink{0%,49%{filter:brightness(1)}50%,100%{filter:brightness(1.45)}}
+    .ticker{position:fixed;left:0;right:0;bottom:0;height:44px;background:#9b001c;color:#fff;border-top:1px solid #5e0011;display:flex;align-items:center;overflow:hidden}
+    .track{white-space:nowrap;display:flex;gap:56px}
+    .scroll{display:flex;gap:56px;will-change:transform;animation:marq 40s linear infinite}
+    @keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+    .sepchar{opacity:.9;margin:0 16px}
+  </style>
 </head>
 <body>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 
-<div class="header">
-  <div class="title">Tableau de garde</div>
-  <div class="right">
-    <div class="pill" id="dateTxt">—</div>
-    <div class="pill" id="meteo">—</div>
-    <div class="pill" id="clock">—:—</div>
-  </div>
-</div>
+  <script src="js/store-bridge.js"></script>
+  <script src="js/auth-guard.js"></script>
+  <script>AuthGuard.ensureAuthOrRedirect();</script>
 
-<div id="roles" class="roles"></div>
-
-<!-- Légende des statuts -->
-<div class="legend">
-  <span>Codes couleurs :</span>
-  <span class="chip"><span class="dot" style="background:#00a032"></span>Disponible</span>
-  <span class="chip"><span class="dot" style="background:#005DFF"></span>Départ</span>
-  <span class="chip"><span class="dot" style="background:#ffd500"></span>Sur place</span>
-  <span class="chip"><span class="dot" style="background:#ff75a0"></span>En charge</span>
-  <span class="chip"><span class="dot" style="background:#ff7f00"></span>À l'hôpital</span>
-  <span class="chip"><span class="dot" style="background:#c00000"></span>Indisponible</span>
-</div>
-
-<div class="content">
-  <!-- Hall (gauche): Ext + H1..H10 (sans libellés) -->
-  <div class="panel">
-    <div class="grid" id="hallGrid">
-      <div class="slot" id="slot-Ext"></div>
-      <div class="slot" id="slot-H1"></div>
-      <div class="slot" id="slot-H2"></div>
-      <div class="slot" id="slot-H3"></div>
-      <div class="slot" id="slot-H4"></div>
-      <div class="slot" id="slot-H5"></div>
-      <div class="slot" id="slot-H6"></div>
-      <div class="slot" id="slot-H7"></div>
-      <div class="slot" id="slot-H8"></div>
-      <div class="slot" id="slot-H9"></div>
-      <div class="slot" id="slot-H10"></div>
+  <div class="header">
+    <div class="title" id="dateTxt">—</div>
+    <div class="meta">
+      <div class="pill" id="meteo">🌦️ …</div>
+      <div class="pill" id="clock">--:--</div>
     </div>
   </div>
 
-  <!-- Garage (droite) en “optique hall” uniforme -->
-  <div class="panel">
-    <div class="grid" id="garageGrid">
-      <div class="slot" id="slot-G1"></div>
-      <div class="slot" id="slot-G2"></div>
-      <div class="slot" id="slot-G3"></div>
-      <div class="slot" id="slot-G4"></div>
-      <div class="slot" id="slot-G5"></div>
-      <div class="slot" id="slot-G6"></div>
-      <div class="slot" id="slot-G7"></div>
-      <div class="slot" id="slot-G8"></div>
+  <div class="roles" id="roles">Chargement des rôles…</div>
+
+  <div class="legend">
+    <div class="leg"><span class="sw" style="background:#2ecc71"></span>Disponible</div>
+    <div class="leg"><span class="sw" style="background:#e74c3c"></span>Indisponible</div>
+    <div class="leg"><span class="sw" style="background:#3a8bf2"></span>Départ</div>
+    <div class="leg"><span class="sw" style="background:#f1c40f"></span>Sur place</div>
+    <div class="leg"><span class="sw" style="background:#ff5db1"></span>En charge</div>
+    <div class="leg"><span class="sw" style="background:#ffa447"></span>À l’hôpital</div>
+  </div>
+
+  <div class="main">
+    <div class="column hall">
+      <div class="exterieur" id="slot-Ext"></div>
+      <div class="hgrid">
+        <div class="hcol">
+          <div class="hslot" id="slot-H6"></div>
+          <div class="hslot" id="slot-H7"></div>
+          <div class="hslot" id="slot-H8"></div>
+          <div class="hslot" id="slot-H9"></div>
+          <div class="hslot" id="slot-H10"></div>
+        </div>
+        <div class="hcol">
+          <div class="hslot" id="slot-H5"></div>
+          <div class="hslot" id="slot-H4"></div>
+          <div class="hslot" id="slot-H3"></div>
+          <div class="hslot" id="slot-H2"></div>
+          <div class="hslot" id="slot-H1"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="column garage">
+      <div class="gtop">
+        <div class="g1" id="slot-G1"></div>
+        <div class="g8" id="slot-G8"></div>
+        <div class="gstack">
+          <div class="gH" id="slot-G2"></div>
+          <div class="gH" id="slot-G3"></div>
+          <div class="gH" id="slot-G4"></div>
+        </div>
+      </div>
+      <div class="gmid">
+        <div class="g5" id="slot-G5"></div>
+      </div>
+      <div class="gbottom">
+        <div class="g6" id="slot-G6"></div>
+        <div class="g7" id="slot-G7"></div>
+      </div>
     </div>
   </div>
-</div>
 
-<!-- Ticker -->
-<div class="ticker">
-  <div class="marquee">
-    <div id="band1" class="scroll"></div>
-    <div id="band2" class="scroll" aria-hidden="true"></div>
+  <div class="ticker">
+    <div class="track">
+      <div id="band1" class="scroll"></div>
+      <div id="band2" class="scroll" aria-hidden="true"></div>
+    </div>
   </div>
-</div>
 
-<!-- Store bridge + TV JS -->
-<script src="js/store-bridge.js"></script>
-<script src="js/tv-grid.js"></script>
+  <script src="js/tv-grid.js"></script>
 </body>
 </html>
