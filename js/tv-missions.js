@@ -1,251 +1,169 @@
-// tv-missions.js — Colonne missions + Carte OSM + Ticker (aligné TV-Grid)
-// Corrige "writeKey is not defined" en ajoutant persistKey fallback.
+/* =====================  ANNONCE DÉPART 112 ===================== */
 
-const MISSIONS_KEY = "dispatch_missions";
-const DISPATCH_KEY = "dispatch_parc_vehicules";
-
-// Base précise fournie
-const BASE = { lat: 50.730716, lon: 4.494684, label: "Base ACSRS" };
-
-let missions = {};
-let dispatch = {};
-let map, missionLayer, baseMarker;
-
-/* ==== Fallback de persistance (évite writeKey manquant) ==== */
-function persistKey(key, value){
-  // 1) Si store-bridge fournit writeKey, on l'utilise
-  if (typeof window.writeKey === 'function') {
-    return window.writeKey(key, value);
+/* 1) Audio & TTS helpers */
+let audioCtx;
+function ensureAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // Tentative de déblocage sur premier clic si besoin
+    document.addEventListener('click', ()=>audioCtx.resume(), {once:true});
   }
-  // 2) Sinon si Firebase est dispo, on écrit direct en RTDB
-  try{
-    if (window.firebase && firebase.apps && firebase.apps.length && firebase.database){
-      return firebase.database().ref(key).set(value);
-    }
-  }catch(e){
-    console.warn('[tv-missions] persist via firebase échoué', e);
+}
+function beep(freq=650, durMs=250, vol=0.4) {
+  ensureAudio();
+  if (!audioCtx) return Promise.resolve();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = freq;
+  gain.gain.value = vol;
+  osc.connect(gain).connect(audioCtx.destination);
+  const t0 = audioCtx.currentTime;
+  osc.start(t0);
+  osc.stop(t0 + durMs/1000);
+  return new Promise(r=> osc.onended = r);
+}
+async function tonePattern(kind) {
+  // motifs -> patterns (brefs pour la TV)
+  switch(kind){
+    case 'critical': // ARCA/RÉA/décès
+      await beep(1000,250,0.5); await beep(700,250,0.5);
+      await beep(1000,250,0.5); await beep(700,250,0.5);
+      break;
+    case 'avp': // accident voie publique
+      await beep(600,180,0.45); await beep(800,180,0.45); await beep(1000,220,0.5);
+      break;
+    case 'trauma':
+      await beep(850,400,0.45);
+      break;
+    case 'noResponse': // personne ne répondant pas à l'appel
+      await beep(550,220,0.4); await new Promise(r=>setTimeout(r,150)); await beep(550,220,0.4); await new Promise(r=>setTimeout(r,150)); await beep(550,220,0.4);
+      break;
+    case 'pmd': // problème mal défini
+      await beep(700,350,0.4);
+      break;
+    case 'assist': // relève / assistance physique
+      await beep(500,300,0.35);
+      break;
+    default:
+      await beep(650,250,0.35);
   }
-  // 3) Sinon fallback localStorage (meilleur que rien)
+}
+
+// Web Speech API
+function pickFrenchVoice() {
+  const vs = speechSynthesis.getVoices();
+  // Privilégie FR-BE si dispo, sinon FR-FR
+  return vs.find(v=>/fr.*(BE)/i.test(v.lang)) || vs.find(v=>/fr/i.test(v.lang)) || vs[0];
+}
+function speakFr(text, rate=1.02, pitch=1, volume=1){
   try{
-    localStorage.setItem(key, JSON.stringify(value||{}));
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'fr-BE';
+    const v = pickFrenchVoice(); if (v) u.voice = v;
+    u.rate = rate; u.pitch = pitch; u.volume = volume;
+    speechSynthesis.speak(u);
   }catch{}
-  return Promise.resolve();
 }
 
-/* Utils */
-const z2 = n => String(n).padStart(2,'0');
-const nowHHMM = () => { const d=new Date(); return `${z2(d.getHours())}:${z2(d.getMinutes())}`; };
-const esc = s => String(s??"").replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const norm = s => String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/['’"]/g,"").replace(/\s+/g," ").trim();
-
-/* Horloge */
-const clockEl = document.getElementById('clock');
-if (clockEl){ clockEl.textContent = nowHHMM(); setInterval(()=>clockEl.textContent = nowHHMM(), 1000); }
-
-/* Map Leaflet */
-function initMap(){
-  map = L.map('map',{ zoomControl:false, attributionControl:false }).setView([BASE.lat, BASE.lon], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ maxZoom:19 }).addTo(map);
-  baseMarker = L.circleMarker([BASE.lat, BASE.lon], { radius:8, color:'#3a8bf2', fillColor:'#3a8bf2', fillOpacity:1 })
-    .addTo(map)
-    .bindTooltip(BASE.label, { direction:'top' });
-  missionLayer = L.layerGroup().addTo(map);
+/* 2) Catégorisation du motif -> sonnerie */
+function motifCategory(motifRaw){
+  const s = (motifRaw||'').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,'');
+  if (/(arca|arre[t ]?cardio|rea|reanimation|deces|mort appar)/.test(s)) return 'critical';
+  if (/(avp|accident|collision|voie publique)/.test(s)) return 'avp';
+  if (/(trauma|fract|chute|plaie|contusion|luxation)/.test(s)) return 'trauma';
+  if (/(personne.*ne.*repond)/.test(s)) return 'noResponse';
+  if (/(pmd|probleme mal defini)/.test(s)) return 'pmd';
+  if (/(releve|assistance physique)/.test(s)) return 'assist';
+  return 'default';
 }
-initMap();
 
-/* Geo cache (local) */
-const GEO_CACHE_KEY = "geo_cache";
-function geoCacheGet(k){ try{ return JSON.parse(localStorage.getItem(GEO_CACHE_KEY)||"{}")[k]; }catch{return undefined;} }
-function geoCacheSet(k,v){ try{ const c=JSON.parse(localStorage.getItem(GEO_CACHE_KEY)||"{}"); c[k]=v; localStorage.setItem(GEO_CACHE_KEY, JSON.stringify(c)); }catch{} }
-
-/* Statut courant */
-const FLOW_ORDER = ["depart","sur place","en charge","a l hopital","retour dispo","retour indisponible","rentre poste","retour au poste"];
-function currentStatus(m){
-  const s = m?.statuts || {};
-  const entries = Object.entries(s);
-  if (!entries.length) return { key:"depart", time:"" };
-  const normed = entries.map(([k,v])=>[norm(k), v]);
-
-  let bestKey="depart", bestTime="";
-  for(const wanted of FLOW_ORDER){
-    const hit = normed.find(([k])=>{
-      if (wanted==="en charge") return k.startsWith("en charge");
-      if (wanted==="a l hopital") return (k.includes("hopital") || k.includes("hôpital"));
-      if (wanted==="retour dispo") return (k.includes("retour dispo") || k.includes("retour disponible"));
-      if (wanted==="retour indisponible") return (k.includes("retour indispo") || k.includes("mise indispo"));
-      if (wanted==="rentre poste" || wanted==="retour au poste") return k.includes("poste");
-      return k===wanted;
-    });
-    if (hit){ bestKey=wanted; bestTime=hit[1]; }
+/* 3) Traduction attribution -> annonce */
+function spokenAttribution(attr){
+  if (!attr) return '';
+  const m = attr.match(/^LH\s*([1-8])$/i);
+  if (m){
+    const n = parseInt(m[1],10);
+    if (n===5) return 'bariatrique';
+    const words = ['une','deux','trois','quatre','cinq','six','sept','huit'];
+    return `la hulpe ${words[n-1]}`;
   }
-  return { key:bestKey, time:bestTime };
-}
-function statusClass(key){
-  switch(key){
-    case "retour indisponible": return "st-indispo";
-    case "a l hopital":         return "st-hopital";
-    case "en charge":           return "st-encharge";
-    case "sur place":           return "st-surplace";
-    case "depart":              return "st-depart";
-    case "retour dispo":        return "st-dispo";
-    default:                    return "st-dispo";
-  }
-}
-function labelFor(k){
-  const map = {
-    "depart":"Départ","sur place":"Sur place","en charge":"En charge",
-    "a l hopital":"À l'hôpital","retour dispo":"Retour dispo","retour indisponible":"Retour indispo"
-  };
-  return map[k] || "—";
+  return attr; // ex. autres attributions "TMS", "OFF", etc.
 }
 
-/* Numéro d'ordre stable tant que non clôturée */
-async function ensureOrderNumbers(){
-  const active = Object.values(missions||{}).filter(m=>!m.done);
-  const used = new Set(active.map(m=>m.ordre).filter(n=>Number.isInteger(n)));
-  const next = ()=>{ let n=1; while(used.has(n)) n++; return n; };
-  let changed=false;
-  active.sort((a,b)=>(+a.id)-(+b.id));
-  for (const m of active){
-    if (!Number.isInteger(m.ordre)){
-      m.ordre = next(); used.add(m.ordre); changed=true;
+/* 4) Construction du message vocal demandé */
+function buildAnnouncement(m){
+  const amb = m.veh ? `ambulance ${m.veh}` : `ambulance`;
+  const attr = spokenAttribution(m.attr);
+  const city = (m?.adresse?.ville || '').trim();
+  const motif = (m.motif || '').trim();
+  // ordre demandé: ambulance, attribution, localité (x2), motif
+  const parts = [amb];
+  if (attr) parts.push(attr);
+  if (city) { parts.push(city); parts.push(city); }
+  if (motif) parts.push(motif);
+  return parts.join(', ') + '.';
+}
+
+/* 5) Détection des nouveaux départs 112 + anti-doublon */
+const ANNOUNCED_KEY = 'tv_112_announced_ids';
+function getAnnounced(){ try{ return new Set(JSON.parse(localStorage.getItem(ANNOUNCED_KEY)||'[]')); }catch{ return new Set(); } }
+function setAnnounced(set){
+  try{ localStorage.setItem(ANNOUNCED_KEY, JSON.stringify(Array.from(set))); }catch{}
+}
+let announcedSet = getAnnounced();
+let prevMissionsSnapshot = {};
+
+async function maybeAnnounceNew112(prev, curr){
+  // curr = missions (objet complet)
+  const ids = Object.keys(curr||{});
+  for (const id of ids){
+    const m = curr[id];
+    if (!m || m.done) continue;
+    if ((m.type||'').toUpperCase() !== '112') continue;
+
+    const was = prev[id];
+
+    // Conditions d’annonce :
+    //  - nouvelle mission 112 (id absent avant), ou
+    //  - statut "Départ" vient d’apparaître
+    const hasDepartNow  = !!(m.statuts && (m.statuts['Départ'] || m.statuts['depart']));
+    const hadDepartBefore = !!(was && was.statuts && (was.statuts['Départ'] || was.statuts['depart']));
+    const isNew = !was;
+    const departJustSet = (!hadDepartBefore && hasDepartNow);
+
+    if ((isNew || departJustSet) && !announcedSet.has(id)){
+      announcedSet.add(id); setAnnounced(announcedSet);
+      const kind = motifCategory(m.motif);
+      try {
+        await tonePattern(kind);
+      } catch {}
+      const msg = buildAnnouncement(m);
+      speakFr(msg, 1.02, 1, 1);
     }
   }
-  if (changed){
-    await persistKey(MISSIONS_KEY, missions);
+  // nettoie les annonces si mission clôturée (optionnel)
+  for (const oldId of Object.keys(prev)){
+    if (!curr[oldId]) announcedSet.delete(oldId);
   }
+  setAnnounced(announcedSet);
+  prevMissionsSnapshot = JSON.parse(JSON.stringify(curr||{}));
 }
 
-/* Liste missions (colonne gauche) */
-function renderList(){
-  const list = document.getElementById('list');
-  const sub  = document.getElementById('subTitle');
-  const cnt  = document.getElementById('count');
-
-  const active = Object.values(missions||{}).filter(m=>!m.done);
-  active.sort((a,b)=> (a.ordre||999) - (b.ordre||999));
-
-  if (cnt) cnt.textContent = `${active.length} mission(s)`;
-  if (sub) sub.textContent = active.length ? "Dernières missions actives" : "Aucune mission en cours";
-
-  list.innerHTML = "";
-  active.forEach(m=>{
-    const st = currentStatus(m);
-    const cls = statusClass(st.key);
-    const veh = m.veh || "—";
-    const attr = m.attr ? ` • ${m.attr}` : "";
-    const motif = m.motif || "—";
-    const cpVille = [m?.adresse?.cp, m?.adresse?.ville].filter(Boolean).join(" ");
-
-    const div = document.createElement('div');
-    div.className = "card";
-    div.innerHTML = `
-      <div class="order">${esc(m.ordre)}</div>
-      <div class="info">
-        <div class="line"><strong>${esc(veh)}${esc(attr)}</strong> <span class="badge">${esc(m.type||"")}</span></div>
-        <div class="line"><span class="label">Motif:</span> ${esc(motif)}</div>
-        <div class="line"><span class="label">Lieu:</span> ${esc(cpVille||"—")}</div>
-        <div class="line"><span class="st ${cls}">${esc(labelFor(st.key))}</span> <span class="label">${esc(st.time||"")}</span></div>
-      </div>
-    `;
-    list.appendChild(div);
-  });
-}
-
-/* Carte missions (droite) */
-function renderMap(){
-  missionLayer.clearLayers();
-  const active = Object.values(missions||{}).filter(m=>!m.done);
-  const pts = [];
-
-  active.forEach(m=>{
-    let { lat, lon } = m;
-    if (typeof lat !== 'number' || typeof lon !== 'number'){
-      const key = `${m?.adresse?.cp||""} ${m?.adresse?.ville||""}`.trim();
-      const cached = key ? geoCacheGet(key) : undefined;
-      if (cached){ lat=cached.lat; lon=cached.lon; }
-      else if (key){
-        fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(key)}&countrycodes=be&format=json&limit=1`)
-          .then(r=>r.json()).then(arr=>{
-            if (Array.isArray(arr) && arr.length){
-              const p = { lat:+arr[0].lat, lon:+arr[0].lon };
-              geoCacheSet(key, p);
-            }
-          }).catch(()=>{});
-      }
-    }
-    if (typeof lat === 'number' && typeof lon === 'number'){
-      const marker = L.circleMarker([lat,lon], { radius:7, color:'#ffea00', fillColor:'#ffea00', fillOpacity:0.9 });
-      marker.bindTooltip(`${esc(m.ordre||"?")}. ${esc(m.veh||"—")} — ${esc(m.motif||"")}`, { direction:'top' });
-      missionLayer.addLayer(marker);
-      pts.push([lat,lon]);
-    }
-  });
-
-  if (pts.length){
-    const b = L.latLngBounds(pts.concat([[BASE.lat,BASE.lon]]));
-    map.fitBounds(b.pad(0.2));
-  }else{
-    map.setView([BASE.lat, BASE.lon], 12);
-  }
-}
-
-/* Bannière — identique à TV-Grid */
-function renderTicker(){
-  const notes = dispatch?._notes || {};
-  const outs = [];
-  (dispatch?._settings?.vehs||[]).forEach(v=>{
-    const d = dispatch[v.id];
-    if (d?.statut === 'Indisponible'){
-      let t = (d.name||v.id);
-      if (d.attribution||v.attribution) t += ` [${d.attribution||v.attribution}]`;
-      if (d.commentaire) t += ` — ${d.commentaire}`;
-      outs.push(t);
-    }
-  });
-
-  const parts=[];
-  if ((notes.infos||'').trim()){
-    parts.push(`INFOS: ${String(notes.infos).replace(/\s+/g,' ').trim()}`);
-  }
-  if (outs.length){
-    parts.push(`VÉHICULE OUT: ${outs.join(' • ')}`);
-  }
-  if ((notes.materiel||'').trim()){
-    parts.push(`MATÉRIEL: ${String(notes.materiel).replace(/\s+/g,' ').trim()}`);
-  }
-
-  const html = parts.length ? parts.join(`<span class="sepchar">|</span>`) : `Aucune information`;
-  const b1 = document.getElementById('band1');
-  const b2 = document.getElementById('band2');
-  if (b1 && b2){
-    b1.innerHTML = html + html; // duplication pour scroll sans couture
-    b2.innerHTML = b1.innerHTML;
-  }
-}
-
-/* Chargement initial (après auth & store-bridge injectés) */
-(async function initialLoad(){
-  try{
-    const [dSnap, mSnap] = await Promise.all([readKey(DISPATCH_KEY), readKey(MISSIONS_KEY)]);
-    dispatch = dSnap || {};
-    missions = mSnap || {};
-  }catch{/* ignore */}
-  await ensureOrderNumbers();
-  renderList();
-  renderMap();
-  renderTicker();
+/* 6) Raccordement aux mises à jour existantes */
+(async function hookAnnouncementsOnBoot(){
+  // prépare le snapshot initial
+  prevMissionsSnapshot = JSON.parse(JSON.stringify(missions||{}));
+  // on déclenche aussi à chaque refresh missions
+  // (ajoute ceci là où tu reçois les updates missions)
 })();
 
-/* Subscriptions (poll) */
+// Si tu as déjà des subscribeKey ci-dessous, complète-les :
 subscribeKey(MISSIONS_KEY, async snap=>{
   missions = snap || {};
   await ensureOrderNumbers();
   renderList();
   renderMap();
-},{ mode:'poll', intervalMs: 3000 });
-
-subscribeKey(DISPATCH_KEY, snap=>{
-  dispatch = snap || {};
-  renderTicker();
+  // >>> ajoute l’appel annonce :
+  maybeAnnounceNew112(prevMissionsSnapshot, missions);
 },{ mode:'poll', intervalMs: 3000 });
