@@ -100,6 +100,25 @@ html,body{margin:0;height:100%;background:var(--bg);color:var(--text);font-famil
   </div>
 </div>
 
+<!-- Firebase compat SDKs + init inline (AUCUN nouveau fichier) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
+<script>
+  // Config RACS
+  const firebaseConfig = {
+    apiKey: "AIzaSyCP6ZClAectP8OPneAeoYGYdRYO0CvnbnQ",
+    authDomain: "racs-dispatch.firebaseapp.com",
+    databaseURL: "https://racs-dispatch-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "racs-dispatch",
+    storageBucket: "racs-dispatch.firebasestorage.app",
+    messagingSenderId: "589135271261",
+    appId: "1:589135271261:web:d080a5da49a061929b84b4"
+  };
+  if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+</script>
+
+<!-- Bridge et logique page -->
 <script src="js/store-bridge.js"></script>
 <script src="js/tv-missions.js"></script>
 </body>

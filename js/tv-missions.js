@@ -1,34 +1,28 @@
-// tv-missions.js — Colonne missions + Carte OSM + Ticker
+// tv-missions.js — Colonne missions + Carte OSM + Ticker (aligné TV-Grid)
 const MISSIONS_KEY = "dispatch_missions";
 const DISPATCH_KEY = "dispatch_parc_vehicules";
 
-// Base (La Hulpe — Avenue René Soyer 3)
+// Base précise fournie
 const BASE = { lat: 50.730716, lon: 4.494684, label: "Base ACSRS" };
 
 let missions = {};
 let dispatch = {};
-let map, baseMarker, missionLayer;
+let map, missionLayer, baseMarker;
 
-function z2(n){ return String(n).padStart(2,'0'); }
-function nowHHMM(){ const d=new Date(); return `${z2(d.getHours())}:${z2(d.getMinutes())}:${z2(d.getSeconds())}`; }
-function esc(s){ return String(s??"").replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m])); }
-function norm(s){
-  return String(s||"").toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/['’"]/g,"")
-    .replace(/\s+/g," ").trim();
-}
+/* Utils */
+const z2 = n => String(n).padStart(2,'0');
+const nowHHMM = () => { const d=new Date(); return `${z2(d.getHours())}:${z2(d.getMinutes())}`; };
+const esc = s => String(s??"").replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+const norm = s => String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/['’"]/g,"").replace(/\s+/g," ").trim();
 
 /* Horloge */
-setInterval(()=>{ document.getElementById('clock').textContent = nowHHMM(); }, 1000);
-document.getElementById('clock').textContent = nowHHMM();
+const clockEl = document.getElementById('clock');
+if (clockEl){ clockEl.textContent = nowHHMM(); setInterval(()=>clockEl.textContent = nowHHMM(), 1000); }
 
-/* Leaflet Map */
+/* Map Leaflet */
 function initMap(){
   map = L.map('map',{ zoomControl:false, attributionControl:false }).setView([BASE.lat, BASE.lon], 12);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-    maxZoom: 19
-  }).addTo(map);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{ maxZoom:19 }).addTo(map);
   baseMarker = L.circleMarker([BASE.lat, BASE.lon], { radius:8, color:'#3a8bf2', fillColor:'#3a8bf2', fillOpacity:1 })
     .addTo(map)
     .bindTooltip(BASE.label, { direction:'top' });
@@ -36,26 +30,20 @@ function initMap(){
 }
 initMap();
 
-/* Geocache simple (localStorage) pour Nominatim */
+/* Geo cache (local) */
 const GEO_CACHE_KEY = "geo_cache";
-function geoCacheGet(key){
-  try{ const c=JSON.parse(localStorage.getItem(GEO_CACHE_KEY)||"{}"); return c[key]; }catch{ return undefined; }
-}
-function geoCacheSet(key,val){
-  try{ const c=JSON.parse(localStorage.getItem(GEO_CACHE_KEY)||"{}"); c[key]=val; localStorage.setItem(GEO_CACHE_KEY, JSON.stringify(c)); }catch{}
-}
+function geoCacheGet(k){ try{ return JSON.parse(localStorage.getItem(GEO_CACHE_KEY)||"{}")[k]; }catch{return undefined;} }
+function geoCacheSet(k,v){ try{ const c=JSON.parse(localStorage.getItem(GEO_CACHE_KEY)||"{}"); c[k]=v; localStorage.setItem(GEO_CACHE_KEY, JSON.stringify(c)); }catch{} }
 
-/* Détermine statut courant + heure affichable */
+/* Statut courant */
 const FLOW_ORDER = ["depart","sur place","en charge","a l hopital","retour dispo","retour indisponible","rentre poste","retour au poste"];
 function currentStatus(m){
-  const s = m.statuts || {};
-  // Normalise et trouve le plus “avancé” selon FLOW_ORDER
-  let bestKey = "depart", bestTime = "";
+  const s = m?.statuts || {};
   const entries = Object.entries(s);
   if (!entries.length) return { key:"depart", time:"" };
+  const normed = entries.map(([k,v])=>[norm(k), v]);
 
-  // map entries -> normalized key
-  const normed = entries.map(([k,v])=>[norm(k),v]);
+  let bestKey="depart", bestTime="";
   for(const wanted of FLOW_ORDER){
     const hit = normed.find(([k])=>{
       if (wanted==="en charge") return k.startsWith("en charge");
@@ -69,74 +57,60 @@ function currentStatus(m){
   }
   return { key:bestKey, time:bestTime };
 }
-
-/* Classe couleur statut pour pill */
 function statusClass(key){
   switch(key){
     case "retour indisponible": return "st-indispo";
-    case "a l hopital": return "st-hopital";
-    case "en charge": return "st-encharge";
-    case "sur place": return "st-surplace";
-    case "depart": return "st-depart";
-    case "retour dispo": return "st-dispo";
-    default: return "st-dispo";
+    case "a l hopital":         return "st-hopital";
+    case "en charge":           return "st-encharge";
+    case "sur place":           return "st-surplace";
+    case "depart":              return "st-depart";
+    case "retour dispo":        return "st-dispo";
+    default:                    return "st-dispo";
   }
 }
+function labelFor(k){
+  const map = {
+    "depart":"Départ","sur place":"Sur place","en charge":"En charge",
+    "a l hopital":"À l'hôpital","retour dispo":"Retour dispo","retour indisponible":"Retour indispo"
+  };
+  return map[k] || "—";
+}
 
-/* Attribution ordre: plus petit entier libre, stable tant que non clos */
-function ensureOrderNumbers(){
-  const active = Object.values(missions).filter(m=>!m.done);
-  // Occupés
-  const used = new Set(active.map(m=>m.ordre).filter(x=>Number.isInteger(x)));
-  function nextFree(){
-    let n=1; while(used.has(n)) n++; return n;
-  }
-  // Assigne si manquant
-  active.sort((a,b)=>(+a.id)-(+b.id)); // stable
+/* Numéro d'ordre stable tant que non clôturée */
+async function ensureOrderNumbers(){
+  const active = Object.values(missions||{}).filter(m=>!m.done);
+  const used = new Set(active.map(m=>m.ordre).filter(n=>Number.isInteger(n)));
+  const next = ()=>{ let n=1; while(used.has(n)) n++; return n; };
   let changed=false;
-  active.forEach(m=>{
+  active.sort((a,b)=>(+a.id)-(+b.id));
+  for (const m of active){
     if (!Number.isInteger(m.ordre)){
-      m.ordre = nextFree();
-      used.add(m.ordre);
-      changed=true;
+      m.ordre = next(); used.add(m.ordre); changed=true;
     }
-  });
-  if (changed){
-    // Sauve dans store pour persister
-    writeKey(MISSIONS_KEY, missions);
   }
+  if (changed){ await writeKey(MISSIONS_KEY, missions); }
 }
 
-/* Rendu liste gauche */
+/* Liste missions (colonne gauche) */
 function renderList(){
-  ensureOrderNumbers();
   const list = document.getElementById('list');
-  const sub = document.getElementById('subTitle');
+  const sub  = document.getElementById('subTitle');
+  const cnt  = document.getElementById('count');
 
-  const active = Object.values(missions).filter(m=>!m.done);
-  // tri par ordre croissant (numéro fixe)
+  const active = Object.values(missions||{}).filter(m=>!m.done);
   active.sort((a,b)=> (a.ordre||999) - (b.ordre||999));
 
-  document.getElementById('count').textContent = `${active.length} mission(s)`;
-  sub.textContent = active.length ? "Dernières missions actives" : "Aucune mission en cours";
+  if (cnt) cnt.textContent = `${active.length} mission(s)`;
+  if (sub) sub.textContent = active.length ? "Dernières missions actives" : "Aucune mission en cours";
 
   list.innerHTML = "";
   active.forEach(m=>{
-    const stat = currentStatus(m);
-    const cls  = statusClass(stat.key);
-    const veh  = m.veh || "—";
+    const st = currentStatus(m);
+    const cls = statusClass(st.key);
+    const veh = m.veh || "—";
     const attr = m.attr ? ` • ${m.attr}` : "";
     const motif = m.motif || "—";
     const cpVille = [m?.adresse?.cp, m?.adresse?.ville].filter(Boolean).join(" ");
-    const statusLabelMap = {
-      "depart":"Départ",
-      "sur place":"Sur place",
-      "en charge":"En charge",
-      "a l hopital":"À l'hôpital",
-      "retour dispo":"Retour dispo",
-      "retour indisponible":"Retour indispo"
-    };
-    const stLabel = statusLabelMap[stat.key] || "—";
 
     const div = document.createElement('div');
     div.className = "card";
@@ -146,31 +120,33 @@ function renderList(){
         <div class="line"><strong>${esc(veh)}${esc(attr)}</strong> <span class="badge">${esc(m.type||"")}</span></div>
         <div class="line"><span class="label">Motif:</span> ${esc(motif)}</div>
         <div class="line"><span class="label">Lieu:</span> ${esc(cpVille||"—")}</div>
-        <div class="line"><span class="st ${cls}">${esc(stLabel)}</span> <span class="label">${esc(stat.time||"")}</span></div>
+        <div class="line"><span class="st ${cls}">${esc(labelFor(st.key))}</span> <span class="label">${esc(st.time||"")}</span></div>
       </div>
     `;
     list.appendChild(div);
   });
 }
 
-/* Carte: placer marqueurs missions (si lat/lon connus). Sinon géocoder (Nominatim) en cache local */
-function boundsFor(points){
-  const b = L.latLngBounds(points);
-  return b;
-}
+/* Carte missions (droite) */
 function renderMap(){
   missionLayer.clearLayers();
-  const active = Object.values(missions).filter(m=>!m.done);
+  const active = Object.values(missions||{}).filter(m=>!m.done);
   const pts = [];
 
   active.forEach(m=>{
-    let lat = m.lat, lon = m.lon;
+    let { lat, lon } = m;
     if (typeof lat !== 'number' || typeof lon !== 'number'){
-      // essaie de récupérer du cache par "cp ville"
       const key = `${m?.adresse?.cp||""} ${m?.adresse?.ville||""}`.trim();
-      if (key){
-        const cached = geoCacheGet(key);
-        if (cached){ lat=cached.lat; lon=cached.lon; }
+      const cached = key ? geoCacheGet(key) : undefined;
+      if (cached){ lat=cached.lat; lon=cached.lon; }
+      else if (key){
+        fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(key)}&countrycodes=be&format=json&limit=1`)
+          .then(r=>r.json()).then(arr=>{
+            if (Array.isArray(arr) && arr.length){
+              const p = { lat:+arr[0].lat, lon:+arr[0].lon };
+              geoCacheSet(key, p);
+            }
+          }).catch(()=>{});
       }
     }
     if (typeof lat === 'number' && typeof lon === 'number'){
@@ -178,38 +154,22 @@ function renderMap(){
       marker.bindTooltip(`${esc(m.ordre||"?")}. ${esc(m.veh||"—")} — ${esc(m.motif||"")}`, { direction:'top' });
       missionLayer.addLayer(marker);
       pts.push([lat,lon]);
-    }else{
-      // tente géocodage léger par CP+ville (throttling par cache)
-      const key = `${m?.adresse?.cp||""} ${m?.adresse?.ville||""}`.trim();
-      if (key && !geoCacheGet(key)){
-        // Nominatim (respecte la charte: inclure 'format=json', 'countrycodes=be')
-        fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(key)}&countrycodes=be&format=json&limit=1`)
-          .then(r=>r.json())
-          .then(arr=>{
-            if (Array.isArray(arr) && arr.length){
-              const p = { lat:+arr[0].lat, lon:+arr[0].lon };
-              geoCacheSet(key, p);
-              // on re-rendera au prochain tick de données
-            }
-          }).catch(()=>{});
-      }
     }
   });
 
-  // Ajuster la vue si on a des points; sinon centrer base
   if (pts.length){
-    const b = boundsFor(pts.concat([[BASE.lat,BASE.lon]]));
+    const b = L.latLngBounds(pts.concat([[BASE.lat,BASE.lon]]));
     map.fitBounds(b.pad(0.2));
   }else{
     map.setView([BASE.lat, BASE.lon], 12);
   }
 }
 
-/* Ticker (notes + OUT depuis dispatch) */
+/* Bannière — identique à TV-Grid */
 function renderTicker(){
-  const notes = dispatch._notes || {};
+  const notes = dispatch?._notes || {};
   const outs = [];
-  (dispatch._settings?.vehs||[]).forEach(v=>{
+  (dispatch?._settings?.vehs||[]).forEach(v=>{
     const d = dispatch[v.id];
     if (d?.statut === 'Indisponible'){
       let t = (d.name||v.id);
@@ -218,6 +178,7 @@ function renderTicker(){
       outs.push(t);
     }
   });
+
   const parts=[];
   if ((notes.infos||'').trim()){
     parts.push(`INFOS: ${esc(notes.infos.replace(/\s+/g,' ').trim())}`);
@@ -233,24 +194,33 @@ function renderTicker(){
   const b1 = document.getElementById('band1');
   const b2 = document.getElementById('band2');
   if (b1 && b2){
-    b1.innerHTML = html + html; // doublage = défilement sans couture
+    b1.innerHTML = html + html; // duplication pour scroll sans couture
     b2.innerHTML = b1.innerHTML;
   }
 }
 
-/* Subscriptions */
-subscribeKey(MISSIONS_KEY, snap=>{
-  missions = snap || {};
+/* Chargement initial (important pour afficher tout de suite) */
+(async function initialLoad(){
+  try{
+    const [dSnap, mSnap] = await Promise.all([readKey(DISPATCH_KEY), readKey(MISSIONS_KEY)]);
+    dispatch = dSnap || {};
+    missions = mSnap || {};
+  }catch{ /* ignore */ }
+  await ensureOrderNumbers();
   renderList();
   renderMap();
-},{ mode:'poll', intervalMs: 4000 });
+  renderTicker();
+})();
+
+/* Subscriptions (poll) */
+subscribeKey(MISSIONS_KEY, async snap=>{
+  missions = snap || {};
+  await ensureOrderNumbers();
+  renderList();
+  renderMap();
+},{ mode:'poll', intervalMs: 3000 });
 
 subscribeKey(DISPATCH_KEY, snap=>{
   dispatch = snap || {};
   renderTicker();
-},{ mode:'poll', intervalMs: 4000 });
-
-// Première passe
-renderList();
-renderMap();
-renderTicker();
+},{ mode:'poll', intervalMs: 3000 });
